@@ -1,0 +1,1196 @@
+#from crypt import methods
+#from crypt import methods
+#from crypt import methods
+import json
+from PIL import Image
+import qrcode
+import base64
+from tabnanny import check
+from io import BytesIO
+from flask import Flask
+from datetime import timedelta
+from unicodedata import category
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+import requests
+from .models import User, Product, Session,session_users 
+from website import db
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, login_required, logout_user, current_user
+from flask_login import LoginManager
+import os
+from flask import send_from_directory
+from sqlalchemy.ext.automap import automap_base
+from . import connect_to_product, create_app, mail, api
+from flask_paginate import Pagination, get_page_args
+from flask_sqlalchemy import SQLAlchemy
+from json2html import json2html
+import urllib.parse
+import html, re
+from datetime import datetime,time,date
+from sqlalchemy import func
+from flask_mail import Message
+from flask import current_app
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from flask_restx import Resource
+from email.mime.base import MIMEBase
+from email import encoders
+import traceback
+import pytz
+import mimetypes  # Import mimetypes module
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr
+import time
+import threading
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+
+
+
+views = Blueprint('views', __name__)
+
+
+######################################################
+@api.route('/api', '/api/')
+class GetAndPost(Resource):
+    # Get all
+    def get(self):
+        users = User.query.all()
+        users_dict = [user.to_dict() for user in users]
+        return jsonify(users_dict)
+    
+    def post(self):
+        data = api.payload
+        # Generate QR code
+        qr_data = f'Username: {data["username"]}\nEmail: {data["email"]}'
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer)
+        qr_code_bytes = buffer.getvalue()
+        new_user = User(
+                email=data["email"],
+                first_name=data["first_name"],
+                last_name= data["last_name"],
+                date_of_birth=datetime.strptime(data["date_of_birth"], '%Y-%m-%d').date(),
+                qr_code=qr_code_bytes,
+                password=generate_password_hash(data["password"], method='sha256'),
+                username=data["username"] 
+            )
+        db.session.add(new_user)
+        db.session.commit() 
+        return jsonify(User.query.filter_by(id = data["id"])).to_dict() 
+    
+
+    
+
+@api.route('/api/<idx>')
+class GetUpdateDelete(Resource):
+    # Get one
+    def get(self, idx):
+        user = User.query.filter_by(id = idx).first()
+        user_dict = user.to_dict()
+        return jsonify(user_dict) 
+
+#######################################################################
+
+# Function to send email with out QR code
+def send_test_email(user_email):
+    try:
+        msg = Message('Test Email', recipients=[user_email])
+        msg.body = "This is a test email."
+        
+        mail.send(msg)
+        current_app.logger.info(f'Test email sent to {user_email}')
+        return True
+    except Exception as e:
+        current_app.logger.error(f'Failed to send test email to {user_email}. Error: {str(e)}')
+        return False
+
+
+#Send email with QR Code
+# Global rate limit parameters
+RATE_LIMIT = 10  # Max number of emails per minute
+RATE_PERIOD = 60  # Time period in seconds
+rate_limit_lock = threading.Lock()
+emails_sent = 0
+start_time = time.time()
+
+def send_email_with_qr(user_email, username, attachment, filename='attachment.png', retries=3, delay=5):
+    global emails_sent, start_time
+    
+    # Define your email parameters
+    smtp_server = 'smtp.gmail.com'  # Replace with your SMTP server
+    smtp_port = 587  # Replace with your SMTP port
+    smtp_user = 'tosinsleek01@gmail.com'  # Replace with your email address
+    smtp_password = 'ugqm eupj ikts asom'  # Replace with your email password
+
+    # Create the email message
+    msg = EmailMessage()
+    msg['From'] = formataddr(('Saka Tosin', smtp_user))
+    msg['To'] = user_email
+    msg['Subject'] = 'Your QR Code Attachment'
+
+    # Create the email body
+    msg_body = f"""
+    <html>
+        <body>
+            <h1>Hello {username},</h1>
+            <p>Here is your QR code:</p>
+        </body>
+    </html>
+    """
+    msg.set_content(msg_body, subtype='html')
+
+    # Ensure the attachment is a BytesIO object
+    if isinstance(attachment, bytes):
+        attachment_io = BytesIO(attachment)
+    else:
+        attachment_io = attachment
+
+    # Determine the MIME type
+    content_type, encoding = mimetypes.guess_type(filename)
+    if content_type is None:
+        content_type = 'application/octet-stream'
+    maintype, subtype = content_type.split('/')
+
+    # Create the MIME part
+    mime_part = MIMEBase(maintype, subtype)
+    mime_part.set_payload(attachment_io.read())
+    encoders.encode_base64(mime_part)
+    mime_part.add_header('Content-Disposition', 'attachment', filename=filename)
+    msg.add_attachment(mime_part)
+
+    # Rate limiting mechanism
+    with rate_limit_lock:
+        current_time = time.time()
+        if current_time - start_time < RATE_PERIOD:
+            if emails_sent >= RATE_LIMIT:
+                sleep_time = RATE_PERIOD - (current_time - start_time)
+                print(f"Rate limit reached, sleeping for {sleep_time} seconds")
+                time.sleep(sleep_time)
+                emails_sent = 0
+                start_time = time.time()
+        else:
+            emails_sent = 0
+            start_time = current_time
+
+    # Send the email with retries
+    for attempt in range(retries):
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+            print(f'Email sent to {user_email}')
+            with rate_limit_lock:
+                emails_sent += 1
+            return True
+        except smtplib.SMTPException as e:
+            print(f'Failed to send email to {user_email} on attempt {attempt + 1}: {e}')
+            time.sleep(delay)
+
+    print(f'Failed to send email to {user_email} after {retries} attempts')
+    return False
+
+
+def send_email_with_qr_(user_email, username, qr_code_bytes):
+    try:
+        message = Mail(
+            from_email=current_app.config['MAIL_FROM_EMAIL'],
+            to_emails=user_email,
+            subject='Your QR Code Attachment',
+            html_content=f"<strong>Hello {username},</strong><br><p>Here is your QR code:</p>"
+        )
+        
+        # Encode the QR code as base64
+        encoded_qr_code = base64.b64encode(qr_code_bytes).decode()
+
+        # Create the attachment
+        attachment = Attachment(
+            FileContent(encoded_qr_code),
+            FileName('qr_code.png'),
+            FileType('image/png'),
+            Disposition('attachment')
+        )
+        message.add_attachment(attachment)
+        
+        # Send email
+        sg = SendGridAPIClient(current_app.config['SENDGRID_API_KEY'])
+        response = sg.send(message)
+        
+        current_app.logger.info(f'Email sent to {user_email}, Status Code: {response.status_code}')
+        return True
+    except Exception as e:
+        current_app.logger.error(f'Failed to send email to {user_email}: {e}')
+        return False
+
+
+
+
+
+
+# Load favicon
+
+
+@views.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(views.root_path, 'static'),
+                               'uploads/favicon.png', mimetype='image/vnd.microsoft.icon')
+
+
+def extract_user_info(user_string):
+    # Define a regular expression pattern to match username and email
+    pattern = r"Username: (.+)\nEmail: (.+)"
+
+    # Execute the regular expression pattern on the input string
+    match = re.search(pattern, user_string)
+
+    if match:
+        # Extracted username is at group 1 and email is at group 2
+        username = match.group(1)
+        email = match.group(2)
+        return email
+    else:
+        # Return None if the pattern did not match
+        return None, None
+    
+
+
+
+
+
+@views.route('/barcodelogin')
+def barcodelogin():
+    return render_template('loginn.html')
+
+@views.route('/addUsersToSession/<id>',methods=['GET', 'POST'])  
+def addUsersToSession_handler(id):
+    if id:
+        returned_qr_code = request.form.get('qr_code')
+        email = extract_user_info(returned_qr_code)
+        user = User.query.filter_by(email=email).first()
+        session = Session.query.get(id)
+        if user:
+            existing_entry = db.session.query(session_users).filter_by(session_id=session.id, user_id=user.id).first()
+            if not existing_entry:
+                stmt = session_users.insert().values(
+                    session_id=session.id,
+                    user_id=user.id,
+                    date=datetime.now()
+                )
+                db.session.execute(stmt)
+                db.session.commit()
+                flash('User added to session successfully!', 'success')
+            else:
+                flash('User is already in this session.', 'error')
+        else:
+            flash('User not found.', 'error')
+
+    return render_template('adduserstosession.html', user=current_user, session_data=session)
+        
+
+
+
+@views.route('/logging', methods=['POST'])
+def logging_handler():
+    returned_qr_code = request.form.get('qr_code')
+    email = extract_user_info(returned_qr_code)
+    user = User.query.filter_by(email=email).first()  
+    if user:
+        flash('Logged in successfully!', category='success')
+        login_user(user, remember=True)
+        return redirect(url_for('views.session'))
+    else:
+        # Show error message on failed login
+        return render_template('login.html', error='Invalid QR code. Please try again.')
+
+
+
+
+@views.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_template("login.html")
+    elif request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")        
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if check_password_hash(user.password,password):
+                flash('Logged in successfully!', category='success')
+                login_user(user, remember=True)
+                return redirect(url_for('views.session'))
+            else:
+                password=generate_password_hash(password, method='sha256')
+                flash('Incorrect password, try again. ' + password , category='error')
+        else:
+            flash('Email does not exist.', category='error')
+
+    return render_template("login.html", user=current_user)
+
+
+def get_gender_count_by_date():
+    query = db.session.query(
+    func.strftime('%Y-%m-%d', Session.date).label('session_date'),
+    User.gender.label('user_gender'),
+    func.count(User.id).label('user_count')
+    ).join(session_users, session_users.c.session_id == Session.id) \
+    .join(User, User.id == session_users.c.user_id) \
+    .group_by(func.strftime('%Y-%m-%d', Session.date), User.gender) \
+    .order_by(func.strftime('%Y-%m-%d', Session.date), User.gender)
+
+    results = query.all()
+    return results
+
+ 
+ 
+
+# Count users
+def count_registered_users():
+    registered_users_count = db.session.query(User).count()
+    return registered_users_count
+
+# Count sessions
+def count_sessions():
+    session_count = db.session.query(Session).count()
+    return session_count
+
+
+# Function to count the number of male users
+def count_male_users():
+    male_count = db.session.query(User).filter(User.gender == 'male').count()
+    return male_count  
+
+
+# Function to count the number of male users
+def count_female_users():
+    female_count = db.session.query(User).filter(User.gender == 'female').count()
+    return female_count 
+
+
+@views.route('/analytics')
+@login_required
+def analytics():
+    user_count = count_registered_users()
+    session_count = count_sessions()
+    male_count = count_male_users()
+    female_count = count_female_users()
+    results = get_gender_count_by_date()
+    data = {}
+    
+    for result in results:
+        date_str = result.session_date # already a string
+        if date_str not in data:
+            data[date_str] = {'male': 0, 'female': 0}
+        data[date_str][result.user_gender] = result.user_count
+
+    # Convert the data to JSON
+    data_json = json.dumps(data)
+    return render_template("home.html", user=current_user, user_count = user_count, 
+                           session_count = session_count, male_count = male_count,
+                             female_count = female_count,data = data_json)
+
+
+@views.route('/home')
+@login_required
+def home():
+    return render_template("home.html", user=current_user)
+
+
+@views.route('/product')
+def product():
+    return render_template('Products.html')
+
+@views.route('/datatable')
+def datatable():
+    return render_template('datatable.html')
+
+
+#  Edit product view
+@views.route('/editproduct', methods=['GET', 'POST'])
+def editProduct():
+    if request.method == 'POST':
+        my_data = Product.query.get(request.form.get('productid'))
+        if my_data:
+            my_data.ProductCode = request.form['productcode']
+            my_data.ItemName = request.form['itemname']
+            my_data.GenericName = request.form['genericname']
+            my_data.GenericNameUpdated = request.form['genericnameupdate']
+            my_data.BasicUnit = request.form['basicunit']
+            my_data.GenericRatio = request.form['genericratio']
+            my_data.StorageCondition = request.form['storagetype']
+            my_data.IvedexGenericCode = request.form['ivedexgenericcode']
+            my_data.Volume = request.form['volume']
+            my_data.Weight = request.form['weight']
+            my_data.PriceDollar = request.form['price']
+            my_data.Program = request.form['program']
+            my_data.ProductGroup = request.form['productgroup']    
+        # db_.session.add(my_data)
+        db.session.commit()
+
+        flash("Product Updated Successfully")
+        
+        return redirect(url_for('views.datatable'))
+
+
+# Delete product
+@views.route('/productdelete/<id>/', methods=['GET', 'POST'])
+def productdelete(id):
+    my_data = Product.query.get(id)
+    db.session.delete(my_data)
+    db.session.commit()
+
+    flash("Product Deleted Successfully")
+    return render_template('datatable.html') 
+
+
+# Route to delete session
+@views.route('/sessiondelete/<id>/', methods=['POST'])
+def sessiondelete(id):
+    my_data = Session.query.get(id)
+    if my_data:
+        db.session.delete(my_data)
+        db.session.commit()
+        return jsonify({"message": "Session Deleted Successfully"}), 200
+    else:
+        return jsonify({"message": "Session Not Found"}), 404
+
+
+
+# Route to delete user from session
+@views.route('/remove_user_from_session/<userId>/<sessionId>', methods=['POST'])
+def remove_user_from_session(userId, sessionId):
+    user = User.query.get(userId)
+    session = Session.query.get(sessionId)
+    
+    if user and session:
+        try:
+            # Remove the user from the session
+            session.users.remove(user)
+            db.session.commit()
+            return 'User removed from session successfully', 200
+        except Exception as e:
+            print('Error removing user from session:', e)
+            db.session.rollback()
+            return 'Error removing user from session', 500
+    else:
+        return 'User or session not found', 404
+
+
+@views.route('/get_sessions_users/<session_id>/users', methods=['POST','GET'])
+def get_sessions_users(session_id):
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start', 0))
+    length = int(request.form.get('length', 10))
+    search_value = request.form.get('search[value]', '').strip().lower()
+
+    # Query to get users for a specific session
+    base_query = db.session.query(
+        User.id,
+        User.username,
+        User.email,
+        session_users.c.date.label('added_date')
+        ).join(session_users).filter(session_users.c.session_id == session_id)
+
+    # Apply search filter
+    if search_value:
+        base_query = base_query.filter(
+            (User.username.ilike(f'%{search_value}%')) | 
+            (User.email.ilike(f'%{search_value}%')) |
+            func.cast(session_users.c.date, db.String).like(f'%{search_value}%')
+        )
+
+    # Get the total number of records before filtering
+    total_records = base_query.count()
+
+    # Apply pagination
+    paginated_query = base_query.offset(start).limit(length)
+
+    # Fetch filtered data
+    items = paginated_query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    nigeria_tz = pytz.timezone('Africa/Lagos')
+    for item in items:
+        if item.added_date:
+            # Check if added_date is already a datetime object
+            if isinstance(item.added_date, datetime):
+                added_date_utc = pytz.utc.localize(item.added_date)
+            else:
+                # If added_date is a date object, convert it to a datetime object
+                added_date_datetime = datetime.combine(item.added_date, time.min)
+                added_date_utc = pytz.utc.localize(added_date_datetime)
+        
+            # Convert the UTC datetime to Nigeria time zone
+            added_date_nigeria = added_date_utc.astimezone(nigeria_tz)
+            
+            # Format the datetime to a string
+            added_date_str = added_date_nigeria.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            added_date_str = None
+        data.append({
+            'Id': item.id,
+            'username': item.username,
+            'email': item.email,
+            'added_date': added_date_str,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records if not search_value else len(items),
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+
+@views.route('/get_sessions_data', methods=['POST','GET'])
+def get_sessions_data():
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]').strip().lower()
+
+    # Base query to get session data
+    base_query = db.session.query(
+        Session.id,
+        Session.name,
+        Session.description,
+        Session.date,
+        func.coalesce(func.count(session_users.c.user_id), 0).label('user_count')
+    ).outerjoin(session_users).group_by(Session.id)
+
+    # Apply search filter
+    if search_value:
+        base_query = base_query.filter(
+            Session.name.like(f'%{search_value}%') |
+            Session.description.like(f'%{search_value}%') |
+            func.cast(Session.date, db.String).like(f'%{search_value}%')
+        )
+
+    # Get the total number of records before filtering
+    total_records = db.session.query(func.count(Session.id)).scalar()
+
+    # Get the total number of filtered records
+    total_filtered_records = base_query.count()
+
+    # Apply pagination
+    query = base_query.order_by(Session.id.asc()).offset(start).limit(length)
+
+    # Fetch filtered data
+    items = query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    for item in items:
+        data.append({
+            'Id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'date': item.date.strftime('%Y-%m-%d'),  # Format date if needed
+            'user_count': item.user_count,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered_records,
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+@views.route('/get_sessions_summary_data', methods=['POST','GET'])
+def get_sessions_summary_data():
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]').strip().lower()
+
+    # Base query to get session data
+    base_query = db.session.query(
+        Session.date,
+        Session.name,
+        func.coalesce(func.count(session_users.c.user_id), 0).label('user_count')
+    ).outerjoin(session_users).group_by(Session.id)
+
+    # Apply search filter
+    if search_value:
+        base_query = base_query.filter(
+            Session.name.like(f'%{search_value}%') |
+            Session.description.like(f'%{search_value}%') |
+            func.cast(Session.date, db.String).like(f'%{search_value}%')
+        )
+
+    # Get the total number of records before filtering
+    total_records = db.session.query(func.count(Session.id)).scalar()
+
+    # Get the total number of filtered records
+    total_filtered_records = base_query.count()
+
+    # Apply pagination
+    query = base_query.order_by(Session.id.asc()).offset(start).limit(length)
+
+    # Fetch filtered data
+    items = query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    for item in items:
+        data.append({
+            'date': item.date.strftime('%Y-%m-%d'),  # Format date if needed
+            'name': item.name,
+            'user_count': item.user_count,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered_records,
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+
+@views.route('/get_data', methods=['POST','GET'])
+def get_data():
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]').strip().lower()
+
+    # Query data from the database
+    query = Product.query.order_by(Product.Id.asc())
+
+    # Apply search filter
+    if search_value:
+        query = query.filter(Product.ProductCode.like(f'%{search_value}%') | Product.GenericNameUpdated.like(f'%{search_value}%') | Product.Program.like(f'%{search_value}%'))
+        
+        
+
+    # Get the total number of records before filtering
+    total_records = query.count()
+
+    # Apply pagination
+    query = query.offset(start).limit(length)
+
+    # Fetch filtered data
+    items = query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    for item in items:
+        data.append({
+            'Id': item.Id,
+            'ProductCode': item.ProductCode,
+            'ItemName' : item.ItemName,
+            'GenericName': item.GenericName,
+            'GenericNameUpdated': item.GenericNameUpdated,
+            'BasicUnit': item.BasicUnit,
+            'GenericRatio': item.GenericRatio,
+            'StorageCondition': item.StorageCondition,
+            'IvedexGenericCode': item.IvedexGenericCode,
+            'NHLMISGenericParent' : item.NHLMISGenericParent,
+            'InventoryConversionFactor' : item.InventoryConversionFactor,
+            'Volume' : item.Volume,
+            'Weight' : item.Weight,
+            'PriceDollar' : item.PriceDollar,
+            'Program' : item.Program,
+            'ProductGroup' : item.ProductGroup,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records if not search_value else len(items),
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+@views.route('/products', methods=['GET', 'POST'])
+@login_required
+def products():
+    return_value = ''
+    if request.method == 'GET':
+        all_products = Product.query.all()
+        if all_products:
+            return_value = 'Data Returned'
+        else:
+            return_value = 'No Data returned'
+                
+            
+    return render_template("Products.html", user=current_user, products=all_products)
+
+
+
+@views.route('/addsession', methods=['POST'])
+@login_required
+def addsession():
+    if request.method == 'POST':
+        activityname = request.form.get("activityname")
+        activitydescription = request.form.get("activitydescription")
+        activitydate = request.form.get("activitydate")
+        date_object = datetime.strptime(activitydate, '%Y-%m-%d').date()
+        new_activity = Session(name = activityname, description = activitydescription, date = date_object)
+        db.session.add(new_activity)
+        db.session.commit()
+        flash("New Activity Added Successfully")
+        return redirect(url_for('views.session'))
+    
+
+@views.route('/adduserstosession', methods=['POST'])
+@login_required
+def adduserstosession():
+    if request.method == 'POST':
+        activityname = request.form.get("activityname")
+        activitydescription = request.form.get("activitydescription")
+        activitydate = request.form.get("activitydate")
+        date_object = datetime.strptime(activitydate, '%Y-%m-%d').date()
+        new_activity = Session(name = activityname, description = activitydescription, date = date_object)
+        db.session.add(new_activity)
+        db.session.commit()
+        flash("User Added Successfully")
+        return redirect(url_for('views.session'))
+
+
+@views.route('/insert', methods=['POST'])
+@login_required
+def insert():
+    if request.method == 'POST':
+        username = request.form.get("username")
+        firstname = request.form.get("firstname")
+        lastname = request.form.get("lastname")
+        date_of_birth_ = request.form.get("dateofbirth")
+        date_of_birth = get_date_of_birth(date_of_birth_)
+        email = request.form.get("email")
+        password = request.form.get("password")
+        gender = request.form.get("gender")
+        phone_no = request.form.get("phone_no")
+        home_address = request.form.get("home_address")
+
+        # Generate QR code
+        qr_data = f"Username: {username}\nEmail: {email}"
+        qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer)
+       
+
+        my_data = User(username=username,gender=gender,phone_no=phone_no,home_address=home_address,first_name=firstname,last_name=lastname,date_of_birth=date_of_birth,
+                        email=email, qr_code=buffer.getvalue(), password=generate_password_hash(
+            password, method='sha256'))
+        db.session.add(my_data)
+        db.session.commit()
+
+        flash("User recorded Inserted Successfully")
+
+        return redirect(url_for('views.createusers'))
+
+
+@views.route('/update', methods=['GET', 'POST'])
+@login_required
+def update():
+    if request.method == 'POST':
+        my_data = User.query.get(request.form.get('id'))
+        my_data.username = request.form['username']
+        my_data.email = request.form['email']
+        my_data.first_name = request.form['firstname']
+        my_data.last_name = request.form['lastname']
+        date_of_birth = request.form['dateofbirth']
+        my_data.date_of_birth = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        password = request.form['password']
+
+        my_data.gender = request.form['gender']
+        my_data.phone_no = request.form['phone_no']
+        my_data.home_address = request.form['home_address']
+        my_data.password = generate_password_hash(
+            password, method='sha256')
+        # db_.session.add(my_data)
+        db.session.commit()
+
+        flash("User Updated Successfully")
+
+        return redirect(url_for('views.createusers'))
+    
+
+@views.route('/activity/<id>', methods=['GET', 'POST'])    
+@login_required   
+def  activity(id):
+    if id:
+        # Query to get session id, session name, and count of users for each session
+        session_data = db.session.query(Session.id, Session.name).filter(Session.id == id).first()
+        return render_template("adduserstosession.html",user=current_user, session_data = session_data)
+
+
+@views.route('/userdetails/<id>', methods=['GET', 'POST'])
+@login_required
+def userdetails(id):
+    if id:
+        user = User.query.get(id)
+        qr_code_data = get_qr_code(user.username)
+        base64_encoded_data = qr_code_data
+        return render_template("userdetail.html", user = user, base64_encoded_data = base64_encoded_data)
+    else:
+        return render_template("userdetail.html", id = "Id is blank")
+  
+    
+
+
+@views.route('/delete/<id>/', methods=['GET', 'POST'])
+@login_required
+def delete(id):
+    my_data = User.query.get(id)
+    db.session.delete(my_data)
+    db.session.commit()
+
+    flash("User Deleted Successfully")
+    return redirect(url_for('views.createusers'))
+
+
+@views.route('/session', methods=['GET', 'POST'])
+@login_required
+def session():
+    all_activity = db.session.query(
+    Session.id,
+    Session.name,
+    Session.description,
+    Session.date,
+    func.coalesce(func.count(session_users.c.user_id),0).label('user_count')
+).outerjoin(session_users).group_by(Session.id, Session.name, Session.description, Session.date).all()
+    return render_template('session.html', user=current_user, activities = all_activity)
+
+
+#paginated function
+def get_users(offset=0, per_page=5):
+    return User.query.offset(offset).limit(per_page).all()
+
+@views.route('/createusers')
+@login_required
+def createusers():
+    # Get page and per_page from URL parameters with default values
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=5, type=int)
+    
+    # Calculate the offset for SQL query
+    offset = (page - 1) * per_page
+    
+    # Get total number of users and the subset of users for the current page
+    total = User.query.count()
+    pagination_users = get_users(offset=offset, per_page=per_page)
+    
+    # Create the pagination object
+    pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap4')
+    
+    # Render the template with users and pagination
+    return render_template("createusers.html", user=current_user, users=pagination_users, pagination=pagination)
+
+
+
+@views.route('/forgotpassword', methods=['GET', 'POST'])
+def forgotpassword():
+    if request.method == 'GET':
+        return render_template('forgotpassword.html')
+    elif request.method == "POST":
+        email = request.form.get("email")
+        password1 = request.form.get("password1")
+        password2 = request.form.get("password2")      
+
+        user = User.query.filter_by(email=email).first()
+        if user:           
+            if len(email) < 4:
+                flash('Email must be greater than 3 characters.', category='error')
+            elif password1 != password2:
+                flash('Passwords don\'t match.', category='error')
+            elif len(password1) < 7:
+                flash('Passwords must be atleast 7 characters', category='error')
+            else:
+                # update user to database
+                password =generate_password_hash(password1, method='sha256')
+                user.password = password
+                db.session.add(user)
+                db.session.commit()
+                flash('Password Updated Successfuly!', category='success')
+                return redirect(url_for('views.login'))
+        else:
+            flash('', category='error')
+    return render_template("forgotpassword.html")
+
+
+@views.route('/test')
+@login_required
+def test():
+    if request.method == 'GET':
+        all_products = Product.query.limit(15).all()
+
+    return render_template("Products.html", user=current_user, products=all_products)
+
+
+#@views.route('/tesst')
+#@login_required
+#def tesst():
+#    if request.method == 'GET':
+#        all_products = TempmsProduct.query.all()
+#    return render_template("tesst.html", products = all_products)
+
+
+@views.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('views.login'))
+
+
+@views.route('/index')
+@login_required
+def index():
+    return render_template("index.html")
+
+
+def get_date_of_birth(dateofbirth, default_value='1789-01-01'):
+    """
+    Returns the parsed dateofbirth if it is valid, otherwise returns the default value.
+
+    :param dateofbirth: The date of birth as a string.
+    :param default_value: The default value to return if dateofbirth is None or invalid.
+    :return: A date object.
+    """
+    if dateofbirth:
+        try:
+            return datetime.strptime(dateofbirth, '%Y-%m-%d').date()
+        except ValueError as e:
+            print(f"Error parsing date: {e}. Returning default value.")
+            return datetime.strptime(default_value, '%Y-%m-%d').date()
+    else:
+        print("Date of birth not provided. Returning default value.")
+        return datetime.strptime(default_value, '%Y-%m-%d').date()
+
+
+@views.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'GET':
+        return render_template('signup.html')
+    elif request.method == "POST":
+        username = request.form.get("username")
+        password1 = request.form.get("password1")
+        password2 = request.form.get("password2")
+        email = request.form.get("email")
+        firstname = request.form.get("firstname")
+        lastname = request.form.get("lastname")
+        dateofbirth = request.form.get("date_of_birth")
+        date_of_birth = get_date_of_birth(dateofbirth)
+        gender = request.form.get("gender")
+        phone_no = request.form.get("phone_no")
+        home_address = request.form.get("home_address")
+
+        # Generate QR code
+        qr_data = f"Username: {username}\nEmail: {email}"
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer)
+        qr_code_bytes = buffer.getvalue()
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            flash('Email already exists.', category='error')
+        elif len(email) < 4:
+            flash('Email must be greater than 3 characters.', category='error')
+        elif len(username) < 2:
+            flash('Username must be greater than 1 characters.', category='error')
+        elif password1 != password2:
+            flash('Passwords don\'t match.', category='error')
+        elif len(password1) < 7:
+            flash('Passwords must be atleast 7 characters', category='error')
+        else:
+            # add user to database
+            new_user = User(
+                email=email,
+                first_name=firstname,
+                last_name=lastname,
+                date_of_birth=date_of_birth,
+                qr_code=qr_code_bytes,
+                password=generate_password_hash(password1, method='sha256'),
+                username=username,
+                gender= gender,
+                phone_no= phone_no,
+                home_address= home_address
+            )
+            db.session.add(new_user)
+            db.session.commit()          
+            login_user(new_user, remember=True)
+
+            # Generate QR code base64 string
+            #qr_code_base64 = get_qr_code(username)
+
+            # Send the email and log the result
+            email_sent = send_email_with_qr(new_user.email, new_user.username, qr_code_bytes)
+            #email_sent = send_test_email(new_user.email)
+            if email_sent:
+                flash('Registration successful! A QR code has been sent to your email.', 'success')
+            else:
+                flash('Registration successful! However, we could not send a QR code to your email.', 'warning')
+
+            return redirect(url_for('views.login'))  # Adjust this to your actual login route
+
+    return render_template("signup.html", user=current_user)
+
+
+
+
+
+# Function to get QR code in base64
+def get_qr_code(username):
+    user = User.query.filter_by(username=username).first()
+    if user and user.qr_code:
+        qr_code_base64 = base64.b64encode(user.qr_code).decode('utf-8')
+        return qr_code_base64
+    return None
+
+
+def convert_to_base64(qr_code_data):
+    if qr_code_data:
+        return base64.b64encode(qr_code_data).decode('utf-8')
+    return None
+
+@views.route('/show_qr_code', methods=['GET', 'POST']) 
+def show_qr_code(username):
+    qr_code_data = get_qr_code(username)
+    base64_encoded_data = convert_to_base64(qr_code_data)
+    return render_template('show_qr_code.html', base64_encoded_data=base64_encoded_data)
+
+
+# Function to generate QR Code
+def generate_qr_code(data):
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.Error_CORRECT_L, box_size=10, border=4)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    return img
+
+# Function to update user model with QR code
+def update_user_qr_code(user):
+    qr_code_data = f"User ID: {user.id}"  # Example data, you can customize this
+    img = generate_qr_code(qr_code_data)
+    buffer = BytesIO()
+    img.save(buffer)
+    user.qr_code = buffer.getvalue()
+    db.session.commit()
+
+# Route to generate QR codes for all users
+@views.route('/generate_qr_codes/<id>/', methods=['GET', 'POST'])
+def generate_qr_codes():
+    user = User.query.get(id)
+    update_user_qr_code(user)
+    flash("QR Code successfully generated")
+    return redirect(url_for('views.createusers'))  # Redirect to index page after generating QR codes    
+
+# Superset stuffs
+@views.route("/guest_token", methods=["GET"])
+def guest_token():
+    # Embed the Superset dashboard using an iframe
+    superset_url = "https://superset.westus2.cloudapp.azure.com:8088/api/v1/security/login"
+    payload = {"password": "Sleektech@2375#",
+               "provider": "db",
+               "refresh": True,
+               "username": "admin"
+               }
+    response = requests.post(superset_url, json=payload)
+    # the acc_token is a json, which holds access_token and refresh_token
+    if response.status_code != 200:
+        return str(response.status_code)
+    access_token = response.json()['access_token']
+
+    # no get a guest token
+    api_url_for_guesttoken = "https://superset.westus2.cloudapp.azure.com:8088/api/v1/security/guest_token"
+    payload = {}
+    data = json.dumps({
+        "user": {
+            "username": "admin",
+            "first_name": "Admin",
+            "last_name": "Admin"
+        },
+
+        "resources": [{
+            "type": "dashboard",
+            "id": "13"
+        }],
+        "rls": []
+    })
+
+    # now this is the crucial part: add the specific auth-header
+    response = requests.post(api_url_for_guesttoken, data=data, headers={
+                             "Authorization": f"Bearer {access_token}", 'Accept': 'application/json', 'Content-Type': 'application/json'})
+
+    if response == None:
+        return "None response error"
+    # Set the authentication token
+    auth_token = jsonify(response.json()['token'])
+
+    # Set the Superset API endpoint and dashboard ID
+    api_url = "https://superset.westus2.cloudapp.azure.com:8088/api/v1/dashboard"
+    dashboard_id = 13
+
+    # Set the headers with the authentication token
+    headers = {
+        "Authorization": f"Bearer {auth_token}",
+        "Content-Type": "application/json"
+    }
+
+    # Send a GET request to retrieve the dashboard
+    response_ = requests.get(f"{api_url}/{dashboard_id}", headers={
+                             "Authorization": f"Bearer {access_token}", 'Accept': 'application/json', 'Content-Type': 'application/json'})
+
+    if response_ != None:
+        response_content = response_.content
+        data = json.loads(response_content)
+        # Parse the JSON response
+        # Convert the parsed JSON to an HTML table using json2html
+        html_table = json2html.convert(json=data)
+        if html_table != None:
+            return html_table

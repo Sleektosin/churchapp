@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dynamic DataTable</title>
+ 
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css"
+    />
+       <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="static/uploads/chemonics_fav.png"
+    />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.7.1/css/buttons.dataTables.min.css">
+       <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>
+   
+
+<style>
+    @media (min-width: 768px) {
+    .navbar-collapse.collapse {
+        display: block !important;
+        height: auto !important;
+        padding-bottom: 0;
+        overflow: visible !important;
+    }
+}
+
+.dt-buttons {
+        position: relative;
+        top: 0;
+        left: 0;
+    }
+
+.topbar .navbar-collapse {
+    padding: 0px 10px 0 0;
+}
+      body {
+    margin: 0;
+    overflow-x: hidden;
+    color: #3e5569;
+    background: #fff;
+}
+p {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+}
+.navbar-dark .navbar-brand {
+    color: #fff;
+}
+.navbar-brand {
+    float: left;
+    height: 50px;
+    padding: 15px 15px;
+    font-size: 18px;
+    line-height: 20px;
+}
+.navbar-brand {
+    padding-top: 0.3359375rem;
+    padding-bottom: 0.3359375rem;
+    margin-right: 1rem;
+    font-size: 1.09375rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #333;
+    background-color: #fff;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup, main, menu, nav, section, summary {
+    display: block;
+}
+.scroll-sidebar {
+    height: calc(100% - 20px);
+    position: relative;
+}
+div {
+    display: block;
+}
+.sidebar-nav ul {
+    margin: 0px;
+    padding: 0px;
+}
+.sidebar-nav ul {
+}
+.pt-4 {
+    padding-top: 1.5rem!important;
+}
+ul {
+    display: block;
+    list-style-type: disc;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    padding-inline-start: 40px;
+}
+.sidebar-nav ul .sidebar-item {
+}
+.sidebar-nav ul li {
+    list-style: none;
+}
+.sidebar-nav ul .sidebar-item.selected>.sidebar-link {
+    background: #27a9e3;
+    opacity: 1;
+}
+.sidebar-nav ul .sidebar-item .sidebar-link.active, .sidebar-nav ul .sidebar-item .sidebar-link:hover {
+    opacity: 1;
+}
+.sidebar-nav ul .sidebar-item .sidebar-link {
+    color: #fff;
+    padding: 14px 15px;
+    display: flex;
+    white-space: nowrap;
+    align-items: center;
+    line-height: 25px;
+    opacity: 0.6;
+}
+.sidebar-nav ul .sidebar-item .sidebar-link i {
+    font-style: normal;
+    width: 35px;
+    line-height: 25px;
+    font-size: 23px;
+    color: #fff;
+    display: inline-block;
+    text-align: center;
+}
+.mdi-border-inside:before {
+    content: "\F0CB";
+}
+.mdi:before, .mdi-set {
+    display: inline-block;
+    font: normal normal normal 24px/1 "Material Design Icons";
+    font-size: inherit;
+    text-rendering: auto;
+    line-height: inherit;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translate(0, 0);
+}
+:after, :before {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+*, :after, :before {
+    box-sizing: border-box;
+}
+.waves-effect {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    vertical-align: middle;
+    z-index: 1;
+    will-change: opacity,transform;
+    transition: all 0.1s ease-out;
+}
+a {
+    color: #337ab7;
+    text-decoration: none;
+}
+      /* Style for the container holding the buttons */
+      .action-buttons {
+        display: flex; /* Display buttons in a row */
+        justify-content: space-between; /* Space between buttons */
+      }
+      #main-wrapper .topbar .navbar-collapse[data-navbarbg=skin5], #main-wrapper .topbar[data-navbarbg=skin5] {
+    background: #1f262d;
+    }
+    #main-wrapper .left-sidebar[data-sidebarbg=skin5], #main-wrapper .left-sidebar[data-sidebarbg=skin5] ul {
+    background: #1f262d;
+}
+    .topbar {
+    position: relative;
+    z-index: 50;
+    box-shadow: 1px 0px 7px rgba(0,0,0,0.05);
+    background: #fff;
+    height: 64px;
+}
+@media (min-width: 768px)
+#main-wrapper[data-layout=vertical] {
+}
+#main-wrapper {
+}
+#main-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+.page-breadcrumb {
+    padding: 20px 20px 0 20px;
+}
+.left-sidebar {
+    position: absolute;
+    width: 250px;
+    height: 1300px;
+    top: 0px;
+    z-index: 10;
+    padding-top: 64px;
+    background: #fff;
+    box-shadow: 1px 0px 20px rgba(0,0,0,0.08);
+}
+
+      /* Style for the update button */
+      .btn-update {
+        background-color: #4caf50; /* Green */
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 4px 2px;
+        cursor: pointer;
+      }
+
+      /* Style for the delete button */
+      .btn-delete {
+        background-color: #f44336; /* Red */
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 4px 2px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+      <!-- ============================================================== -->
+    <!-- Preloader - style you can find in spinners.css -->
+    <!-- ============================================================== -->
+    <div class="preloader">
+      <div class="lds-ripple">
+        <div class="lds-pos"></div>
+        <div class="lds-pos"></div>
+      </div>
+    </div>  
+    <!-- ============================================================== -->
+    <!-- Main wrapper - style you can find in pages.scss -->
+    <!-- ============================================================== -->
+    <div
+      id="main-wrapper"
+      data-layout="vertical"
+      data-navbarbg="skin5"
+      data-sidebartype="full"
+      data-sidebar-position="absolute"
+      data-header-position="absolute"
+      data-boxed-layout="full"
+    >
+      <!-- ============================================================== -->
+      <!-- Topbar header - style you can find in pages.scss -->
+      <!-- ============================================================== -->
+      <header class="topbar" data-navbarbg="skin5">
+        <nav class="navbar top-navbar navbar-expand-md navbar-dark">
+          <div class="navbar-header" data-logobg="skin5">
+            <!-- ============================================================== -->
+            <!-- Logo -->
+            <!-- ============================================================== -->
+            <a class="navbar-brand" href="index.html">
+              <!-- Logo icon -->
+              <b class="logo-icon ps-2">
+                <!--You can put here icon as well // <i class="wi wi-sunset"></i> //-->
+                <!-- Dark Logo icon -->
+                <img
+                  src="static/uploads/logo-icon.png"
+                  alt="homepage"
+                  class="light-logo"
+                  width="25"
+                />
+              </b>
+              <!--End Logo icon -->
+              <!-- Logo text -->
+              <span class="logo-text ms-2">
+                <!-- dark Logo text -->
+                <p class="light-logo" style="padding-top: 20px" alt="homepage">
+                  SleekTech Solution
+                </p>
+                <!--<img
+                  src="static/uploads/logo-text.png"
+                  alt="homepage"
+                  class="light-logo"
+                />-->
+              </span>
+              <!-- Logo icon -->
+              <!-- <b class="logo-icon"> -->
+              <!--You can put here icon as well // <i class="wi wi-sunset"></i> //-->
+              <!-- Dark Logo icon -->
+              <!-- <img src="../assets/images/logo-text.png" alt="homepage" class="light-logo" /> -->
+
+              <!-- </b> -->
+              <!--End Logo icon -->
+            </a>
+            <!-- ============================================================== -->
+            <!-- End Logo -->
+            <!-- ============================================================== -->
+            <!-- ============================================================== -->
+            <!-- Toggle which is visible on mobile only -->
+            <!-- ============================================================== -->
+            <a
+              class="nav-toggler waves-effect waves-light d-block d-md-none"
+              href="javascript:void(0)"
+              ><i class="ti-menu ti-close"></i
+            ></a>
+          </div>
+          <!-- ============================================================== -->
+          <!-- End Logo -->
+          <!-- ============================================================== -->
+          <div
+            class="navbar-collapse collapse"
+            id="navbarSupportedContent"
+            data-navbarbg="skin5"
+          >
+            <!-- ============================================================== -->
+            <!-- toggle and nav items -->
+            <!-- ============================================================== -->
+            <ul class="navbar-nav float-start me-auto">
+              <li class="nav-item d-none d-lg-block">
+                <a
+                  class="nav-link sidebartoggler waves-effect waves-light"
+                  href="javascript:void(0)"
+                  data-sidebartype="mini-sidebar"
+                  ><i class="mdi mdi-menu font-24"></i
+                ></a>
+              </li>
+              <!-- ============================================================== -->
+              <!-- create new -->
+              <!-- ============================================================== -->
+              <!--
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <span class="d-none d-md-block"
+                    >Create New <i class="fa fa-angle-down"></i
+                  ></span>
+                  <span class="d-block d-md-none"
+                    ><i class="fa fa-plus"></i
+                  ></span>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="#">Action</a></li>
+                  <li><a class="dropdown-item" href="#">Another action</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </li>
+                </ul>
+              </li> -->
+              <!-- ============================================================== -->
+              <!-- Search -->
+              <!-- ============================================================== -->
+              <li class="nav-item search-box">
+                <a
+                  class="nav-link waves-effect waves-dark"
+                  href="javascript:void(0)"
+                  ><i class="mdi mdi-magnify fs-4"></i
+                ></a>
+                <form class="app-search position-absolute">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Search &amp; enter"
+                  />
+                  <a class="srh-btn"><i class="mdi mdi-window-close"></i></a>
+                </form>
+              </li>
+            </ul>
+            <!-- ============================================================== -->
+            <!-- Right side toggle and nav items -->
+            <!-- ============================================================== -->
+            <ul class="navbar-nav float-end">
+              <!-- ============================================================== -->
+              <!-- Comment -->
+              <!-- ============================================================== -->
+              <!--
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i class="mdi mdi-bell font-24"></i>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="#">Action</a></li>
+                  <li><a class="dropdown-item" href="#">Another action</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </li>
+                </ul>
+              </li> -->
+              <!-- ============================================================== -->
+              <!-- End Comment -->
+              <!-- ============================================================== -->
+              <!-- ============================================================== -->
+              <!-- Messages -->
+              <!-- ============================================================== -->
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle waves-effect waves-dark"
+                  href="#"
+                  id="2"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i class="font-24 mdi mdi-comment-processing"></i>
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end mailbox animated bounceInDown"
+                  aria-labelledby="2"
+                >
+                  <ul class="list-style-none">
+                    <li>
+                      <div class="">
+                        <!-- Message -->
+                        <a href="javascript:void(0)" class="link border-top">
+                          <div class="d-flex no-block align-items-center p-10">
+                            <span
+                              class="btn btn-success btn-circle d-flex align-items-center justify-content-center"
+                              ><i class="mdi mdi-calendar text-white fs-4"></i
+                            ></span>
+                            <div class="ms-2">
+                              <h5 class="mb-0">Event today</h5>
+                              <span class="mail-desc"
+                                >Just a reminder that event</span
+                              >
+                            </div>
+                          </div>
+                        </a>
+                        <!-- Message -->
+                        <a href="javascript:void(0)" class="link border-top">
+                          <div class="d-flex no-block align-items-center p-10">
+                            <span
+                              class="btn btn-info btn-circle d-flex align-items-center justify-content-center"
+                              ><i class="mdi mdi-settings fs-4"></i
+                            ></span>
+                            <div class="ms-2">
+                              <h5 class="mb-0">Settings</h5>
+                              <span class="mail-desc"
+                                >You can customize this template</span
+                              >
+                            </div>
+                          </div>
+                        </a>
+                        <!-- Message -->
+                        <a href="javascript:void(0)" class="link border-top">
+                          <div class="d-flex no-block align-items-center p-10">
+                            <span
+                              class="btn btn-primary btn-circle d-flex align-items-center justify-content-center"
+                              ><i class="mdi mdi-account fs-4"></i
+                            ></span>
+                            <div class="ms-2">
+                              <h5 class="mb-0">Pavan kumar</h5>
+                              <span class="mail-desc"
+                                >Just see the my admin!</span
+                              >
+                            </div>
+                          </div>
+                        </a>
+                        <!-- Message -->
+                        <a href="javascript:void(0)" class="link border-top">
+                          <div class="d-flex no-block align-items-center p-10">
+                            <span
+                              class="btn btn-danger btn-circle d-flex align-items-center justify-content-center"
+                              ><i class="mdi mdi-link fs-4"></i
+                            ></span>
+                            <div class="ms-2">
+                              <h5 class="mb-0">Luanch Admin</h5>
+                              <span class="mail-desc"
+                                >Just see the my new admin!</span
+                              >
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                    </li>
+                  </ul>
+                </ul>
+              </li>
+              <!-- ============================================================== -->
+              <!-- End Messages -->
+              <!-- ============================================================== -->
+
+              <!-- ============================================================== -->
+              <!-- User profile and search -->
+              <!-- ============================================================== -->
+                   <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle text-muted waves-effect waves-dark pro-pic"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <img
+                    src="static/uploads/users/1.jpg"
+                    alt="user"
+                    class="rounded-circle"
+                    width="31"
+                  />
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end user-dd animated"
+                  aria-labelledby="navbarDropdown"
+                >
+                  <a class="dropdown-item" href="#"
+                    ><i class="mdi mdi-account me-1 ms-1"></i> My Profile</a
+                  >
+                  <!--
+                  <a class="dropdown-item" href="javascript:void(0)"
+                    ><i class="mdi mdi-wallet me-1 ms-1"></i> My Balance</a
+                  >
+                  <a class="dropdown-item" href="javascript:void(0)"
+                    ><i class="mdi mdi-email me-1 ms-1"></i> Inbox</a
+                  >-->
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="javascript:void(0)"
+                    ><i class="mdi mdi-settings me-1 ms-1"></i> Account
+                    Setting</a
+                  >
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="{{url_for('views.logout')}}"
+                    ><i class="fa fa-power-off me-1 ms-1"></i> Logout</a
+                  >
+                  <!--
+                  <div class="dropdown-divider"></div>
+                  <div class="ps-4 p-10">
+                    <a
+                      href="javascript:void(0)"
+                      class="btn btn-sm btn-success btn-rounded text-white"
+                      >View Profile</a
+                    >
+                  </div>-->
+                </ul>
+              </li>
+              <!-- ============================================================== -->
+              <!-- User profile and search -->
+              <!-- ============================================================== -->
+            </ul>
+          </div>
+        </nav>
+      </header>
+      <!-- ============================================================== -->
+      <!-- End Topbar header -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      <aside class="left-sidebar" data-sidebarbg="skin5">
+        <!-- Sidebar scroll-->
+        <div class="scroll-sidebar">
+          <!-- Sidebar navigation-->
+          <nav class="sidebar-nav">
+            <ul id="sidebarnav" class="pt-4">
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="index.html"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-view-dashboard"></i
+                  ><span class="hide-menu">Dashboard</span></a
+                >
+              </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="{{url_for('views.products')}}"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-chart-bar"></i
+                  ><span class="hide-menu">Products</span></a
+                >
+              </li>
+              <!--
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="widgets.html"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-chart-bubble"></i
+                  ><span class="hide-menu">Widgets</span></a
+                >
+              </li>-->
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="{{url_for('views.datatable')}}"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-border-inside"></i
+                  ><span class="hide-menu">DataTable</span></a
+                >
+              </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="#"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-border-inside"></i
+                  ><span class="hide-menu">Data Table</span></a
+                >
+              </li>
+              <!--
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="grid.html"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-blur-linear"></i
+                  ><span class="hide-menu">Full Width</span></a
+                >
+              </li>-->
+              <!--
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link has-arrow waves-effect waves-dark"
+                  href="javascript:void(0)"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-receipt"></i
+                  ><span class="hide-menu">Forms </span></a
+                >
+                <ul aria-expanded="false" class="collapse first-level">
+                  <li class="sidebar-item">
+                    <a href="form-basic.html" class="sidebar-link"
+                      ><i class="mdi mdi-note-outline"></i
+                      ><span class="hide-menu"> Form Basic </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="form-wizard.html" class="sidebar-link"
+                      ><i class="mdi mdi-note-plus"></i
+                      ><span class="hide-menu"> Form Wizard </span></a
+                    >
+                  </li>
+                </ul>
+              </li>-->
+              <!--
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="pages-buttons.html"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-relative-scale"></i
+                  ><span class="hide-menu">Buttons</span></a
+                >
+              </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link has-arrow waves-effect waves-dark"
+                  href="javascript:void(0)"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-face"></i
+                  ><span class="hide-menu">Icons </span></a
+                >
+                <ul aria-expanded="false" class="collapse first-level">
+                  <li class="sidebar-item">
+                    <a href="icon-material.html" class="sidebar-link"
+                      ><i class="mdi mdi-emoticon"></i
+                      ><span class="hide-menu"> Material Icons </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="icon-fontawesome.html" class="sidebar-link"
+                      ><i class="mdi mdi-emoticon-cool"></i
+                      ><span class="hide-menu"> Font Awesome Icons </span></a
+                    >
+                  </li>
+                </ul>
+              </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="pages-elements.html"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-pencil"></i
+                  ><span class="hide-menu">Elements</span></a
+                >
+              </li>-->
+              <!--
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link has-arrow waves-effect waves-dark"
+                  href="javascript:void(0)"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-move-resize-variant"></i
+                  ><span class="hide-menu">Addons </span></a
+                >-->
+                <ul aria-expanded="false" class="collapse first-level">
+                  <li class="sidebar-item">
+                    <a href="index2.html" class="sidebar-link"
+                      ><i class="mdi mdi-view-dashboard"></i
+                      ><span class="hide-menu"> Dashboard-2 </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="pages-gallery.html" class="sidebar-link"
+                      ><i class="mdi mdi-multiplication-box"></i
+                      ><span class="hide-menu"> Gallery </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="pages-calendar.html" class="sidebar-link"
+                      ><i class="mdi mdi-calendar-check"></i
+                      ><span class="hide-menu"> Calendar </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="pages-invoice.html" class="sidebar-link"
+                      ><i class="mdi mdi-bulletin-board"></i
+                      ><span class="hide-menu"> Invoice </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="pages-chat.html" class="sidebar-link"
+                      ><i class="mdi mdi-message-outline"></i
+                      ><span class="hide-menu"> Chat Option </span></a
+                    >
+                  </li>
+                </ul>
+              </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link has-arrow waves-effect waves-dark"
+                  href="javascript:void(0)"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-account-key"></i
+                  ><span class="hide-menu">Authentication </span></a
+                >
+                <ul aria-expanded="false" class="collapse first-level">
+                  <li class="sidebar-item">
+                    <a href="{{url_for('views.createusers')}}" class="sidebar-link"
+                      ><i class="mdi mdi-all-inclusive"></i
+                      ><span class="hide-menu"> Create Users </span></a
+                    >
+                  </li>
+                  <li class="sidebar-item">
+                    <a href="authentication-register.html" class="sidebar-link"
+                      ><i class="mdi mdi-all-inclusive"></i
+                      ><span class="hide-menu"> Register </span></a
+                    >
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+          <!-- End Sidebar navigation -->
+        </div>
+        <!-- End Sidebar scroll-->
+      </aside>
+      <!-- ============================================================== -->
+      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Page wrapper  -->
+      <!-- ============================================================== -->
+         <div class="page-wrapper">
+        <!-- ============================================================== -->
+        <!-- Bread crumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+        <div class="page-breadcrumb">
+          <div class="row">
+            <div class="col-12 d-flex no-block align-items-center">
+             <!-- <h4 class="page-title">Dashboard-2</h4>-->
+              <div class="ms-auto text-end">
+                <nav aria-label="breadcrumb">
+                  <ol class="breadcrumb">
+                   <!-- <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                      Library
+                    </li>-->
+                  </ol>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Bread crumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Container fluid  -->
+        <!-- ============================================================== -->
+        <div class="container-fluid">
+          <!-- ============================================================== -->
+          <!-- Start Page Content -->
+          <!-- ============================================================== -->
+         
+          <div class="row">
+            <div class="col-md-12">
+              
+              <!-- Card -->
+              <div class="card">
+                <div class="card-body">
+                  <div class="row">
+                        <div class="col-md-12">
+                            <div class="jumbotron p-3" style="padding-left:270px">
+                                <h2><b>Manage Products</b><button type="submit" class="btn btn-success" style="float:right; color:White" data-toggle="modal" data-target="#sleekmodal">Add New Users</button></h2>
+
+                                {% with Messages = get_flashed_messages() %}
+
+                                {% if Messages %}
+
+                                {% for message in Messages %}
+
+                                <div class="alert alert-success alert-dismissable" role="alert">
+                                  <button type="button" class="close" data-dismiss="alert" aria-lable="close">
+                                    <span aria-hidden="true">x</span>
+                                  </button>
+                                  {{message}}
+                                </div>
+
+                                {% endfor %}
+
+                                {% endif %}
+
+                                {% endwith %}
+                                    <table id="item-table" class="display" style="width: 100%">
+                                      <thead>
+                                        <tr>
+                                          <th>ProductId</th>
+                                          <th>Product Code</th>
+                                          <th>Item Name</th>
+                                          <th>Generic Name</th>
+                                          <th>GenericNameUpdated</th>
+                                          <th>Basic Unit</th>
+                                          <th>Generic Ratio</th>
+                                          <th>Storage Type</th>
+                                          <th>IvedexGenericCode</th>
+                                          <th>NHLMISGenericParent</th>
+                                          <th>InventoryConversionFactor</th>
+                                          <th>Volume</th>
+                                          <th>Weight</th>
+                                          <th>PriceDollar</th>
+                                          <th>Program</th>
+                                          <th>ProductGroup</th>
+                                          <th>Action</th>
+                                        </tr>
+                                      </thead>
+                                      <br />
+                                      <br />
+                                      <tbody>
+                                        <!-- Data will be loaded here using Ajax -->
+                                      </tbody>
+                                    </table>
+                                    <!-- DataTable Export Buttons -->
+                                    <div style="margin-top: 20px;">
+                                        <button id="exportCSV" onclick= "DownloadData()" class="btn"><i class="fa fa-download"></i>Export to CSV</button>
+                                        <button id="exportExcel"  onclick= "DownloadData()" class="btn"><i class="fa fa-download"></i>Export to Excel</button>
+                                    </div>
+                                    <script>
+                                      $(document).ready(function () {
+                                        var productData = $("#item-table").DataTable({
+                                          processing: true,
+                                          pageLength: 15,
+                                          paging: true,
+                                          lengthMenu: [
+                                            [5, 10, 15,20, 25, 50, 60, -1],
+                                            [5, 10, 15,20, 25, 50, 60, "All"],
+                                          ],
+                                          serverSide: true,
+                                          order: [],
+                                          sort: true,
+                                          searching: true,
+                                          ajax: {
+                                            url: "/get_data",
+                                            type: "POST",
+                                          },
+                                          columns: [
+                                            { data: "Id" },
+                                            { data: "ProductCode" },
+                                            { data: "ItemName" },
+                                            { data: "GenericName" },
+                                            { data: "GenericNameUpdated" },
+                                            { data: "BasicUnit" },
+                                            { data: "GenericRatio" },
+                                            { data: "StorageCondition" },
+                                            { data: "IvedexGenericCode" },
+                                            { data: "NHLMISGenericParent" },
+                                            { data: "InventoryConversionFactor" },
+                                            { data: "Volume" },
+                                            { data: "Weight" },
+                                            { data: "PriceDollar" },
+                                            { data: "Program" },
+                                            { data: "ProductGroup" },
+                                            {
+                                              data: null,
+                                              render: function (data, type, row) {
+                                                // Create a container with custom CSS classes for styling
+                                                return (
+                                                  '<div class="action-buttons">' +
+                                                  '<button id="edit-button-' + data.Id + '" class="btn btn-warning btn-xs edit-button" onclick="editRow(' +
+                                                  "'" + data.Id + "'" + 
+                                                  ',' + "'" + data.ProductCode + "'" +
+                                                  ',' + "'" + data.ItemName + "'" +
+                                                  ',' + "'" + data.GenericName + "'" +
+                                                  ',' + "'" + data.GenericNameUpdated + "'" +
+                                                  ',' + "'" + data.BasicUnit + "'" +
+                                                  ',' + "'" + data.GenericRatio + "'" +
+                                                  ',' + "'" + data.StorageCondition + "'" +
+                                                  ',' + "'" + data.IvedexGenericCode + "'" +
+                                                  ',' + "'" + data.Volume + "'" +
+                                                  ',' + "'" + data.Weight + "'" +
+                                                  ',' + "'" + data.PriceDollar + "'" +
+                                                  ',' + "'" + data.Program + "'" +
+                                                  ',' + "'" + data.ProductGroup + "'" +
+                                                  ')">Edit</button>' +                 
+                                                  '<button  class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' +
+                                                  data.Id +
+                                                  ')">Delete</button>' +
+                                                  "</div>"
+
+                                                );
+                                              },
+                                            },
+                                          ],
+                                        });
+                                      });
+                                    </script>
+                            </div>
+                        </div>
+                  </div>
+                  <div class="todo-widget scrollable" style="height: 2px">
+                    <ul
+                      class="list-task todo-list list-group mb-0"
+                      data-role="tasklist"
+                    >
+                      <li class="list-group-item todo-item" data-role="task">
+                        <div class="form-check">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="customCheck"
+                          />
+                          
+                        </div>
+                        <ul class="list-style-none assignedto">
+                        <li class="assignee">
+                            <img
+                              class="rounded-circle"
+                              width="40"
+                              src="../assets/images/users/2.jpg"
+                              alt="user"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                              title=""
+                              data-original-title="Jessica"
+                            />
+                          </li>
+   
+                        </ul>
+                      </li>                                          
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+      
+          <!-- ============================================================== -->
+          <!-- End PAge Content -->
+          <!-- ============================================================== -->
+          <!-- ============================================================== -->
+          <!-- Right sidebar -->
+          <!-- ============================================================== -->
+          <!-- .right-sidebar -->
+          <!-- ============================================================== -->
+          <!-- End Right sidebar -->
+          <!-- ============================================================== -->
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Container fluid  -->
+        <!-- ============================================================== -->
+      </div>
+<!-- Hidden modal for Product edit -->
+<div id="edit-modal" class="modal" tabindex="-1" role="dialog"  aria-hidden="true">
+     <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Edit Product</h4>
+                            <button onclick="CloseEditModal()" type="button" class="close" id="closeModalButton" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <form   action="{{url_for('views.editProduct')}}" method="POST">
+                              <div class="form-group">
+                                    <label>ProductId:</label>
+                                    <input id="ProductId" type="text" class="form-control" name="productid" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>ProductCode:</label>
+                                    <input id="productcode" type="text" class="form-control" name="productcode" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Item Name:</label>
+                                    <input id="itemname" type="text" class="form-control" name="itemname" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Generic Name:</label>
+                                    <input id="genericname" type="text" class="form-control" name="genericname" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Generic Name Update:</label>
+                                    <input id="genericnameupdate" type="text" class="form-control" name="genericnameupdate" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Basic Unit:</label>
+                                    <input id="basicunit" type="text" class="form-control" name="basicunit" required="1">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Generic Ratio:</label>
+                                    <input id="genericratio" type="text" class="form-control" name="genericratio" required="1">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Storage Type:</label>
+                                    <input id="storagetype" type="text" class="form-control" name="storagetype" required="1">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Ivedex Generic Code:</label>
+                                    <input id="ivedexgenericcode" type="text" class="form-control" name="ivedexgenericcode" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Volume:</label>
+                                    <input id="volume" type="text" class="form-control" name="volume" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Weight:</label>
+                                    <input id="weight" type="text" class="form-control" name="weight" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Price (Dollar):</label>
+                                    <input id="price" type="text" class="form-control" name="price" required="1">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Program:</label>
+                                    <input id="program" type="text" class="form-control" name="program" required="1">
+                                </div>
+                                 <div class="form-group">
+                                    <label>Product Group:</label>
+                                    <input id="productgroup" type="text" class="form-control" name="productgroup" required="1">
+                                </div>
+                                <div class="form-group">
+                                    <button class="btn btn-primary" type="submit">Edit Product</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            
+                            <button onclick="CloseEditModal_()" id='closeModal' type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+</div>
+    <script>
+       // Function to handle the delete action
+      function deleteRow(Id) {
+        const confirmation =  confirm("Are You Sure About The Delete?");
+        const url = "/productdelete/" +Id;
+        if (confirmation){
+          fetch(url, {
+            method: "POST"
+            }).then(response=>{
+            if (response.status === 200){  
+              alert('Item deleted successfully '); 
+              const table = $('#item-table').DataTable();
+              table.ajax.reload();                          
+            }
+            else{
+              // Handle any errors or non-200 status codes
+              alert('Failed to delete item. Please try again.');
+            }
+          
+        }).catch(error =>{
+          // Handle error
+          console.error('There was a problem with the fetch operation:', error);
+        });
+        }       
+      } 
+    </script>
+    <script>
+      function editRow(Id, ProductCode, ItemName, GenericName,GenericNameUpdated,BasicUnit,GenericRatio,
+       StorageCondition, IvedexGenericCode,Volume,Weight,PriceDollar, Program, ProductGroup) {
+        const table = $('#item-table').DataTable();
+        // Trigger the modal using JavaScript
+        $('#edit-modal').show();
+        // Populate the modal with data (replace with your data fetching logic)
+        // For example, if you want to set the name in an input field with id "name":
+        $('#ProductId').val(Id)
+        $('#productcode').val(ProductCode)
+        $('#itemname').val(ItemName)
+        $('#genericname').val(GenericName)
+        $('#genericnameupdate').val(GenericNameUpdated)
+        $('#basicunit').val(BasicUnit)
+        $('#genericratio').val(GenericRatio)
+        $('#storagetype').val(StorageCondition)
+        $('#ivedexgenericcode').val(IvedexGenericCode)
+        $('#volume').val(Volume)
+        $('#weight').val(Weight)
+        $('#price').val(PriceDollar)
+        $('#program').val(Program)
+        $('#productgroup').val(ProductGroup)
+
+      }
+
+    </script>
+    <script>
+      function CloseEditModal()
+      {
+        document.getElementById("closeModalButton").addEventListener("click", function() {
+          $('#edit-modal').hide();
+          
+          });
+      }
+
+       function CloseEditModal_()
+      {
+        document.getElementById("closeModal").addEventListener("click", function() {
+          $('#edit-modal').hide();
+          
+          });
+      }
+    </script>
+    <script>
+        // Initialize DataTable with export buttons
+        function DownloadData()
+        {
+          $(document).ready(function () {
+            // Destroy existing DataTable before reinitializing
+            var table = $('#item-table').DataTable();
+            table.destroy();
+
+            var userFilename = prompt("Enter the filename (without extension):", "data");
+
+            // Create a timestamp for the filename
+            var timestamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "_").replace("Z", "");
+            var table = $("#item-table").DataTable({
+                dom:'<"top"Bfrtip>t<"bottom"lp>', // Custom layout to move buttons below the table,
+                 buttons: 
+                 [
+                    {
+                        extend: 'csv',
+                        text: 'Export to CSV',
+                        exportOptions: {
+                            columns: [0, 1, 2, 4, 5,6,7,8,9,10,11,12,13,14,15]  // Specify the columns to include (columns are zero-based)
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        text: 'Export to Excel',
+                        exportOptions: {
+                            columns: [0, 1, 2, 4, 5,6,7,8,9,10,11,12,13,14,15]  // Specify the columns to include (columns are zero-based)
+                        }
+                    }
+                  ]
+            });
+
+            // Custom export buttons
+            $('#exportCSV').on('click', function () {
+                table.button('csv').trigger();
+            });
+
+            $('#exportExcel').on('click', function () {
+                table.button('excel').trigger();
+            });
+        });
+
+      }   
+    </script>
+
+    <!-- ============================================================== -->
+    <!-- footer -->
+        <!-- ============================================================== -->
+        <footer class="footer text-center">
+          All Rights Reserved by &copy; Sleektech . Designed and Developed by
+          <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a
+          >
+        </footer>
+        <!-- ============================================================== -->
+        <!-- End footer -->
+        <!-- ============================================================== -->
+  </body>
+</html>

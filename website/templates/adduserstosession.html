@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Users</title>
+    <link type="text/css" rel="stylesheet" href="{{url_for('static',filename='styles/style.min.css')}}" />
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css"/>
+        <!-- DataTables CSS -->
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css"/>
+        <!-- DataTables JS -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+
+        <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
+        <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+        <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
+    <style>
+        /* Table Style */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        /* Table Header Style */
+        .table th {
+            background-color: #f2f2f2;
+            color: #333;
+            font-weight: bold;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+
+        /* Table Body Style */
+        .table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Alternate Row Color */
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Hover Effect */
+        .table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+    <!-- ZXing JavaScript library for barcode scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
+</head>
+<body>
+    <div
+        id="main-wrapper"
+        data-layout="vertical"
+        data-navbarbg="skin5"
+        data-sidebartype="full"
+        data-sidebar-position="absolute"
+        data-header-position="absolute"
+        data-boxed-layout="full">
+                {% include "include/header.html" %} 
+                {% include "include/leftnavbar.html" %}
+                <div class="page-wrapper">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-12">
+                            
+                                <!-- Card -->
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="jumbotron p-3" id="sessionContainer" data-session-id="{{ session_data.id }}">
+                                                        {% with Messages = get_flashed_messages() %}
+
+                                                        {% if Messages %}
+                                                        
+                                                        {% for message in Messages %}
+    
+                                                        <div class="alert alert-success alert-dismissable" role="alert">
+                                                            <button type="button" class="close" data-dismiss="alert" aria-lable="close">
+                                                            <span aria-hidden="true">x</span>
+                                                            </button>
+                                                            {{message}}
+                                                        </div>
+                                                        
+                                                        {% endfor %}
+                                                        
+                                                        {% endif %}
+                                                        
+                                                        {% endwith %}
+                                                        <h2>{{session_data.name}}</h2>
+                                                        <button type="submit" class="btn btn-success" data-toggle="modal" data-target="#addUsersModal">
+                                                            Add User
+                                                        </button>
+       
+                                                        <hr>    
+                                                        <table id="userTable" class="table table-striped table-bordered" style="width:100%">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>User Id</th>
+                                                                    <th>User Name</th>
+                                                                    <th>User Email</th>
+                                                                    <th>DateTime</th>
+                                                                    <th>Action</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <!-- Activities will be dynamically added here -->
+                                                            </tbody>
+                                                        </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+       
+    {% include "include/footer.html" %}
+</div>
+    <script>
+        $(document).ready(function() {
+            // Get session ID from the data attribute
+            const sessionId = $('#sessionContainer').data('session-id');
+            //console.log("Session ID:", sessionId);  // For debugging
+            //alert("Session ID: " + sessionId);
+
+            // Initialize DataTable
+            $('#userTable').DataTable({
+                processing: true,
+                pageLength: 15,
+                paging: true,
+                lengthMenu: [
+                    [5, 10, 15, 20, 25, 50, 60, -1],
+                    [5, 10, 15, 20, 25, 50, 60, "All"]
+                ],
+                serverSide: true,
+                order: [],
+                sort: true,
+                searching: true,
+                ajax: {
+                    url: `/get_sessions_users/${sessionId}/users`,  // Use template literal to include sessionId
+                    type: "POST"
+                },
+                columns: [
+                    { data: "Id" },
+                    { data: "username" },
+                    { data: "email" },
+                    { data: "added_date" },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return (
+                                '<div class="action-buttons">' +             
+                                '<button class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' + data.Id +
+                                ')"><i class="fas fa-trash"></i>  Delete</button>' +
+                                "</div>"
+                            );
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
+    <script>
+        // Function to handle the delete action
+        function deleteRow(userId) {
+            const confirmation = confirm("Do you want to remove this user from this session?");
+            const sessionId = $('#sessionContainer').data('session-id');
+            if (confirmation) {
+                const url = `/remove_user_from_session/${userId}/${sessionId}`;
+                fetch(url, {
+                    method: "POST"
+                }).then(response => {
+                    if (response.status === 200) {
+                        alert('User deleted from session successfully');
+                        const table = $('#userTable').DataTable();
+                        table.ajax.reload();
+                    } else {
+                        // Handle any errors or non-200 status codes
+                        alert('Failed to delete User. Please try again.');
+                    }
+                }).catch(error => {
+                    // Handle error
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+            }
+        }
+
+    </script>
+     <!-- Modal -->
+     <div class="modal fade" id="addUsersModal" tabindex="-1" role="dialog" aria-labelledby="addUsersModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUsersModalLabel">Add User</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Scan user's QR Code to add user</p>
+                    <div id="qrScanner"></div>
+                    <div id="error" style="color: red;">{{ error }}</div>
+                    <script>
+                        // Initialize ZXing library
+                        const codeReader = new ZXing.BrowserQRCodeReader();
+                
+                        // Function to handle QR code scanning
+                        function scanQRCode() {
+                            // Select video element
+                            const videoElement = document.createElement('video');
+                            videoElement.style.width = '350px';  // Specify desired width
+                            videoElement.style.height = '300px'; // Specify desired height
+                            document.getElementById('qrScanner').appendChild(videoElement);
+                
+                            // Start camera and scan for QR codes
+                            codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
+                                if (result) {
+                                    console.log('Scanned QR code:', result.text);
+                                    // Submit QR code for login
+                                    document.getElementById('qr_code').value = result.text;
+                                    document.getElementById('loginForm').submit();
+                                } else {
+                                    console.error('Error:', error);
+                                    // Show error message
+                                    document.getElementById('error').innerText = 'Error: Unable to scan QR code. Please try again.';
+                                    // Restart scanning
+                                    //scanQRCode();
+                                }
+                            });
+                        }
+                
+                        // Start scanning QR code
+                        scanQRCode();
+                    </script>
+                    <form id="loginForm" action="/addUsersToSession/{{session_data.id}}" method="post" style="display: none;">
+                        <input type="hidden" id="qr_code"  name="qr_code">
+                    </form>                       
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show QR Code</title>
+</head>
+<body>
+    <h1>User Details</h1>
+    <p>{{id}}</p>
+    <p>{{user.email}}</p>
+    <p>{{user.username}}</p>
+    <h1>QR Code</h1>
+    <img src="data:image/png;base64,{{ base64_encoded_data }}" alt="QR Code">
+    <button id="downloadQrCodeBtn">Download QR Code</button>
+    <script>
+        document.getElementById("downloadQrCodeBtn").addEventListener("click", function() {
+            var qrCodeImg = document.querySelector("img"); // Assuming only one <img> tag is present
+            var imgSrc = qrCodeImg.src;
+        
+            // Split the base64 encoded data
+            var base64Data = imgSrc.split(',')[1];
+            
+            // Convert base64 data to blob
+            var byteCharacters = atob(base64Data);
+            var byteNumbers = new Array(byteCharacters.length);
+            for (var i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            var byteArray = new Uint8Array(byteNumbers);
+            var blob = new Blob([byteArray], { type: 'image/png' });
+        
+            // Create a temporary anchor element
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            var username = "{{ user.username }}"; 
+            link.download = username + '_qr_code.png';
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+        
+</body>
+</html>

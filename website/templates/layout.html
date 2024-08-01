@@ -1,0 +1,66 @@
+{% include "include/header.html" %}
+      <!-- ============================================================== -->
+      <!-- End Topbar header -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+{% include "include/leftnavbar.html" %}
+      <!-- ============================================================== -->
+      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Page wrapper  -->
+      <!-- ============================================================== -->
+{% block content %}
+{% endblock %}
+    <!-- ============================================================== -->
+    <!-- End Wrapper -->
+    <!-- ============================================================== -->
+    <!-- ============================================================== -->
+    <!-- All Jquery -->
+    <!-- ============================================================== -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>
+    <!-- <script src="../assets/libs/jquery/dist/jquery.min.js"></script> -->
+    <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
+    <!--<script src="../dist/js/jquery.ui.touch-punch-improved.js"></script> -->
+    <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
+    <!--<script src="../dist/js/jquery-ui.min.js"></script> -->
+    <!-- Bootstrap tether Core JavaScript -->
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
+    <!--<script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script> -->
+    <!-- slimscrollbar scrollbar JavaScript -->
+    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
+    <!--<script src="../assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>-->
+    <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
+    <!--<script src="../assets/extra-libs/sparkline/sparkline.js"></script> -->
+    <!--Wave Effects -->
+    <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
+    <!--<script src="../dist/js/waves.js"></script>-->
+    <!--Menu sidebar -->
+    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+    <!--<script src="../dist/js/sidebarmenu.js"></script>-->
+    <!--Custom JavaScript -->
+    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
+    <!--<script src="../dist/js/custom.min.js"></script>-->
+    <!-- this page js -->
+    <script src="{{url_for('static',filename='lib/moment/min/moment.min.js')}}"></script>
+    <!--<script src="../assets/libs/moment/min/moment.min.js"></script>-->
+    <script src="{{url_for('static',filename='lib/fullcalendar/dist/fullcalendar.min.js')}}"></script>
+    <!--<script src="../assets/libs/fullcalendar/dist/fullcalendar.min.js"></script>-->
+    <script src="{{url_for('static',filename='javascript/pages/calendar/cal-init.js')}}"></script>
+
+    <!--<script src="../dist/js/pages/calendar/cal-init.js"></script>-->
+  </body>
+  {% include "include/footer.html" %}
+</html>

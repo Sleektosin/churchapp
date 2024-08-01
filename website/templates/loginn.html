@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- Include the ZXing JavaScript library for QR code scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
+</head>
+<body>
+    <h3>Kindly scan user QR Code to Login</h3>
+    <div id="qrScanner"></div>
+    <div id="error" style="color: red;">{{ error }}</div>
+    <script>
+        // Initialize ZXing library
+        const codeReader = new ZXing.BrowserQRCodeReader();
+
+        // Function to handle QR code scanning
+        function scanQRCode() {
+            // Select video element
+            const videoElement = document.createElement('video');
+            document.getElementById('qrScanner').appendChild(videoElement);
+
+            // Start camera and scan for QR codes
+            codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
+                if (result) {
+                    console.log('Scanned QR code:', result.text);
+                    // Submit QR code for login
+                    document.getElementById('qr_code').value = result.text;
+                    document.getElementById('loginForm').submit();
+                } else {
+                    console.error('Error:', error);
+                    // Show error message
+                    document.getElementById('error').innerText = 'Error: Unable to scan QR code. Please try again.';
+                    // Restart scanning
+                    //scanQRCode();
+                }
+            });
+        }
+
+        // Start scanning QR code
+        scanQRCode();
+    </script>
+    <form id="loginForm" action="/logging" method="post" style="display: none;">
+        <input type="hidden" id="qr_code" name="qr_code">
+    </form>
+</body>
+</html>

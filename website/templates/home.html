@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="keywords"
+      content="wrappixel, admin dashboard, html css dashboard, web dashboard, bootstrap 5 admin, bootstrap 5, css3 dashboard, bootstrap 5 dashboard, Matrix lite admin bootstrap 5 dashboard, frontend, responsive bootstrap 5 admin template, Matrix admin lite design, Matrix admin lite dashboard bootstrap 5 dashboard template"
+    />
+    <meta
+      name="description"
+      content="Matrix Admin Lite Free Version is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Sleek</title>
+    <!-- Favicon icon -->
+       <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='styles/style.min.css')}}"
+    />
+     <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css"/>
+    <link
+    type="text/css"
+    rel="stylesheet"
+    href="{{url_for('static',filename='styles/custom.min.css')}}"
+  />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <link
+    type="text/css"
+    rel="stylesheet"
+    href="{{url_for('static',filename='styles/jsvectormap.min.css')}}"
+  />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="static/uploads/chemonics_fav.png"
+    />
+    <!-- Custom CSS -->
+
+    <link
+      href="static/lib/fullcalendar/dist/fullcalendar.min.css"
+      rel="stylesheet"
+    />
+   <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">-->
+ <!--
+      <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='lib/bootstrap/dist/css/bootstrap.min.css')}}"
+    />-->
+
+ 
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <style>
+      .row>* {
+    position: relative;
+    }
+    :root[data-sidebar=dark] {
+    --vz-vertical-menu-bg: #151529;
+    --vz-vertical-menu-border: #151529;
+    --vz-vertical-menu-item-color: #a3a6b7;
+    --vz-vertical-menu-item-bg: rgba(255, 255, 255, 0.15);
+    --vz-vertical-menu-item-hover-color: #fff;
+    --vz-vertical-menu-item-active-color: #fff;
+    --vz-vertical-menu-item-active-bg: rgba(255, 255, 255, 0.15);
+    --vz-vertical-menu-sub-item-color: #a3a6b7;
+    --vz-vertical-menu-sub-item-hover-color: #fff;
+    --vz-vertical-menu-sub-item-active-color: #fff;
+    --vz-vertical-menu-title-color: #9b9eb1;
+    --vz-twocolumn-menu-iconview-bg: #121222;
+    --vz-vertical-menu-box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+    --vz-vertical-menu-dropdown-box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+  }
+  :root {
+    --fc-border-color: var(--vz-border-color);
+    --fc-page-bg-color: var(--vz-secondary-bg);
+    --fc-neutral-bg-color: var(--vz-light);
+}
+:root {
+    --vz-card-logo-dark: block;
+    --vz-card-logo-light: none;
+    --vz-vertical-menu-width: 250px;
+    --vz-vertical-menu-width-md: 180px;
+    --vz-vertical-menu-width-sm: 70px;
+    --vz-header-bg: #fff;
+    --vz-header-border: #e9ebec;
+    --vz-header-item-color: #495057;
+    --vz-header-item-bg: rgba(75, 56, 179, 0.12);
+    --vz-header-item-sub-color: #878a99;
+    --vz-topbar-search-bg: #f3f3f9;
+    --vz-topbar-search-color: #495057;
+    --vz-topbar-user-bg: #f3f3f9;
+    --vz-page-title-box-shadow: 0 3px 3px rgba(56, 65, 74, 0.1);
+    --vz-page-title-border: none;
+    --vz-topnav-bg: #fff;
+    --vz-topnav-item-color: #6d7080;
+    --vz-topnav-item-active-color: #4b38b3;
+    --vz-twocolumn-menu-iconview-bg: #fff;
+    --vz-twocolumn-menu-box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+    --vz-boxed-layout-width: 1300px;
+    --vz-boxed-body-bg: #e5e5ef;
+    --vz-semibox-width: 110px;
+    --vz-footer-bg: #fff;
+    --vz-footer-color: #98a6ad;
+    --vz-input-bg-custom: #fff;
+    --vz-input-border-custom: #ced4da;
+}
+.card-animate {
+    -webkit-transition: all .4s;
+    transition: all .4s;
+}
+.card {
+    margin-bottom: 1.5rem;
+    -webkit-box-shadow: 0 3px 3px rgba(56, 65, 74, .1);
+    box-shadow: 0 3px 3px rgba(56, 65, 74, .1);
+}
+:root[data-sidebar=dark] {
+    --vz-vertical-menu-bg: #151529;
+    --vz-vertical-menu-border: #151529;
+    --vz-vertical-menu-item-color: #a3a6b7;
+    --vz-vertical-menu-item-bg: rgba(255, 255, 255, 0.15);
+    --vz-vertical-menu-item-hover-color: #fff;
+    --vz-vertical-menu-item-active-color: #fff;
+    --vz-vertical-menu-item-active-bg: rgba(255, 255, 255, 0.15);
+    --vz-vertical-menu-sub-item-color: #a3a6b7;
+    --vz-vertical-menu-sub-item-hover-color: #fff;
+    --vz-vertical-menu-sub-item-active-color: #fff;
+    --vz-vertical-menu-title-color: #9b9eb1;
+    --vz-twocolumn-menu-iconview-bg: #121222;
+    --vz-vertical-menu-box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+    --vz-vertical-menu-dropdown-box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+}
+.justify-content-between {
+    -webkit-box-pack: justify !important;
+    -ms-flex-pack: justify !important;
+    justify-content: space-between !important;
+}
+p {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    unicode-bidi: isolate;
+}
+h2 {
+    display: block;
+    font-size: 1.5em;
+    margin-block-start: 0.83em;
+    margin-block-end: 0.83em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+    unicode-bidi: isolate;
+}
+.page-content {
+    padding: calc(70px + 1.5rem) calc(1.5rem* .5) 60px calc(1.5rem* .5);
+}
+:is(.h1,.h2,.h3,.h4,.h5,.h6,h1,h2,h3,h4,h5,h6) {
+    font-family: Inter, sans-serif;
+}
+.ff-secondary {
+    font-family: Inter, sans-serif;
+}
+h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+.avatar-sm {
+    height: 3rem;
+    width: 3rem;
+}
+.avatar-title {
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    background-color: #4b38b3;
+    color: #fff;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    font-weight: 500;
+    height: 100%;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    width: 100%;
+}
+svg {
+    -ms-touch-action: none;
+    touch-action: none;
+}
+svg{
+    width: 24;
+    height: 24;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+svg:not(:root) {
+    overflow-clip-margin: content-box;
+    overflow: hidden;
+}
+.card {
+    --vz-card-spacer-y: 1rem;
+    --vz-card-spacer-x: 1rem;
+    --vz-card-title-spacer-y: 0.5rem;
+    --vz-card-title-color: var(--vz-heading-color);
+    --vz-card-border-width: 0;
+    --vz-card-border-color: var(--vz-border-color);
+    --vz-card-border-radius: var(--vz-border-radius);
+    --vz-card-box-shadow: 0 3px 3px rgba(56, 65, 74, 0.1);
+    --vz-card-inner-border-radius: var(--vz-border-radius);
+    --vz-card-cap-padding-y: 1rem;
+    --vz-card-cap-padding-x: 1rem;
+    --vz-card-cap-bg: var(--vz-secondary-bg);
+    --vz-card-bg: var(--vz-secondary-bg);
+    --vz-card-img-overlay-padding: 1rem;
+    --vz-card-group-margin: calc(1.5rem * 0.5);
+    position: relative;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    min-width: 0;
+    height: var(--vz-card-height);
+    color: var(--vz-body-color);
+    word-wrap: break-word;
+    background-color: var(--vz-card-bg);
+    background-clip: border-box;
+    border: var(--vz-card-border-width) solid var(--vz-card-border-color);
+    border-radius: var(--vz-card-border-radius);
+}
+.jvm-container {
+    -ms-touch-action: none;
+    touch-action: none;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+}
+
+    </style>
+  </head>
+
+  <body>
+    <!-- ============================================================== -->
+    <!-- Preloader - style you can find in spinners.css -->
+    <!-- ============================================================== -->
+    <!-- <div class="preloader">
+      <div class="lds-ripple">
+        <div class="lds-pos"></div>
+        <div class="lds-pos"></div>
+      </div>
+    </div> -->
+    <!-- ============================================================== -->
+    <!-- Main wrapper - style you can find in pages.scss -->
+    <!-- ============================================================== -->
+    <div
+      id="main-wrapper"
+      data-layout="vertical"
+      data-navbarbg="skin5"
+      data-sidebartype="full"
+      data-sidebar-position="absolute"
+      data-header-position="absolute"
+      data-boxed-layout="full"
+    >
+      <!-- ============================================================== -->
+      <!-- Topbar header - style you can find in pages.scss -->
+      <!-- ============================================================== -->
+      {% include "include/header.html" %}
+      <!-- ============================================================== -->
+      <!-- End Topbar header -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      {% include "include/leftnavbar.html" %}
+      <!-- ============================================================== -->
+      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Page wrapper  -->
+      <!-- ============================================================== -->
+      <div class="page-wrapper">
+        <!-- ============================================================== -->
+        <!-- Bread crumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+        <div class="page-breadcrumb">
+          <div class="row">
+            <div class="col-12 d-flex no-block align-items-center">
+             <!-- <h4 class="page-title">Dashboard-2</h4>-->
+              <div class="ms-auto text-end">
+                <nav aria-label="breadcrumb">
+                  <ol class="breadcrumb">
+                   <!-- <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                      Library
+                    </li>-->
+                  </ol>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Bread crumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Container fluid  -->
+        <!-- ============================================================== -->
+        <div class="container-fluid">
+          <!-- ============================================================== -->
+          <!-- Start Page Content -->
+          <!-- ============================================================== -->
+         
+          <div class="row">
+            <div class="col-md-12">
+              
+              <!-- Card -->
+              <div class="card">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="row project-wrapper">
+                      <div class="col-xxl-8">
+                            <div class="row">
+                              <div class="col-xxl-5">
+                                  <div class="d-flex flex-column h-100">      
+                                      <div class="row">
+                                          <div class="col-md-6">
+                                              <div class="card card-animate">
+                                                  <div class="card-body">
+                                                      <div class="d-flex justify-content-between">
+                                                          <div>
+                                                              <p class="fw-medium text-muted mb-0">Registered Users</p>
+                                                              <h2 class="mt-4 ff-secondary fw-semibold"><span class="counter-value" data-target="28.05">{{user_count}}</span></h2>
+                                                          </div>
+                                                          <div>
+                                                              <div class="avatar-sm flex-shrink-0">
+                                                                  <span class="avatar-title bg-primary rounded-circle fs-2">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-users">
+                                                                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                                      <circle cx="9" cy="7" r="4"></circle>
+                                                                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                                                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                                  </svg>
+                                                                      <i data-feather="users"></i>
+                                                                  </span>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div><!-- end card body -->
+                                              </div> <!-- end card-->
+                                          </div> <!-- end col-->
+      
+                                          <div class="col-md-6">
+                                              <div class="card card-animate">
+                                                  <div class="card-body">
+                                                      <div class="d-flex justify-content-between">
+                                                          <div>
+                                                              <p class="fw-medium text-muted mb-0">Number of Activities</p>
+                                                              <h2 class="mt-4 ff-secondary fw-semibold"><span class="counter-value" data-target="97.66">{{session_count}}</span></h2>
+                                                          </div>
+                                                          <div>
+                                                              <div class="avatar-sm flex-shrink-0">
+                                                                  <span class="avatar-title bg-danger rounded-circle fs-2">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-activity">
+                                                                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                                                  </svg>
+                                                                      <i data-feather="activity"></i>
+                                                                  </span>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div><!-- end card body -->
+                                              </div> <!-- end card-->
+                                          </div> <!-- end col-->
+                                      </div> <!-- end row-->
+      
+                                      <div class="row">
+                                          <div class="col-md-6">
+                                              <div class="card card-animate">
+                                                  <div class="card-body">
+                                                      <div class="d-flex justify-content-between">
+                                                          <div>
+                                                              <p class="fw-medium text-muted mb-0">Number of Registered Male</p>
+                                                              <h2 class="mt-4 ff-secondary fw-semibold"><span class="counter-value" data-target="3">{{male_count}}</span>
+                                                              </h2>
+                                                          </div>
+                                                          <div>
+                                                              <div class="avatar-sm flex-shrink-0">
+                                                                  <span class="avatar-title bg-warning rounded-circle fs-2">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user">
+                                                                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path>
+                                                                      <path d="M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                                                                      <path d="M20 21v-2c0-2.67-1.34-8-4-8h-8c-2.66 0-4 5.33-4 8v2"></path>
+                                                                      <circle cx="12" cy="7" r="4"></circle>
+                                                                      <path d="M12 7V2M10 4h4"></path>
+                                                                  </svg>
+                                                                  
+                                                                      <i data-feather="clock"></i>
+                                                                  </span>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div><!-- end card body -->
+                                              </div> <!-- end card-->
+                                          </div> <!-- end col-->
+      
+                                          <div class="col-md-6">
+                                              <div class="card card-animate">
+                                                  <div class="card-body">
+                                                      <div class="d-flex justify-content-between">
+                                                          <div>
+                                                              <p class="fw-medium text-muted mb-0">Number of Registered Female</p>
+                                                              <h2 class="mt-4 ff-secondary fw-semibold"><span class="counter-value" data-target="33.48">{{female_count}}</span></h2>
+                                                          </div>
+                                                          <div>
+                                                              <div class="avatar-sm flex-shrink-0">
+                                                                  <span class="avatar-title bg-success rounded-circle fs-2">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-female">
+                                                                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                                      <circle cx="9" cy="7" r="4"></circle>
+                                                                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                                      <path d="M12 12c0 2 2 4 2 4s2-2 2-4"></path>
+                                                                  </svg>
+                                                                      <i data-feather="external-link"></i>
+                                                                  </span>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div><!-- end card body -->
+                                              </div> <!-- end card-->
+                                          </div> <!-- end col-->
+                                      </div> <!-- end row-->
+                                  </div>
+                              </div> <!-- end col-->
+      
+                              <div class="col-xxl-7">
+                                  <div class="row h-100">
+                                      <div class="col-xl-6">
+                                          <div class="card card-height-100">
+                                              <div class="card-header align-items-center d-flex">
+                                                  <h4 class="card-title mb-0 flex-grow-1">Session Summary</h4>
+                                              </div><!-- end card header -->
+      
+                                              <!-- card body -->
+                                              <div class="card-body">      
+                                                <div class="table-responsive">
+                                                  <table id="activityTable" class="table table-striped table-bordered">
+                                                      <thead>
+                                                          <tr>
+                                                              <th>Date</th>
+                                                              <th>Activity Name</th>
+                                                              <th>User Count</th>
+                                                              <th>Action</th>
+                                                          </tr>
+                                                      </thead>
+                                                      <tbody>
+                                                          <!-- Activities will be dynamically added here -->
+                                                      </tbody>
+                                                  </table>
+                                      
+                                              </div>
+                                              </div>
+                                              <!-- end card body -->
+                                          </div><!-- end card -->
+                                      </div><!-- end col -->
+      
+                                      <div class="col-xl-6">
+                                          <div class="card card-height-100">
+                                              <div class="card-header align-items-center d-flex">
+                                                  <h4 class="card-title mb-0 flex-grow-1">Gender Counts by Date</h4>
+                                              </div>
+                                              <div class="card-body p-0">
+                                                  <div>
+                                                    <div class="row">
+                                                      <div class="col-md-12">
+                                                          <canvas id="genderChart"></canvas>
+                                                          
+                                                      </div>
+                                                  </div>
+                                                  </div>
+                                              </div><!-- end card body -->
+                                          </div><!-- end card -->
+                                      </div> <!-- end col-->
+      
+                                  </div> <!-- end row-->
+                              </div><!-- end col -->
+                            </div> <!-- end row-->
+                      </div><!-- end col -->
+                  </div><!-- end row -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+      
+          <!-- ============================================================== -->
+          <!-- End PAge Content -->
+          <!-- ============================================================== -->
+          <!-- ============================================================== -->
+          <!-- Right sidebar -->
+          <!-- ============================================================== -->
+          <!-- .right-sidebar -->
+          <!-- ============================================================== -->
+          <!-- End Right sidebar -->
+          <!-- ============================================================== -->
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Container fluid  -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- footer -->
+        <!-- ============================================================== -->
+        {% include "include/footer.html" %}
+        <!-- ============================================================== -->
+        <!-- End footer -->
+        <!-- ============================================================== -->
+      </div>
+      <!-- ============================================================== -->
+      <!-- End Page wrapper  -->
+      <!-- ============================================================== -->
+    </div>
+    <script>
+      // Ensure the JSON data is parsed correctly
+      const data = JSON.parse('{{ data|safe }}');
+      
+      const labels = Object.keys(data);
+      const maleCounts = labels.map(date => data[date].male);
+      const femaleCounts = labels.map(date => data[date].female);
+      
+      const chartData = {
+          labels: labels,
+          datasets: [
+              {
+                  label: 'Male',
+                  data: maleCounts,
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+              },
+              {
+                  label: 'Female',
+                  data: femaleCounts,
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+              }
+          ]
+      };
+      
+      const ctx = document.getElementById('genderChart').getContext('2d');
+      const genderChart = new Chart(ctx, {
+          type: 'bar',
+          data: chartData,
+          options: {
+              scales: {
+                  y: {
+                      beginAtZero: true
+                  }
+              }
+          }
+      });
+  </script>
+    <script>
+      $(document).ready(function() {
+          // Initialize DataTable
+          var session_Data = $('#activityTable').DataTable({
+            processing: true,
+            responsive: true,
+            pageLength: 5,
+            paging: true,
+            lengthMenu: [
+            [5,10, 15,20, 25, 50, 60, -1],
+            [5,10, 15,20, 25, 50, 60, "All"],
+            ],
+            serverSide: true,
+            order: [],
+            sort: true,
+            searching: true,
+            ajax: {
+            url: "/get_sessions_summary_data",
+            type: "POST",
+            },
+            columns: [
+              { data: "date" },
+              { data: "name" },
+              { data: "user_count" },
+              {
+                data: null,
+                render: function (data, type, row) {
+                // Create a container with custom CSS classes for styling
+                return (
+                  '<div class="action-buttons">' +
+                  '<button id="edit-button-' + data.Id + '" class="btn btn-warning btn-xs edit-button" onclick="editRow(' +
+                    "'" + data.Id + "'" + 
+                    ',' + "'" + data.name + "'" +
+                    ',' + "'" + data.description + "'" +
+                    ',' + "'" + data.date + "'" +
+                    ',' + "'" + data.user_count + "'" +
+                    ')"><i class="fas fa-edit"></i></button>&nbsp;&nbsp;' +   
+                    '<a href="/activity/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-plus"></i></a>&nbsp;&nbsp;' +            
+                    '<button  class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' + data.Id +
+                    ')"><i class="fas fa-trash-alt"></i></button>' +
+                    "</div>"
+    
+                            );
+                          },
+                        },
+                    ],                          
+                                        
+            });    
+      });
+    </script>
+    <script>
+        function fetchAndDisplayQRCode(userId) {
+            $.ajax({
+                url: '/get_qr_code/' + userId,
+                type: 'GET',
+                success: function(response) {
+                    var qrCodeData = response.qr_code_data;
+                    var imgHtml = '<img src="data:image/png;base64,' + btoa(qrCodeData) + '" alt="QR Code">';
+                    $('#qr-code-container-' + userId).html(imgHtml);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching QR code:', error);
+                }
+            });
+        }
+      
+    </script>
+    <script>
+      function testScriptHere(userId)
+        {
+          $.ajax({
+                url: '/get_qr_code/' + userId,
+                type: 'GET',
+                success: function(response) {
+                    var qrCodeData = response.qr_code_data;
+                    var imgHtml = '<img src="data:image/png;base64,' + btoa(qrCodeData) + '" alt="QR Code">';
+                    alert(imgHtml)
+                    $('#qr-code-container-' + userId).html(imgHtml);
+                },
+                error: function(xhr, status, error) {
+                  alert("Error occured")
+                    console.error('Error fetching QR code:', error);
+                }
+            });
+          
+        }
+    </script>
+  </body>
+</html>
