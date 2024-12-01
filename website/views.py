@@ -12,7 +12,7 @@ from datetime import timedelta
 from unicodedata import category
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 import requests
-from .models import User, Product, Session,session_users 
+from .models import User, Session,session_users, Role,Item, Maintenance 
 from website import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
@@ -20,13 +20,13 @@ from flask_login import LoginManager
 import os
 from flask import send_from_directory
 from sqlalchemy.ext.automap import automap_base
-from . import connect_to_product, create_app, mail, api
+from . import create_app, mail, api
 from flask_paginate import Pagination, get_page_args
 from flask_sqlalchemy import SQLAlchemy
 from json2html import json2html
 import urllib.parse
 import html, re
-from datetime import datetime,time,date
+from datetime import datetime,date
 from sqlalchemy import func
 from flask_mail import Message
 from flask import current_app
@@ -37,6 +37,7 @@ from flask_restx import Resource
 from email.mime.base import MIMEBase
 from email import encoders
 import traceback
+import time
 import pytz
 import mimetypes  # Import mimetypes module
 import smtplib
@@ -300,6 +301,57 @@ def addUsersToSession_handler(id):
     return render_template('adduserstosession.html', user=current_user, session_data=session)
         
 
+# adding maintenance to product
+@views.route('/addMaintenanceToProduct/<id>', methods=['POST'])  
+@login_required
+def addMaintenanceToProduct(id):
+    # Fetch the selected product details
+    product = db.session.query(
+        Item.id,
+        Item.name,
+        Item.description,
+        Item.manufacturer,
+        Item.model,
+        Item.custodian_unit,
+        Item.date_of_purchase,
+        Item.amount
+    ).filter_by(id=id).first()
+    
+    if product:
+        maintenance_description = request.form.get('maintenance_description')
+        maintenance_vendor = request.form.get('maintenance_vendor')
+        maintenance_date = request.form.get('maintenance_date')
+        date_of_maintenance = datetime.strptime(maintenance_date, '%Y-%m-%d').date()
+        maintenance_amount = request.form.get('maintenance_amount')
+
+        # Ensure all required fields are provided
+        if not (maintenance_description and maintenance_vendor and maintenance_date and maintenance_amount):
+            return jsonify({'error': 'All fields are required.'}), 400
+
+        try:
+            # Create a new Maintenance record
+            new_maintenance = Maintenance(
+                item_id=id,
+                maintenance_description=maintenance_description,
+                maintenance_vendor=maintenance_vendor,
+                date=date_of_maintenance,
+                amount=maintenance_amount
+            )
+
+            # Add the new maintenance record to the session and commit to the database
+            db.session.add(new_maintenance)
+            db.session.commit()
+
+            flash('Record added successfully!', 'success')
+            return render_template('maintenance.html', user=current_user, product=product)
+
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of error
+            return jsonify({'error': f'Error occurred while creating maintenance record: {str(e)}'}), 500
+    else:
+        flash('Product does not exist!', 'error')
+        return render_template('maintenance.html', user=current_user, product=product)
+
 
 
 @views.route('/logging', methods=['POST'])
@@ -409,51 +461,64 @@ def home():
     return render_template("home.html", user=current_user)
 
 
-@views.route('/product')
-def product():
-    return render_template('Products.html')
+# @views.route('/product')
+# def product():
+#     return render_template('Products.html')
 
 @views.route('/datatable')
 def datatable():
     return render_template('datatable.html')
 
 
-#  Edit product view
-@views.route('/editproduct', methods=['GET', 'POST'])
-def editProduct():
-    if request.method == 'POST':
-        my_data = Product.query.get(request.form.get('productid'))
-        if my_data:
-            my_data.ProductCode = request.form['productcode']
-            my_data.ItemName = request.form['itemname']
-            my_data.GenericName = request.form['genericname']
-            my_data.GenericNameUpdated = request.form['genericnameupdate']
-            my_data.BasicUnit = request.form['basicunit']
-            my_data.GenericRatio = request.form['genericratio']
-            my_data.StorageCondition = request.form['storagetype']
-            my_data.IvedexGenericCode = request.form['ivedexgenericcode']
-            my_data.Volume = request.form['volume']
-            my_data.Weight = request.form['weight']
-            my_data.PriceDollar = request.form['price']
-            my_data.Program = request.form['program']
-            my_data.ProductGroup = request.form['productgroup']    
-        # db_.session.add(my_data)
-        db.session.commit()
+# #  Edit product view
+# @views.route('/editproduct', methods=['GET', 'POST'])
+# def editProduct():
+#     if request.method == 'POST':
+#         my_data = Product.query.get(request.form.get('productid'))
+#         if my_data:
+#             my_data.ProductCode = request.form['productcode']
+#             my_data.ItemName = request.form['itemname']
+#             my_data.GenericName = request.form['genericname']
+#             my_data.GenericNameUpdated = request.form['genericnameupdate']
+#             my_data.BasicUnit = request.form['basicunit']
+#             my_data.GenericRatio = request.form['genericratio']
+#             my_data.StorageCondition = request.form['storagetype']
+#             my_data.IvedexGenericCode = request.form['ivedexgenericcode']
+#             my_data.Volume = request.form['volume']
+#             my_data.Weight = request.form['weight']
+#             my_data.PriceDollar = request.form['price']
+#             my_data.Program = request.form['program']
+#             my_data.ProductGroup = request.form['productgroup']    
+#         # db_.session.add(my_data)
+#         db.session.commit()
 
-        flash("Product Updated Successfully")
+#         flash("Product Updated Successfully")
         
-        return redirect(url_for('views.datatable'))
+#         return redirect(url_for('views.datatable'))
 
 
 # Delete product
-@views.route('/productdelete/<id>/', methods=['GET', 'POST'])
-def productdelete(id):
-    my_data = Product.query.get(id)
-    db.session.delete(my_data)
-    db.session.commit()
+# @views.route('/productdelete/<id>/', methods=['GET', 'POST'])
+# def productdelete(id):
+#     my_data = Product.query.get(id)
+#     db.session.delete(my_data)
+#     db.session.commit()
 
-    flash("Product Deleted Successfully")
-    return render_template('datatable.html') 
+#     flash("Product Deleted Successfully")
+#     return render_template('datatable.html') 
+
+
+
+# Route to delete user
+@views.route('/userdelete/<id>/', methods=['POST'])
+def userdelete(id):
+    my_data = User.query.get(id)
+    if my_data:
+        db.session.delete(my_data)
+        db.session.commit()
+        return jsonify({"message": "User Deleted Successfully"}), 200
+    else:
+        return jsonify({"message": "User Not Found"}), 404
 
 
 # Route to delete session
@@ -466,6 +531,35 @@ def sessiondelete(id):
         return jsonify({"message": "Session Deleted Successfully"}), 200
     else:
         return jsonify({"message": "Session Not Found"}), 404
+
+
+
+
+# Route to delete session
+@views.route('/itemdelete/<id>/', methods=['POST'])
+def itemdelete(id):
+    my_data = Item.query.get(id)
+    if my_data:
+        db.session.delete(my_data)
+        db.session.commit()
+        return jsonify({"message": "Item Deleted Successfully"}), 200
+    else:
+        return jsonify({"message": "Item Not Found"}), 404        
+
+
+
+
+# Route to delete session
+@views.route('/maintenancdelete/<id>/', methods=['POST'])
+def maintenancdelete(id):
+    my_data = Maintenance.query.get(id)
+    if my_data:
+        db.session.delete(my_data)
+        db.session.commit()
+        return jsonify({"message": "Record Deleted Successfully"}), 200
+    else:
+        return jsonify({"message": "Item Not Found"}), 404   
+
 
 
 
@@ -559,6 +653,374 @@ def get_sessions_users(session_id):
     }
 
     return jsonify(response)
+
+
+@views.route('/get_roles', methods=['GET'])
+def get_roles():
+    user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
+
+    # Fetch all roles from the database
+    roles = Role.query.all()
+    roles_data = [{'id': role.id, 'name': role.name} for role in roles]  # Convert roles to list of dictionaries
+
+    current_role = None  # Default to no role
+    if user_id:
+        user = User.query.get(user_id)
+        if user and user.roles:
+            # Assuming a user has only one role; modify if users can have multiple roles
+            current_role = {'id': user.roles[0].id, 'name': user.roles[0].name}
+
+    return jsonify({
+        'roles': roles_data,           # List of all available roles
+        'current_role': current_role   # User's current role if it exists
+    })
+
+
+
+
+
+@views.route('/get_roless', methods=['GET'])
+def get_roless():
+    user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
+
+    # Fetch all roles from the database
+    roles = Role.query.all()
+    roles_data = [{'id': role.id, 'name': role.name} for role in roles]  # Convert roles to list of dictionaries
+
+    current_role = None  # Default to no role
+    if user_id:
+        user = User.query.get(user_id)
+        if user and user.roles:
+            # Assuming a user has only one role; modify if users can have multiple roles
+            current_role = {'id': user.roles[0].id, 'name': user.roles[0].name}
+
+    return jsonify({
+        'roles': roles_data,           # List of all available roles
+        'current_role': current_role   # User's current role if it exists
+    })
+
+
+
+
+from datetime import datetime  # Import datetime module
+
+@views.route('/update_user_data', methods=['POST'])
+def update_user_data():
+    try:
+        # Get form data from the AJAX request
+        user_id = request.form.get('user_id')
+        username = request.form.get('username')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        date_of_birth = request.form.get('date_of_birth')
+        email = request.form.get('email')
+        phone_no = request.form.get('phone_no')
+        role_id = request.form.get('role_id')
+
+        # Convert the date_of_birth from string to Python date object
+        if date_of_birth:
+            try:
+                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
+                date_of_birth = datetime.strptime(date_of_birth, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+
+        # Find the user by ID
+        user = User.query.get(user_id)
+
+        if user:
+            # Update the user's details
+            user.username = username
+            user.first_name = first_name
+            user.last_name = last_name
+            user.date_of_birth = date_of_birth  # Set the converted date object
+            user.email = email
+            user.phone_no = phone_no
+            
+            # Update the user's role
+            if role_id:
+                role = Role.query.get(role_id)
+                if role:
+                    # If the user already has a role, replace it
+                    if user.roles:
+                        user.roles.clear()  # Remove all previous roles
+                    user.roles.append(role)  # Assign the new role to the user
+                else:
+                    return jsonify({'status': 'error', 'message': 'Role not found'}), 404
+
+            # Commit the changes to the database
+            db.session.commit()
+
+            return jsonify({'status': 'success', 'message': 'User data updated successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
+
+@views.route('/addmaintenance', methods=['POST'])
+@login_required
+def addmaintenance():
+    print(request.form) 
+    # Get the form data
+    item_id = request.form.get('item_id')
+    maintenance_description = request.form.get('maintenance_description')
+    maintenance_vendor = request.form.get('maintenance_vendor')
+    maintenance_date = request.form.get('maintenance_date')
+    maintenance_amount = request.form.get('maintenance_amount')
+
+    # Ensure all required fields are provided
+    if not (maintenance_description and maintenance_vendor and maintenance_date and maintenance_amount):
+        return jsonify({'error': 'All fields are required.'}), 400
+
+    try:
+        # Create a new Maintenance record
+        new_maintenance = Maintenance(
+            item_id=item_id,
+            maintenance_description=maintenance_description,
+            maintenance_vendor=maintenance_vendor,
+            date=maintenance_date,
+            amount=maintenance_amount
+        )
+        
+        # Add the new maintenance record to the session and commit to the database
+        db.session.add(new_maintenance)
+        db.session.commit()
+
+        return jsonify({'success': 'Maintenance record added successfully!'}), 200
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of error
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+@views.route('/update_session_data', methods=['POST'])
+def update_session_data():
+    try:
+        # Get form data from the AJAX request
+        editactivitySessionId = request.form.get('session_id')
+        editactivityName = request.form.get('editactivityName')
+        editactivityDescription = request.form.get('editactivityDescription')
+        editactivitydate = request.form.get('editactivitydate')
+  
+        # Convert the date_of_birth from string to Python date object
+        if editactivitydate:
+            try:
+                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
+                editactivitydate = datetime.strptime(editactivitydate, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+
+        # Find the user by ID
+        session = Session.query.get(editactivitySessionId)
+
+        if session:
+            # Update the user's details
+            session.name = editactivityName
+            session.description = editactivityDescription
+            session.date = editactivitydate
+            # Commit the changes to the database
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Session data updated successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Session not found'}), 404
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
+@views.route('/update_item_data', methods=['POST'])
+def update_item_data():
+    try:
+        # Get form data from the AJAX request
+        item_id = request.form.get('item_id')
+        editItemName = request.form.get('editItemName')
+        editItemDescription = request.form.get('editItemDescription')
+        editItemManufacturer = request.form.get('editItemManufacturer')
+        editItemModel = request.form.get('editItemModel')
+        editItemcustodianunit = request.form.get('editItemcustodianunit')
+        editItemDateofpurchase = request.form.get('editItemDateofpurchase')
+        editItemamount = request.form.get('editItemamount')
+  
+        # Convert the date_of_birth from string to Python date object
+        if editItemDateofpurchase:
+            try:
+                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
+                editItemDateofpurchase = datetime.strptime(editItemDateofpurchase, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+
+        # Find the user by ID
+        item = Item.query.get(item_id)
+
+        if item:
+            # Update the user's details
+            item.name = editItemName
+            item.description = editItemDescription
+            item.manufacturer = editItemManufacturer
+            item.model = editItemModel
+            item.custodian_unit = editItemcustodianunit
+            item.date_of_purchase = editItemDateofpurchase
+            item.amount = editItemamount
+            # Commit the changes to the database
+            db.item.commit()
+
+            return jsonify({'status': 'success', 'message': 'Item data updated successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Item not found'}), 404
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
+
+@views.route('/get_users_data', methods=['POST','GET'])
+def get_users_data():
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]').strip().lower()
+
+    # Base query to get session data
+    base_query = User.query.with_entities(
+        User.id,
+        User.username,
+        User.first_name,
+        User.last_name,
+        User.date_of_birth,
+        User.email,
+        User.phone_no
+    )
+
+    # Apply search filter
+    if search_value:
+        base_query = base_query.filter(
+            User.username.like(f'%{search_value}%') |
+            User.first_name.like(f'%{search_value}%') |
+            User.phone_no.like(f'%{search_value}%') |
+            func.cast(User.date_of_birth, db.String).like(f'%{search_value}%')
+        )
+
+    # Get the total number of records before filtering
+    total_records = User.query.count()
+
+    # Get the total number of filtered records
+    total_filtered_records = base_query.count()
+
+    # Apply pagination
+    query = base_query.order_by(User.id.asc()).offset(start).limit(length)
+
+    # Fetch filtered data
+    items = query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    for item in items:
+        data.append({
+            'Id': item.id,
+            'username': item.username,
+            'first_name': item.first_name,
+            'last_name': item.last_name,
+            'date_of_birth': item.date_of_birth.strftime('%Y-%m-%d'),  # Format date if needed
+            'email': item.email,
+            'phone_no':item.phone_no,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered_records,
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+
+
+
+@views.route('/get_items_data', methods=['POST','GET'])
+def get_items_data():
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]').strip().lower()
+
+    # Base query to get session data
+    base_query = db.session.query(
+    Item.id,
+    Item.name,
+    Item.description,
+    Item.manufacturer,
+    Item.model,
+    Item.custodian_unit,
+    Item.date_of_purchase,
+    Item.amount
+)
+
+    # Apply search filter
+    if search_value:
+        base_query = base_query.filter(
+            Item.name.like(f'%{search_value}%') |
+            Item.description.like(f'%{search_value}%') |
+            func.cast(Item.date_of_purchase, db.String).like(f'%{search_value}%')
+        )
+
+    # Get the total number of records before filtering
+    total_records = db.session.query(func.count(Item.id)).scalar()
+
+    # Get the total number of filtered records
+    total_filtered_records = base_query.count()
+
+    # Apply pagination
+    query = base_query.order_by(Item.id.asc()).offset(start).limit(length)
+
+    # Fetch filtered data
+    items = query.all()
+
+    # Prepare data for DataTables response
+    data = []
+    for item in items:
+        data.append({
+            'Id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'manufacturer': item.manufacturer,
+            'model': item.model,
+            'custodian_unit': item.custodian_unit,
+            'date_of_purchase': item.date_of_purchase.strftime('%Y-%m-%d'),  # Format date if needed
+            'amount': item.amount,
+            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+        })
+
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered_records,
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+
+
 
 
 
@@ -679,79 +1141,79 @@ def get_sessions_summary_data():
 
 
 
-@views.route('/get_data', methods=['POST','GET'])
-def get_data():
-    # Define parameters for server-side processing
-    draw = request.form.get('draw')
-    start = int(request.form.get('start'))
-    length = int(request.form.get('length'))
-    search_value = request.form.get('search[value]').strip().lower()
+# @views.route('/get_data', methods=['POST','GET'])
+# def get_data():
+#     # Define parameters for server-side processing
+#     draw = request.form.get('draw')
+#     start = int(request.form.get('start'))
+#     length = int(request.form.get('length'))
+#     search_value = request.form.get('search[value]').strip().lower()
 
-    # Query data from the database
-    query = Product.query.order_by(Product.Id.asc())
+#     # Query data from the database
+#     query = Product.query.order_by(Product.Id.asc())
 
-    # Apply search filter
-    if search_value:
-        query = query.filter(Product.ProductCode.like(f'%{search_value}%') | Product.GenericNameUpdated.like(f'%{search_value}%') | Product.Program.like(f'%{search_value}%'))
+#     # Apply search filter
+#     if search_value:
+#         query = query.filter(Product.ProductCode.like(f'%{search_value}%') | Product.GenericNameUpdated.like(f'%{search_value}%') | Product.Program.like(f'%{search_value}%'))
         
         
 
-    # Get the total number of records before filtering
-    total_records = query.count()
+#     # Get the total number of records before filtering
+#     total_records = query.count()
 
-    # Apply pagination
-    query = query.offset(start).limit(length)
+#     # Apply pagination
+#     query = query.offset(start).limit(length)
 
-    # Fetch filtered data
-    items = query.all()
+#     # Fetch filtered data
+#     items = query.all()
 
-    # Prepare data for DataTables response
-    data = []
-    for item in items:
-        data.append({
-            'Id': item.Id,
-            'ProductCode': item.ProductCode,
-            'ItemName' : item.ItemName,
-            'GenericName': item.GenericName,
-            'GenericNameUpdated': item.GenericNameUpdated,
-            'BasicUnit': item.BasicUnit,
-            'GenericRatio': item.GenericRatio,
-            'StorageCondition': item.StorageCondition,
-            'IvedexGenericCode': item.IvedexGenericCode,
-            'NHLMISGenericParent' : item.NHLMISGenericParent,
-            'InventoryConversionFactor' : item.InventoryConversionFactor,
-            'Volume' : item.Volume,
-            'Weight' : item.Weight,
-            'PriceDollar' : item.PriceDollar,
-            'Program' : item.Program,
-            'ProductGroup' : item.ProductGroup,
-            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
-            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
-        })
+#     # Prepare data for DataTables response
+#     data = []
+#     for item in items:
+#         data.append({
+#             'Id': item.Id,
+#             'ProductCode': item.ProductCode,
+#             'ItemName' : item.ItemName,
+#             'GenericName': item.GenericName,
+#             'GenericNameUpdated': item.GenericNameUpdated,
+#             'BasicUnit': item.BasicUnit,
+#             'GenericRatio': item.GenericRatio,
+#             'StorageCondition': item.StorageCondition,
+#             'IvedexGenericCode': item.IvedexGenericCode,
+#             'NHLMISGenericParent' : item.NHLMISGenericParent,
+#             'InventoryConversionFactor' : item.InventoryConversionFactor,
+#             'Volume' : item.Volume,
+#             'Weight' : item.Weight,
+#             'PriceDollar' : item.PriceDollar,
+#             'Program' : item.Program,
+#             'ProductGroup' : item.ProductGroup,
+#             'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
+#             'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+#         })
 
-    response = {
-        'draw': draw,
-        'recordsTotal': total_records,
-        'recordsFiltered': total_records if not search_value else len(items),
-        'data': data,
-    }
+#     response = {
+#         'draw': draw,
+#         'recordsTotal': total_records,
+#         'recordsFiltered': total_records if not search_value else len(items),
+#         'data': data,
+#     }
 
-    return jsonify(response)
+#     return jsonify(response)
 
 
-@views.route('/products', methods=['GET', 'POST'])
-@login_required
-def products():
-    return_value = ''
-    if request.method == 'GET':
-        all_products = Product.query.all()
-        if all_products:
-            return_value = 'Data Returned'
-        else:
-            return_value = 'No Data returned'
+# @views.route('/products', methods=['GET', 'POST'])
+# @login_required
+# def products():
+#     return_value = ''
+#     if request.method == 'GET':
+#         all_products = Product.query.all()
+#         if all_products:
+#             return_value = 'Data Returned'
+#         else:
+#             return_value = 'No Data returned'
                 
             
-    return render_template("Products.html", user=current_user, products=all_products)
+#     return render_template("Products.html", user=current_user, products=all_products)
 
 
 
@@ -768,6 +1230,27 @@ def addsession():
         db.session.commit()
         flash("New Activity Added Successfully")
         return redirect(url_for('views.session'))
+    
+
+
+@views.route('/additem', methods=['POST'])
+@login_required
+def additem():
+    if request.method == 'POST':
+        name = request.form.get("addItemName")
+        Description = request.form.get("addItemDescription")
+        Manufacturer = request.form.get("addItemManufacturer")
+        Model = request.form.get("addItemModel")
+        custodianunit = request.form.get("addItemcustodianunit")
+        Dateofpurchase = request.form.get("addItemDateofpurchase")
+        date_object = datetime.strptime(Dateofpurchase, '%Y-%m-%d').date()
+        amount = request.form.get("addItemamount")
+        new_item = Item(name = name, description = Description,manufacturer = Manufacturer,model=Model,
+                            custodian_unit = custodianunit, date_of_purchase = date_object, amount = amount)
+        db.session.add(new_item)
+        db.session.commit()
+        flash("New Item Added Successfully")
+        return redirect(url_for('views.items'))
     
 
 @views.route('/adduserstosession', methods=['POST'])
@@ -799,6 +1282,7 @@ def insert():
         gender = request.form.get("gender")
         phone_no = request.form.get("phone_no")
         home_address = request.form.get("home_address")
+        role_id = request.form.get('role_id')
 
         # Generate QR code
         qr_data = f"Username: {username}\nEmail: {email}"
@@ -818,12 +1302,23 @@ def insert():
         my_data = User(username=username,gender=gender,phone_no=phone_no,home_address=home_address,first_name=firstname,last_name=lastname,date_of_birth=date_of_birth,
                         email=email, qr_code=buffer.getvalue(), password=generate_password_hash(
             password, method='sha256'))
-        db.session.add(my_data)
-        db.session.commit()
+        
+        # Assign role to the user
+        if role_id:
+            role = Role.query.get(role_id)
+            if role:
+                my_data.roles.append(role)  # Add the role to the user's roles list
 
-        flash("User recorded Inserted Successfully")
+        # Save the user and commit the transaction
+        try:
+            db.session.add(my_data)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of an error
+            print(f"Error: {e}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
 
-        return redirect(url_for('views.createusers'))
+        return jsonify({'status': 'success', 'message': 'User added successfully'})
 
 
 @views.route('/update', methods=['GET', 'POST'])
@@ -852,13 +1347,112 @@ def update():
         return redirect(url_for('views.createusers'))
     
 
+@views.route('/addroletouser/<id>', methods=['GET', 'POST'])    
+@login_required   
+def addroletouser(id):
+    if id:
+        # Query to get session id, session name, and count of users for each session
+        session_data = db.User.query(User.id, User.username).filter(User.id == id).first()
+        return render_template("adduserstosession.html",user=current_user, session_data = session_data)    
+    
+
 @views.route('/activity/<id>', methods=['GET', 'POST'])    
 @login_required   
-def  activity(id):
+def activity(id):
     if id:
         # Query to get session id, session name, and count of users for each session
         session_data = db.session.query(Session.id, Session.name).filter(Session.id == id).first()
         return render_template("adduserstosession.html",user=current_user, session_data = session_data)
+
+
+
+@views.route('/item/<id>', methods=['GET'])
+@login_required 
+def item(id):
+    # Fetch the selected product details
+    product = db.session.query(
+        Item.id,
+        Item.name,
+        Item.description,
+        Item.manufacturer,
+        Item.model,
+        Item.custodian_unit,
+        Item.date_of_purchase,
+        Item.amount
+    ).filter_by(id=id).first()
+
+    if not product:
+        return "Product not found", 404
+
+    # Render the template and pass the product data
+    return render_template('maintenance.html', product=product,user=current_user)
+
+
+
+
+@views.route('/get_product_maintenance/<product_id>/maintenance', methods=['GET', 'POST'])    
+@login_required   
+def get_product_maintenance(product_id):
+    # Define parameters for server-side processing
+    draw = request.form.get('draw')
+    start = int(request.form.get('start'))
+    length = int(request.form.get('length'))
+    search_value = request.form.get('search[value]', '').strip().lower()
+
+    # Query to get the maintenance records for the selected item
+    base_query = db.session.query(
+        Maintenance.id,
+        Maintenance.maintenance_description,
+        Maintenance.maintenance_vendor,
+        Maintenance.date,
+        Maintenance.amount
+    ).filter(Maintenance.item_id == product_id)
+
+    # Search functionality
+    if search_value:
+        base_query = base_query.filter(
+            Maintenance.maintenance_description.ilike(f'%{search_value}%') |
+            Maintenance.maintenance_vendor.ilike(f'%{search_value}%') |
+            func.cast(Maintenance.date, db.String).ilike(f'%{search_value}%')
+        )
+
+    # Get the total number of records before and after filtering
+    total_records = db.session.query(func.count(Maintenance.id)).filter_by(item_id=product_id).scalar()
+    total_filtered_records = base_query.count()
+
+    # Apply pagination
+    query = base_query.order_by(Maintenance.date.asc()).offset(start).limit(length)
+    maintenance_records = query.all()
+
+    # Prepare the response with edit and delete buttons
+    data = []
+    
+    for record in maintenance_records:
+        # Format the date directly (since it's already a date object)
+        maintenance_date_str = record.date.strftime('%Y-%m-%d') if record.date else None
+        
+        data.append({
+            'Id': record.id,
+            'maintenance_description': record.maintenance_description,
+            'maintenance_vendor': record.maintenance_vendor,
+            'maintenance_date': maintenance_date_str,
+            'maintenance_amount': record.amount,
+            'edit_button': f'<button class="btn btn-warning btn-sm edit-btn" data-id="{record.id}">Edit</button>',
+            'delete_button': f'<button class="btn btn-danger btn-sm delete-btn" data-id="{record.id}">Delete</button>'
+        })
+
+    # Prepare the response
+    response = {
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered_records,
+        'data': data,
+    }
+
+    return jsonify(response)
+
+
+
 
 
 @views.route('/userdetails/<id>', methods=['GET', 'POST'])
@@ -897,6 +1491,47 @@ def session():
     func.coalesce(func.count(session_users.c.user_id),0).label('user_count')
 ).outerjoin(session_users).group_by(Session.id, Session.name, Session.description, Session.date).all()
     return render_template('session.html', user=current_user, activities = all_activity)
+
+
+
+
+@views.route('/items', methods=['GET', 'POST'])
+@login_required
+def items():
+    all_item = Item.query.all()
+    return render_template('item.html', user=current_user, items = all_item)
+
+
+
+@views.route('/manageusers', methods=['GET', 'POST'])
+@login_required
+def manageusers():
+    all_user = User.query.with_entities(
+        User.id,
+        User.username,
+        User.first_name,
+        User.last_name,
+        User.date_of_birth,
+        User.email,
+        User.phone_no
+    )
+    return render_template('manageusers.html', user=current_user, users = all_user)
+
+
+
+@views.route('/manageinventory', methods=['GET', 'POST'])
+@login_required
+def manageinventory():
+    all_user = User.query.with_entities(
+        User.id,
+        User.username,
+        User.first_name,
+        User.last_name,
+        User.date_of_birth,
+        User.email,
+        User.phone_no
+    )
+    return render_template('manageusers.html', user=current_user, users = all_user)
 
 
 #paginated function
@@ -955,13 +1590,13 @@ def forgotpassword():
     return render_template("forgotpassword.html")
 
 
-@views.route('/test')
-@login_required
-def test():
-    if request.method == 'GET':
-        all_products = Product.query.limit(15).all()
+# @views.route('/test')
+# @login_required
+# def test():
+#     if request.method == 'GET':
+#         all_products = Product.query.limit(15).all()
 
-    return render_template("Products.html", user=current_user, products=all_products)
+#     return render_template("Products.html", user=current_user, products=all_products)
 
 
 #@views.route('/tesst')

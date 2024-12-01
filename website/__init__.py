@@ -89,27 +89,27 @@ database_con = f'mssql+pyodbc://{username_}:{password_}@{server_}/{database_}?dr
 engine2 = create_engine(database_con, echo=True)
 
 
-def connect_to_product():
-    app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'gsghhjlmpoprfe afdttrgragagesgtgstr'
-    server_ = 'PSM-NG-0003259'
-    database_ = 'AdventureWorksDW2019'
-    username_ = 'sa'
-    password_ = 'Sleektech@2375#'
-    #driver_ = '{ODBC Driver 17 for SQL Server}'
-    driver__ = "ODBC+Driver+17+for+SQL+Server"
-    database_con = f'mssql+pyodbc://{username_}:{password_}@{server_}/{database_}?driver={driver__}'
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_con
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
-    db = SQLAlchemy(app)
-    db.init_app(app)
-    Base = automap_base()
-    Base.prepare(db.engine, reflect=True)
-    product = Base.classes.TempmsProduct
-    #metadata = db.MetaData()
-    #product = db.Table('TempmsProduct', metadata,autoload=True, autoload_with=db.engine)
-    results = db.session.query(product).all()
-    return results
+# def connect_to_product():
+#     app = Flask(__name__)
+#     app.config['SECRET_KEY'] = 'gsghhjlmpoprfe afdttrgragagesgtgstr'
+#     server_ = 'PSM-NG-0003259'
+#     database_ = 'AdventureWorksDW2019'
+#     username_ = 'sa'
+#     password_ = 'Sleektech@2375#'
+#     #driver_ = '{ODBC Driver 17 for SQL Server}'
+#     driver__ = "ODBC+Driver+17+for+SQL+Server"
+#     database_con = f'mssql+pyodbc://{username_}:{password_}@{server_}/{database_}?driver={driver__}'
+#     app.config['SQLALCHEMY_DATABASE_URI'] = database_con
+#     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
+#     db = SQLAlchemy(app)
+#     db.init_app(app)
+#     Base = automap_base()
+#     Base.prepare(db.engine, reflect=True)
+#     product = Base.classes.TempmsProduct
+#     #metadata = db.MetaData()
+#     #product = db.Table('TempmsProduct', metadata,autoload=True, autoload_with=db.engine)
+#     results = db.session.query(product).all()
+#     return results
 
 #Base = automap_base()
 #Base.prepare(db.engine, reflect=True)
@@ -130,10 +130,11 @@ def connect_to_product():
 
 def create_app():   
     app = Flask(__name__)
+    app.config['SESSION_PERMANENT'] = False
     app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
-    app.config['SQLALCHEMY_BINDS'] = {
-        'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
+    # app.config['SQLALCHEMY_BINDS'] = {
+    #     'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
     # Flask-Mail configuration for Gmail
     # app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     # app.config['MAIL_PORT'] = 587
@@ -173,7 +174,7 @@ def create_app():
     app.register_blueprint(auth, url_prefix='/')
 
 
-    from .models import User, Product, Session
+    from .models import User,Session
 
     create_database(app)
 
