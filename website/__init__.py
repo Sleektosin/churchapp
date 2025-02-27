@@ -132,7 +132,7 @@ def create_app():
     app = Flask(__name__)
     app.config['SESSION_PERMANENT'] = False
     app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres.qpepfruxqxqzaqknqxmm:Sleektech%402375%40%23@aws-0-us-east-2.pooler.supabase.com:5432/postgres'
     # app.config['SQLALCHEMY_BINDS'] = {
     #     'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
     # Flask-Mail configuration for Gmail

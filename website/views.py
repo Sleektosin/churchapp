@@ -872,7 +872,7 @@ def update_item_data():
             item.date_of_purchase = editItemDateofpurchase
             item.amount = editItemamount
             # Commit the changes to the database
-            db.item.commit()
+            db.session.commit()
 
             return jsonify({'status': 'success', 'message': 'Item data updated successfully'})
         else:
