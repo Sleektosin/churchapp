@@ -370,27 +370,37 @@ def logging_handler():
 
 
 
+from sqlalchemy.exc import OperationalError
+
 @views.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         return render_template("login.html")
-    elif request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")        
+    
+    # POST handling
+    email = request.form.get("email")
+    password = request.form.get("password")        
 
+    try:
         user = User.query.filter_by(email=email).first()
-        if user:
-            if check_password_hash(user.password,password):
-                flash('Logged in successfully!', category='success')
-                login_user(user, remember=True)
-                return redirect(url_for('views.session'))
-            else:
-                password=generate_password_hash(password, method='sha256')
-                flash('Incorrect password, try again. ' + password , category='error')
-        else:
+        
+        if not user:
             flash('Email does not exist.', category='error')
-
-    return render_template("login.html", user=current_user)
+            return render_template("login.html", user=current_user)
+        
+        if check_password_hash(user.password, password):
+            flash('Logged in successfully!', category='success')
+            login_user(user, remember=True)
+            return redirect(url_for('views.session'))
+        else:
+            # Never reveal whether password was wrong vs email doesn't exist
+            flash('Invalid credentials', category='error')
+            return render_template("login.html", user=current_user)
+            
+    except OperationalError as e:
+        # Handle database connection error
+        flash('Database connection error. Please try again later.', category='error')
+        return render_template("login.html", user=current_user)
 
 
 def get_gender_count_by_date():
@@ -1455,16 +1465,38 @@ def get_product_maintenance(product_id):
 
 
 
-@views.route('/userdetails/<id>', methods=['GET', 'POST'])
+@views.route('/userdetails/<id>')
 @login_required
 def userdetails(id):
-    if id:
-        user = User.query.get(id)
-        qr_code_data = get_qr_code(user.username)
-        base64_encoded_data = qr_code_data
-        return render_template("userdetail.html", user = user, base64_encoded_data = base64_encoded_data)
-    else:
-        return render_template("userdetail.html", id = "Id is blank")
+    user = User.query.get(id)
+    if not user:
+        flash("User not found")
+        #return redirect(url_for('some_other_page'))  # Always return after flash
+    
+    qr_code_data = None
+    
+    if user.qr_code:
+        try:
+            if isinstance(user.qr_code, str):
+                # Handle string data - could be binary string or already base64
+                if user.qr_code.startswith('data:image/png;base64,'):
+                    # Already in correct format
+                    qr_code_data = user.qr_code
+                else:
+                    # Try binary string conversion
+                    padded_binary = user.qr_code.ljust((len(user.qr_code) + 7) // 8 * 8, '0')
+                    byte_data = int(padded_binary, 2).to_bytes(len(padded_binary) // 8, 'big')
+                    qr_code_data = f"data:image/png;base64,{base64.b64encode(byte_data).decode('utf-8')}"
+            elif isinstance(user.qr_code, bytes):
+                # Handle binary data
+                qr_code_data = f"data:image/png;base64,{base64.b64encode(user.qr_code).decode('utf-8')}"
+        except Exception as e:
+            print(f"QR code conversion error: {e}")
+            qr_code_data = None
+    
+    return render_template("userdetail.html", 
+                        user=user, 
+                        qr_code_data=qr_code_data)  # Changed variable name for clarity
   
     
 
@@ -1670,6 +1702,8 @@ def register():
         buffer = BytesIO()
         img.save(buffer)
         qr_code_bytes = buffer.getvalue()
+        ## New
+        qr_code_base64 = base64.b64encode(qr_code_bytes).decode('utf-8')
 
         user = User.query.filter_by(email=email).first()
         if user:
@@ -1689,7 +1723,7 @@ def register():
                 first_name=firstname,
                 last_name=lastname,
                 date_of_birth=date_of_birth,
-                qr_code=qr_code_bytes,
+                qr_code=qr_code_base64,
                 password=generate_password_hash(password1, method='sha256'),
                 username=username,
                 gender= gender,
@@ -1722,10 +1756,15 @@ def register():
 # Function to get QR code in base64
 def get_qr_code(username):
     user = User.query.filter_by(username=username).first()
-    if user and user.qr_code:
-        qr_code_base64 = base64.b64encode(user.qr_code).decode('utf-8')
-        return qr_code_base64
-    return None
+    if not user or not user.qr_code:
+        return None
+    
+    # If already properly formatted
+    if user.qr_code.startswith('data:image'):
+        return user.qr_code
+    
+    # Ensure proper base64 data URL format
+    return f"data:image/png;base64,{user.qr_code}"
 
 
 def convert_to_base64(qr_code_data):

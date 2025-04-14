@@ -5,11 +5,20 @@
       "src": "main.py",
       "use": "@vercel/python",
       "config": {
-        "pythonVersion": "3.11"
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.10"
       }
+    },
+    {
+      "src": "static/*",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "main.py"
