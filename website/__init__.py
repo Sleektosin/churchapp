@@ -131,8 +131,10 @@ engine2 = create_engine(database_con, echo=True)
 def create_app():   
     app = Flask(__name__)
     app.config['SESSION_PERMANENT'] = False
+    database_uri = os.environ.get('DATABASE_URI', 'postgresql://postgres.qpepfruxqxqzaqknqxmm:Sleektech%402375%40%23@aws-0-us-east-2.pooler.supabase.com:5432/postgres')
     app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres.qpepfruxqxqzaqknqxmm:Sleektech%402375%40%23@aws-0-us-east-2.pooler.supabase.com:5432/postgres'
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 3600,
