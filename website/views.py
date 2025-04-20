@@ -48,6 +48,8 @@ import threading
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import logging
+from sqlalchemy import text
 
 
 
@@ -405,13 +407,13 @@ def login():
 
 def get_gender_count_by_date():
     query = db.session.query(
-    func.strftime('%Y-%m-%d', Session.date).label('session_date'),
-    User.gender.label('user_gender'),
-    func.count(User.id).label('user_count')
+        func.to_char(Session.date, 'YYYY-MM-DD').label('session_date'),
+        User.gender.label('user_gender'),
+        func.count(User.id).label('user_count')
     ).join(session_users, session_users.c.session_id == Session.id) \
     .join(User, User.id == session_users.c.user_id) \
-    .group_by(func.strftime('%Y-%m-%d', Session.date), User.gender) \
-    .order_by(func.strftime('%Y-%m-%d', Session.date), User.gender)
+    .group_by(func.to_char(Session.date, 'YYYY-MM-DD'), User.gender) \
+    .order_by(func.to_char(Session.date, 'YYYY-MM-DD'), User.gender)
 
     results = query.all()
     return results
@@ -1065,8 +1067,8 @@ def get_sessions_data():
     # Get the total number of filtered records
     total_filtered_records = base_query.count()
 
-    # Apply pagination
-    query = base_query.order_by(Session.id.asc()).offset(start).limit(length)
+    # Apply pagination and sort by date (newest first)
+    query = base_query.order_by(Session.date.desc()).offset(start).limit(length)  # <-- Changed to date.desc()
 
     # Fetch filtered data
     items = query.all()
@@ -1123,8 +1125,8 @@ def get_sessions_summary_data():
     # Get the total number of filtered records
     total_filtered_records = base_query.count()
 
-    # Apply pagination
-    query = base_query.order_by(Session.id.asc()).offset(start).limit(length)
+    # Apply pagination and sort by date (newest first)
+    query = base_query.order_by(Session.date.desc()).offset(start).limit(length)  # <-- Changed to date.desc()
 
     # Fetch filtered data
     items = query.all()
@@ -1471,34 +1473,76 @@ def userdetails(id):
     user = User.query.get(id)
     if not user:
         flash("User not found")
-        #return redirect(url_for('some_other_page'))  # Always return after flash
+        return redirect(url_for('home'))
     
     qr_code_data = None
     
     if user.qr_code:
         try:
             if isinstance(user.qr_code, str):
-                # Handle string data - could be binary string or already base64
+                # Case 1: Already a data URL
                 if user.qr_code.startswith('data:image/png;base64,'):
-                    # Already in correct format
                     qr_code_data = user.qr_code
-                else:
-                    # Try binary string conversion
+                
+                # Case 2: Already a base64 string without prefix
+                elif is_valid_base64(user.qr_code):
+                    qr_code_data = f"data:image/png;base64,{user.qr_code}"
+                
+                # Case 3: Binary as string (0s and 1s)
+                elif all(c in '01' for c in user.qr_code):
+                    # Ensure length is multiple of 8
                     padded_binary = user.qr_code.ljust((len(user.qr_code) + 7) // 8 * 8, '0')
+                    # Convert binary string to bytes
                     byte_data = int(padded_binary, 2).to_bytes(len(padded_binary) // 8, 'big')
+                    # Convert bytes to base64
                     qr_code_data = f"data:image/png;base64,{base64.b64encode(byte_data).decode('utf-8')}"
+                
+                else:
+                    # Unrecognized string format
+                    flash("QR code format not recognized", "warning")
+            
             elif isinstance(user.qr_code, bytes):
                 # Handle binary data
                 qr_code_data = f"data:image/png;base64,{base64.b64encode(user.qr_code).decode('utf-8')}"
+        
         except Exception as e:
             print(f"QR code conversion error: {e}")
+            flash("Unable to display QR code: " + str(e), "warning")
             qr_code_data = None
     
     return render_template("userdetail.html", 
                         user=user, 
-                        qr_code_data=qr_code_data)  # Changed variable name for clarity
+                        qr_code_data=qr_code_data)
+
+# Helper function to check if a string is valid base64
+def is_valid_base64(s):
+    try:
+        # Add padding if needed
+        padding_needed = len(s) % 4
+        if padding_needed:
+            s += '=' * (4 - padding_needed)
+        
+        # Try to decode
+        base64.b64decode(s)
+        return True
+    except:
+        return False
   
-    
+
+# Helper function to check if a string is valid base64
+def is_valid_base64(s):
+    try:
+        # Add padding if needed
+        padding_needed = len(s) % 4
+        if padding_needed:
+            s += '=' * (4 - padding_needed)
+        
+        # Try to decode
+        base64.b64decode(s)
+        return True
+    except:
+        return False
+
 
 
 @views.route('/delete/<id>/', methods=['GET', 'POST'])
@@ -1669,6 +1713,127 @@ def get_date_of_birth(dateofbirth, default_value='1789-01-01'):
     else:
         print("Date of birth not provided. Returning default value.")
         return datetime.strptime(default_value, '%Y-%m-%d').date()
+
+
+
+def update_all_user_qr_codes():
+    """
+    Updates all users' QR codes from binary string format to Base64.
+    
+    This function:
+    1. Finds all users with QR codes in binary format (strings of only 0s and 1s)
+    2. Converts each binary string to bytes
+    3. Encodes those bytes to Base64
+    4. Updates the database with the new Base64 format
+    
+    Returns:
+        dict: A summary of the update operation with counts and any errors
+    """
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info("Starting QR code update process")
+    
+    # Get database connection from Flask app
+    try:
+        db = current_app.extensions['sqlalchemy'].db.session
+    except Exception as e:
+        logger.error(f"Failed to get database session: {str(e)}")
+        return {"error": "Database connection failed", "details": str(e)}
+    
+    # Find all users with binary QR codes
+    try:
+        result = db.execute(text("""
+            SELECT Id, qr_code 
+            FROM "user" 
+            WHERE qr_code ~ '^[01]+$'
+        """))
+        users = result.fetchall()
+        logger.info(f"Found {len(users)} users with binary QR codes")
+    except Exception as e:
+        logger.error(f"Failed to query user: {str(e)}")
+        return {"error": "Query failed", "details": str(e)}
+    
+    # Process statistics
+    total_users = len(users)
+    success_count = 0
+    failed_count = 0
+    failed_users = []
+    
+    # Process each user
+    for user in users:
+        user_id = user[0]
+        binary_qr = user[1]
+        
+        try:
+            logger.info(f"Processing user ID: {user_id}")
+            
+            # Make sure the binary string length is a multiple of 8
+            remainder = len(binary_qr) % 8
+            if remainder != 0:
+                padding_needed = 8 - remainder
+                binary_qr = binary_qr + '0' * padding_needed
+                logger.info(f"Added {padding_needed} bits of padding")
+            
+            # Convert binary string to bytes
+            bytes_data = bytearray()
+            for i in range(0, len(binary_qr), 8):
+                byte = binary_qr[i:i+8]
+                bytes_data.append(int(byte, 2))
+            
+            # Convert bytes to Base64
+            base64_qr = base64.b64encode(bytes_data).decode('utf-8')
+            logger.info(f"Successfully converted to Base64. First 30 chars: {base64_qr[:30]}...")
+            
+            # Update the database
+            db.execute(text("""
+                UPDATE "user"
+                SET qr_code = :new_barcode
+                WHERE Id = :user_id
+            """), {"new_barcode": base64_qr, "user_id": user_id})
+            
+            success_count += 1
+            logger.info(f"User {user_id} updated successfully")
+            
+        except Exception as e:
+            failed_count += 1
+            error_details = {"user_id": user_id, "error": str(e)}
+            failed_users.append(error_details)
+            logger.error(f"Failed to update user {user_id}: {str(e)}")
+    
+    # Commit all changes
+    try:
+        db.commit()
+        logger.info("All changes committed to database")
+    except Exception as e:
+        logger.error(f"Failed to commit changes: {str(e)}")
+        return {
+            "error": "Failed to commit changes",
+            "details": str(e),
+            "processed": success_count,
+            "failed": failed_count
+        }
+    
+    # Return summary
+    result = {
+        "total_users": total_users,
+        "success_count": success_count,
+        "failed_count": failed_count
+    }
+    
+    if failed_count > 0:
+        result["failed_users"] = failed_users
+    
+    logger.info(f"QR code update complete. Summary: {result}")
+    return result
+
+
+@views.route('/admin/update-qr-codes', methods=['GET', 'POST'])
+def update_qr_codes_endpoint():
+    result = update_all_user_qr_codes()
+    return jsonify(result)
+
+
 
 
 @views.route('/register', methods=['GET', 'POST'])

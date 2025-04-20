@@ -594,14 +594,14 @@ svg:not(:root) {
           var session_Data = $('#activityTable').DataTable({
             processing: true,
             responsive: true,
-            pageLength: 5,
+            pageLength: 10,
             paging: true,
             lengthMenu: [
             [5,10, 15,20, 25, 50, 60, -1],
             [5,10, 15,20, 25, 50, 60, "All"],
             ],
             serverSide: true,
-            order: [],
+            order: [[0, "desc"]], // This sorts the first column (date) in descending order
             sort: true,
             searching: true,
             ajax: {

@@ -143,10 +143,10 @@
                                         <!-- QR Code Section -->
                                         <div class="form-group text-center mb-4">
                                           {% if qr_code_data %}
-                                              <img src="{% if not qr_code_data.startswith('data:image') %}data:image/png;base64,{% endif %}{{ qr_code_data }}" 
+                                          <img src="{% if not qr_code_data.startswith('data:image') %}data:image/png;base64,{% endif %}{{ qr_code_data }}" 
                                                    alt="QR Code" 
                                                    class="img-fluid" 
-                                                   style="max-width: 150px;"/>
+                                                   style="max-width: 150px; width: 100%;"/>
                                           {% else %}
                                               <p class="text-danger">QR Code not available</p>
                                           {% endif %}

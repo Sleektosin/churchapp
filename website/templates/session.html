@@ -146,14 +146,14 @@
             var sessionData = $('#activityTable').DataTable({
               processing: true,
               responsive: true,
-              pageLength: 15,
+              pageLength: 10,
               paging: true,
               lengthMenu: [
               [5,10, 15,20, 25, 50, 60, -1],
               [5,10, 15,20, 25, 50, 60, "All"],
               ],
               serverSide: true,
-              order: [],
+              order: [[3, 'desc']],
               sort: true,
               searching: true,
               ajax: {

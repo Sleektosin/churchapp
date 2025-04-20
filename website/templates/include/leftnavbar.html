@@ -48,13 +48,15 @@
                   </li>
                 </ul>
               </li>
-              
-              
               <li class="sidebar-item">
                 <a href="{{url_for('views.analytics')}}" class="sidebar-link {% if home %}active{% endif %}"
                   ><i class="mdi mdi-border-inside"></i
-                    ><span class="hide-menu">Analytics</span></a
-                >
+                    ><span class="hide-menu">Analytics</span></a>
+              </li>
+              <br/><br/><br/>
+              <li class="sidebar-item">
+                <a href="{{url_for('views.logout')}}" class="sidebar-link {% if home %}active{% endif %}"
+                  ><i class="fa fa-power-off me-1 ms-1"></i>Logout</span></a>
               </li>
 
             </ul>
