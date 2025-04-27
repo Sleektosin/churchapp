@@ -63,14 +63,14 @@
         <div class="row no-gutters">
           <div class="col-lg-5">
             <img
-              src="{{url_for('static',filename = 'uploads/background1.jpg')}}"
+              src="{{url_for('static',filename = 'uploads/register_2.jpg')}}"
               alt=""
-              class="img-fluid"
+              class="img-fluid" style="height: 720px;"
             />
           </div>
 
           <div class="col-lg-7 px-5 pt-5">
-            <h4>Register Your Account</h4>
+            <h6>Create Account</h6>
             {% with messages = get_flashed_messages(with_categories=true) %} {%
             if messages%} {% for category, message in messages %} {% if category
             == 'error' %}
@@ -100,7 +100,7 @@
                 padding-bottom: 1px;
                 padding-right: 5px;
                 padding-left: 5px;
-                width: 500px;
+                width: auto;
                 height: 34px;
               "
             >
@@ -231,7 +231,7 @@
                 </div>
             </div>
         </div>
-        <a href="#">Forgot Password</a>
+        <a href="{{url_for('views.forgotpassword')}}">Forgot Password</a>
         <p>
             Already have an account?
             <a href="{{url_for('views.login')}}">Sign in here</a>

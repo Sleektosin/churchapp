@@ -63,13 +63,13 @@
         <div class="row no-gutters">
           <div class="col-lg-5">
             <img
-              src="{{url_for('static',filename = 'uploads/login3__.jpg')}}"
+              src="{{url_for('static',filename = 'uploads/login_final.jpg')}}"
               alt=""
-              class="img-fluid"
+              class="img-fluid" style="height: 390px;"
             />
           </div>
           <div class="col-lg-7 px-5 pt-5">
-            <h4>Sign Into Your Account</h4>
+            <!-- <h4>Sign Into Your Account</h4> -->
 
             {% with messages = get_flashed_messages(with_categories=true) %} {%
             if messages%} {% for category, message in messages %} {% if category
@@ -82,8 +82,9 @@
                 padding-bottom: 1px;
                 padding-right: 5px;
                 padding-left: 5px;
-                width: 500px;
-                height: 34px;
+                width: auto;
+                height: auto;
+                font-size: 13px;
               "
             >
               {{message}}
@@ -100,7 +101,7 @@
                 padding-bottom: 1px;
                 padding-right: 5px;
                 padding-left: 5px;
-                width: 500px;
+                width: auto;
                 height: 34px;
               "
             >
@@ -138,7 +139,7 @@
                   <button type="submit" class="btn1 mt-3 mb-5">Login</button>
                 </div>
               </div>
-              <a href="{{url_for('views.barcodelogin')}}">QR Code Login</a> ||
+              <!-- <a href="{{url_for('views.barcodelogin')}}">QR Code Login</a> || -->
               <a href="{{url_for('views.forgotpassword')}}">Forgot Password</a>            
               <div id="qrCodeContainer"></div>         
               <p>

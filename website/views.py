@@ -2,6 +2,7 @@
 #from crypt import methods
 #from crypt import methods
 import json
+import random
 from PIL import Image
 import qrcode
 import base64
@@ -50,6 +51,7 @@ from sendgrid.helpers.mail import Mail
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 import logging
 from sqlalchemy import text
+from flask import session
 
 
 
@@ -205,6 +207,64 @@ def send_email_with_qr(user_email, username, attachment, filename='attachment.pn
 
     print(f'Failed to send email to {user_email} after {retries} attempts')
     return False
+
+
+def send_login_validation_email(user_email, username, code, retries=3, delay=5):
+    global emails_sent, start_time
+
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587
+    smtp_user = 'tosinsleek01@gmail.com'
+    smtp_password = 'ugqm eupj ikts asom'
+
+    msg = EmailMessage()
+    msg['From'] = formataddr(('Saka Tosin', smtp_user))
+    msg['To'] = user_email
+    msg['Subject'] = 'Login Code'
+
+    # Create plain text and HTML body
+    msg.set_content(f"Hello {username}, here is your Login code: {code}")
+    msg.add_alternative(f"""
+    <html>
+        <body>
+            <h1>Hello {username},</h1>
+            <p>Here is your Login code: <strong>{code}</strong></p>
+        </body>
+    </html>
+    """, subtype='html')
+
+    with rate_limit_lock:
+        current_time = time.time()
+        if current_time - start_time < RATE_PERIOD:
+            if emails_sent >= RATE_LIMIT:
+                sleep_time = RATE_PERIOD - (current_time - start_time)
+                print(f"Rate limit reached, sleeping for {sleep_time} seconds")
+                time.sleep(sleep_time)
+                emails_sent = 0
+                start_time = time.time()
+        else:
+            emails_sent = 0
+            start_time = current_time
+
+    for attempt in range(retries):
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+            print(f'Email sent to {user_email}')
+            with rate_limit_lock:
+                emails_sent += 1
+            return True
+        except smtplib.SMTPException as e:
+            print(f'Failed to send email to {user_email} on attempt {attempt + 1}: {e}')
+            time.sleep(delay)
+
+    print(f'Failed to send email to {user_email} after {retries} attempts')
+    return False
+
+
+
 
 
 def send_email_with_qr_(user_email, username, qr_code_bytes):
@@ -391,9 +451,15 @@ def login():
             return render_template("login.html", user=current_user)
         
         if check_password_hash(user.password, password):
+            # get random code for user's authentication
+            code = generate_code()
+            session['pending_user'] = user.username
+            session['validation_code'] = code
+            #send_login_validation_email(user.email,user.username, code)  # Send code to user's email
             flash('Logged in successfully!', category='success')
             login_user(user, remember=True)
-            return redirect(url_for('views.session'))
+            return redirect(url_for('views.sessions'))
+            # return redirect(url_for('views.prevalidate'))
         else:
             # Never reveal whether password was wrong vs email doesn't exist
             flash('Invalid credentials', category='error')
@@ -1241,7 +1307,7 @@ def addsession():
         db.session.add(new_activity)
         db.session.commit()
         flash("New Activity Added Successfully")
-        return redirect(url_for('views.session'))
+        return redirect(url_for('views.sessions'))
     
 
 
@@ -1556,9 +1622,9 @@ def delete(id):
     return redirect(url_for('views.createusers'))
 
 
-@views.route('/session', methods=['GET', 'POST'])
+@views.route('/sessions', methods=['GET', 'POST'])
 @login_required
-def session():
+def sessions():
     all_activity = db.session.query(
     Session.id,
     Session.name,
@@ -1662,7 +1728,7 @@ def forgotpassword():
                 flash('Password Updated Successfuly!', category='success')
                 return redirect(url_for('views.login'))
         else:
-            flash('', category='error')
+            flash('Email address not found.', category='error')
     return render_template("forgotpassword.html")
 
 
@@ -1681,6 +1747,34 @@ def forgotpassword():
 #    if request.method == 'GET':
 #        all_products = TempmsProduct.query.all()
 #    return render_template("tesst.html", products = all_products)
+
+
+
+def generate_code():
+    return str(random.randint(100000, 999999))  # 6-digit code
+
+
+
+# Prevalidate users before login
+@views.route('/prevalidate', methods=['GET', 'POST'])
+def prevalidate():
+    if 'pending_user' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        code = request.form['code']
+        if code == session.get('validation_code'):
+            session['user'] = session.pop('pending_user')
+            session.pop('validation_code', None)  # remove used code
+            flash('Logged in successfully!', category='success')
+            login_user(session['user'], remember=True)
+            return redirect(url_for('views.sessions'))
+        else:
+            return "Invalid validation code"
+    return render_template('prevalidate.html')
+
+
+
+
 
 
 @views.route('/logout')

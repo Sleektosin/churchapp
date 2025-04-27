@@ -12,7 +12,7 @@ from flask_login import UserMixin
 from flask_migrate import Migrate
 import os
 # ffrom website.models import User
-
+from functools import wraps
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy
@@ -135,6 +135,7 @@ def create_app():
     app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 3600,
