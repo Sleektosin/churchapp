@@ -337,6 +337,9 @@ def extract_user_info(user_string):
 def barcodelogin():
     return render_template('loginn.html')
 
+
+
+
 @views.route('/addUsersToSession/<id>',methods=['GET', 'POST'])  
 def addUsersToSession_handler(id):
     if id:
@@ -877,6 +880,43 @@ def addmaintenance():
 
 
 
+
+@views.route('/update_maintenance_data', methods=['POST'])
+def update_maintenance_data():
+    try:
+        # Get form data from the AJAX request
+        editmaintenanceid = request.form.get('maintenance_id')
+        editmaintenancedescripton = request.form.get('maintenance_description')
+        editmaintenancevendor = request.form.get('maintenance_vendor')
+        editmaintenancedate = request.form.get('maintenance_date')
+        editmaintenanceamount = request.form.get('maintenance_amount')
+          
+        # Convert the date_of_birth from string to Python date object
+        if editmaintenancedate:
+            try:
+                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
+                editmaintenancedate = datetime.strptime(editmaintenancedate, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+
+        # Find the user by ID
+        maintenance = Maintenance.query.get(editmaintenanceid)
+
+        if maintenance:
+            # Update the user's details
+            maintenance.maintenance_description = editmaintenancedescripton
+            maintenance.maintenance_vendor = editmaintenancevendor
+            maintenance.date = editmaintenancedate
+            maintenance.amount = editmaintenanceamount
+            # Commit the changes to the database
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Maintenance data updated successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Maintenance not found'}), 404
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @views.route('/update_session_data', methods=['POST'])

@@ -140,8 +140,8 @@ def create_app():
     'pool_pre_ping': True,
     'pool_recycle': 3600,
     'pool_timeout': 30,
-    'max_overflow': 10,
-    'pool_size': 5
+    'max_overflow': 30,
+    'pool_size': 20
 }
     # app.config['SQLALCHEMY_BINDS'] = {
     #     'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
