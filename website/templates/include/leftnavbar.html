@@ -21,17 +21,17 @@
           <!-- Sidebar navigation-->
           <nav class="sidebar-nav">
             <ul id="sidebarnav" class="pt-4">
-              <li class="sidebar-item">
+              <li class="sidebar-item {% if sessions or activity %}parent-active{% endif %}">
                 <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions %}active{% endif %}"
+                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity %}active{% endif %}"
                   href="{{url_for('views.sessions')}}"
                   aria-expanded="false"
                   ><i class="mdi mdi-view-dashboard"></i
                   ><span class="hide-menu">Sessions</span></a
                 >
               </li>
-              <li class="sidebar-item">
-                <a href="{{url_for('views.manageusers')}}" class="sidebar-link {% if createusers %}active{% endif %}"
+              <li class="sidebar-item {% if createusers or userdetails %}parent-active{% endif %}">
+                <a href="{{url_for('views.manageusers')}}" class="sidebar-link {% if createusers or userdetails %}active{% endif %}"
                   ><i class="mdi mdi-account-key"></i
                   ><span class="hide-menu">Manage Users</span></a
                 >

@@ -6,6 +6,8 @@ from sqlalchemy.sql import func
 from sqlalchemy import Column, Integer, String, Table
 from datetime import datetime
 import base64
+from sqlalchemy import DateTime
+from datetime import datetime, timezone
 #from sqlalchemy.orm import declarative_base
 
 #Base = declarative_base()
@@ -43,11 +45,16 @@ class User(db.Model, UserMixin):
     phone_no = db.Column(db.String(150), nullable=True)
     home_address = db.Column(db.String(150), nullable=True)
     qr_code = db.Column(db.String(255)) # Column to store QR code data
+
+     # New fields for first-timer tracking
+    is_first_timer = db.Column(db.Boolean, default=False, nullable=False)
+    date_joined = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     # Define the relationship with roles
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
 
 
-    def __init__(self, username, email, password, qr_code, first_name, last_name, date_of_birth, gender,phone_no,home_address ):
+    def __init__(self, username, email, password, qr_code, first_name, last_name, 
+                 date_of_birth, gender, phone_no, home_address, is_first_timer=True,date_joined=None):
         self.username = username
         self.email = email
         self.password = password
@@ -58,7 +65,8 @@ class User(db.Model, UserMixin):
         self.gender = gender
         self.home_address = home_address
         self.phone_no = phone_no
-        self.date_of_birth = date_of_birth
+        self.is_first_timer = is_first_timer
+        self.date_joined = date_joined
 
     def to_dict(self):
         return {
@@ -72,7 +80,9 @@ class User(db.Model, UserMixin):
             'phone_no':self.phone_no,
             'date_of_birth': self.date_of_birth.isoformat() if self.date_of_birth else None,
             'qr_code': base64.b64encode(self.qr_code).decode('utf-8') if self.qr_code else None,
-            'roles': [role.name for role in self.roles]
+            'roles': [role.name for role in self.roles],
+            'is_first_timer': self.is_first_timer,
+            'date_joined': self.date_joined.isoformat() if self.date_joined else None
         }       
 
 

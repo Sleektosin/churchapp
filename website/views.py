@@ -52,6 +52,8 @@ from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileT
 import logging
 from sqlalchemy import text
 from flask import session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 
 
 
@@ -131,50 +133,65 @@ rate_limit_lock = threading.Lock()
 emails_sent = 0
 start_time = time.time()
 
-def send_email_with_qr(user_email, username, attachment, filename='attachment.png', retries=3, delay=5):
+def send_email_with_qr(user_email, username, attachment, is_first_timer=False, filename='attachment.png', retries=3, delay=5):
     global emails_sent, start_time
     
     # Define your email parameters
-    smtp_server = 'smtp.gmail.com'  # Replace with your SMTP server
-    smtp_port = 587  # Replace with your SMTP port
-    smtp_user = 'tosinsleek01@gmail.com'  # Replace with your email address
-    smtp_password = 'ugqm eupj ikts asom'  # Replace with your email password
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587
+    smtp_user = 'tosinsleek01@gmail.com'
+    smtp_password = 'ugqm eupj ikts asom'
 
     # Create the email message
     msg = EmailMessage()
     msg['From'] = formataddr(('Saka Tosin', smtp_user))
     msg['To'] = user_email
-    msg['Subject'] = 'Your QR Code Attachment'
+    msg['Subject'] = 'Welcome to Our Service'  # Updated subject line
 
-    # Create the email body
-    msg_body = f"""
-    <html>
-        <body>
-            <h1>Hello {username},</h1>
-            <p>Here is your QR code:</p>
-        </body>
-    </html>
-    """
+    # Customize message based on first-timer status
+    if is_first_timer:
+        msg_body = f"""
+        <html>
+            <body>
+                <h1>Welcome {username}!</h1>
+                <p>We're thrilled to have you join our service for the first time!</p>
+                <p>Here's your QR code that you can use to access your account:</p>
+            </body>
+        </html>
+        """
+    else:
+        msg_body = f"""
+        <html>
+            <body>
+                <h1>Welcome back {username}!</h1>
+                <p>Thank you for using our service again.</p>
+                <p>Here's your updated QR code for your account:</p>
+            </body>
+        </html>
+        """
+    
     msg.set_content(msg_body, subtype='html')
 
-    # Ensure the attachment is a BytesIO object
-    if isinstance(attachment, bytes):
-        attachment_io = BytesIO(attachment)
-    else:
-        attachment_io = attachment
+    # Handle attachment only if provided
+    if attachment:
+        # Ensure the attachment is a BytesIO object
+        if isinstance(attachment, bytes):
+            attachment_io = BytesIO(attachment)
+        else:
+            attachment_io = attachment
 
-    # Determine the MIME type
-    content_type, encoding = mimetypes.guess_type(filename)
-    if content_type is None:
-        content_type = 'application/octet-stream'
-    maintype, subtype = content_type.split('/')
+        # Determine the MIME type
+        content_type, encoding = mimetypes.guess_type(filename)
+        if content_type is None:
+            content_type = 'application/octet-stream'
+        maintype, subtype = content_type.split('/')
 
-    # Create the MIME part
-    mime_part = MIMEBase(maintype, subtype)
-    mime_part.set_payload(attachment_io.read())
-    encoders.encode_base64(mime_part)
-    mime_part.add_header('Content-Disposition', 'attachment', filename=filename)
-    msg.add_attachment(mime_part)
+        # Create the MIME part
+        mime_part = MIMEBase(maintype, subtype)
+        mime_part.set_payload(attachment_io.read())
+        encoders.encode_base64(mime_part)
+        mime_part.add_header('Content-Disposition', 'attachment', filename=filename)
+        msg.add_attachment(mime_part)
 
     # Rate limiting mechanism
     with rate_limit_lock:
@@ -191,61 +208,6 @@ def send_email_with_qr(user_email, username, attachment, filename='attachment.pn
             start_time = current_time
 
     # Send the email with retries
-    for attempt in range(retries):
-        try:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_password)
-                server.send_message(msg)
-            print(f'Email sent to {user_email}')
-            with rate_limit_lock:
-                emails_sent += 1
-            return True
-        except smtplib.SMTPException as e:
-            print(f'Failed to send email to {user_email} on attempt {attempt + 1}: {e}')
-            time.sleep(delay)
-
-    print(f'Failed to send email to {user_email} after {retries} attempts')
-    return False
-
-
-def send_login_validation_email(user_email, username, code, retries=3, delay=5):
-    global emails_sent, start_time
-
-    smtp_server = 'smtp.gmail.com'
-    smtp_port = 587
-    smtp_user = 'tosinsleek01@gmail.com'
-    smtp_password = 'ugqm eupj ikts asom'
-
-    msg = EmailMessage()
-    msg['From'] = formataddr(('Saka Tosin', smtp_user))
-    msg['To'] = user_email
-    msg['Subject'] = 'Login Code'
-
-    # Create plain text and HTML body
-    msg.set_content(f"Hello {username}, here is your Login code: {code}")
-    msg.add_alternative(f"""
-    <html>
-        <body>
-            <h1>Hello {username},</h1>
-            <p>Here is your Login code: <strong>{code}</strong></p>
-        </body>
-    </html>
-    """, subtype='html')
-
-    with rate_limit_lock:
-        current_time = time.time()
-        if current_time - start_time < RATE_PERIOD:
-            if emails_sent >= RATE_LIMIT:
-                sleep_time = RATE_PERIOD - (current_time - start_time)
-                print(f"Rate limit reached, sleeping for {sleep_time} seconds")
-                time.sleep(sleep_time)
-                emails_sent = 0
-                start_time = time.time()
-        else:
-            emails_sent = 0
-            start_time = current_time
-
     for attempt in range(retries):
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -1009,7 +971,7 @@ def get_users_data():
     draw = request.form.get('draw')
     start = int(request.form.get('start'))
     length = int(request.form.get('length'))
-    search_value = request.form.get('search[value]').strip().lower()
+    search_value = request.form.get('search[value]','').strip().lower()
 
     # Base query to get session data
     base_query = User.query.with_entities(
@@ -1024,11 +986,14 @@ def get_users_data():
 
     # Apply search filter
     if search_value:
+
         base_query = base_query.filter(
-            User.username.like(f'%{search_value}%') |
-            User.first_name.like(f'%{search_value}%') |
-            User.phone_no.like(f'%{search_value}%') |
-            func.cast(User.date_of_birth, db.String).like(f'%{search_value}%')
+            or_(
+            User.username.ilike(f'%{search_value}%'),
+            User.first_name.ilike(f'%{search_value}%'),
+            User.phone_no.ilike(f'%{search_value}%'),
+            func.cast(User.date_of_birth, db.String).ilike(f'%{search_value}%')
+            )
         )
 
     # Get the total number of records before filtering
@@ -1077,7 +1042,7 @@ def get_items_data():
     draw = request.form.get('draw')
     start = int(request.form.get('start'))
     length = int(request.form.get('length'))
-    search_value = request.form.get('search[value]').strip().lower()
+    search_value = request.form.get('search[value]','').strip().lower()
 
     # Base query to get session data
     base_query = db.session.query(
@@ -1094,10 +1059,14 @@ def get_items_data():
     # Apply search filter
     if search_value:
         base_query = base_query.filter(
-            Item.name.like(f'%{search_value}%') |
-            Item.description.like(f'%{search_value}%') |
-            func.cast(Item.date_of_purchase, db.String).like(f'%{search_value}%')
+            or_(
+            Item.name.ilike(f'%{search_value}%') |
+            Item.description.ilike(f'%{search_value}%') |
+            Item.manufacturer.ilike(f'%{search_value}%') |
+            Item.custodian_unit.ilike(f'%{search_value}%') |
+            func.cast(Item.date_of_purchase, db.String).ilike(f'%{search_value}%')
         )
+    )
 
     # Get the total number of records before filtering
     total_records = db.session.query(func.count(Item.id)).scalar()
@@ -1148,7 +1117,7 @@ def get_sessions_data():
     draw = request.form.get('draw')
     start = int(request.form.get('start'))
     length = int(request.form.get('length'))
-    search_value = request.form.get('search[value]').strip().lower()
+    search_value = request.form.get('search[value]', '').strip().lower()
 
     # Base query to get session data
     base_query = db.session.query(
@@ -1162,10 +1131,12 @@ def get_sessions_data():
     # Apply search filter
     if search_value:
         base_query = base_query.filter(
-            Session.name.like(f'%{search_value}%') |
-            Session.description.like(f'%{search_value}%') |
-            func.cast(Session.date, db.String).like(f'%{search_value}%')
+    or_(
+        Session.name.ilike(f'%{search_value}%'),
+        Session.description.ilike(f'%{search_value}%'),
+        func.cast(Session.date, db.String).ilike(f'%{search_value}%')
         )
+    )   
 
     # Get the total number of records before filtering
     total_records = db.session.query(func.count(Session.id)).scalar()
@@ -1402,24 +1373,31 @@ def insert():
         home_address = request.form.get("home_address")
         role_id = request.form.get('role_id')
 
+        is_first_timer = 'is_first_timer' in request.form  # Returns True/False
+        date_joined_str = request.form.get("date_joined")
+        date_joined = datetime.strptime(date_joined_str, '%Y-%m-%d') if date_joined_str else datetime.utcnow()
+
         # Generate QR code
         qr_data = f"Username: {username}\nEmail: {email}"
         qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
         )
         qr.add_data(qr_data)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         buffer = BytesIO()
         img.save(buffer)
+        qr_code_bytes = buffer.getvalue()
+        ## New
+        qr_code_base64 = base64.b64encode(qr_code_bytes).decode('utf-8')
        
 
         my_data = User(username=username,gender=gender,phone_no=phone_no,home_address=home_address,first_name=firstname,last_name=lastname,date_of_birth=date_of_birth,
-                        email=email, qr_code=buffer.getvalue(), password=generate_password_hash(
-            password, method='sha256'))
+                        email=email, qr_code=qr_code_base64, password=generate_password_hash(
+            password, method='sha256'),is_first_timer=is_first_timer,date_joined=date_joined)
         
         # Assign role to the user
         if role_id:
@@ -1431,10 +1409,49 @@ def insert():
         try:
             db.session.add(my_data)
             db.session.commit()
+
+            # Send welcome email with QR code
+            email_sent = send_email_with_qr(
+                user_email=email,
+                username=username,
+                attachment=qr_code_bytes,
+                is_first_timer=is_first_timer
+            )
+            if email_sent:
+                return jsonify({
+                    'status':'success',
+                    'message': 'User added successfully. Welcome email with QR code sent.'
+                })
+            else:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'User added successfully, but failed to send welcome email.'
+                })
+            
+        except IntegrityError as e:
+            db.session.rollback()
+            error_message = str(e.orig)
+    
+            if 'user_email_key' in error_message:
+                return jsonify({
+                    'status': 'error', 
+                    'message': 'This email address is already registered. Please use a different email.'
+                }), 400
+            elif 'user_username_key' in error_message:
+                return jsonify({
+                    'status': 'error', 
+                    'message': 'This username is already taken. Please choose a different username.'
+                }), 400
+            else:
+                return jsonify({
+                    'status': 'error', 
+                    'message': 'A user with this information already exists.'
+                }), 400    
+
         except Exception as e:
             db.session.rollback()  # Rollback in case of an error
             print(f"Error: {e}")
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+            return jsonify({'status': 'error', 'message': 'An unexpected error occurred while creating the user. Please try again.'}), 500
 
         return jsonify({'status': 'success', 'message': 'User added successfully'})
 
@@ -1480,7 +1497,7 @@ def activity(id):
     if id:
         # Query to get session id, session name, and count of users for each session
         session_data = db.session.query(Session.id, Session.name).filter(Session.id == id).first()
-        return render_template("adduserstosession.html",user=current_user, session_data = session_data)
+        return render_template("adduserstosession.html",user=current_user, session_data = session_data,activity=True)
 
 
 
@@ -1618,7 +1635,7 @@ def userdetails(id):
     
     return render_template("userdetail.html", 
                         user=user, 
-                        qr_code_data=qr_code_data)
+                        qr_code_data=qr_code_data,userdetails=True)
 
 # Helper function to check if a string is valid base64
 def is_valid_base64(s):
@@ -1987,6 +2004,9 @@ def register():
         phone_no = request.form.get("phone_no")
         home_address = request.form.get("home_address")
 
+        is_first_timer = request.form.get('is_first_timer') == 'on'  # Returns True/False
+        date_joined = request.form.get("date_joined") or datetime.utcnow()
+
         # Generate QR code
         qr_data = f"Username: {username}\nEmail: {email}"
         qr = qrcode.QRCode(
@@ -2027,7 +2047,9 @@ def register():
                 username=username,
                 gender= gender,
                 phone_no= phone_no,
-                home_address= home_address
+                home_address= home_address,
+                is_first_timer= is_first_timer,
+                date_joined = date_joined
             )
             db.session.add(new_user)
             db.session.commit()          
@@ -2037,7 +2059,7 @@ def register():
             #qr_code_base64 = get_qr_code(username)
 
             # Send the email and log the result
-            email_sent = send_email_with_qr(new_user.email, new_user.username, qr_code_bytes)
+            email_sent = send_email_with_qr(new_user.email, new_user.username, qr_code_bytes, is_first_timer= is_first_timer)
             #email_sent = send_test_email(new_user.email)
             if email_sent:
                 flash('Registration successful! A QR code has been sent to your email.', 'success')
