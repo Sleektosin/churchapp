@@ -113,6 +113,7 @@
                                                             <th>Model</th>
                                                             <th>Custodian Unit</th>
                                                             <th>Date of Purchase</th>
+                                                            <th>Quantity</th>
                                                             <th class="amount-column">Amount</th>
                                                             <th>Action</th>
                                                         </tr>
@@ -174,6 +175,7 @@
                     { data: "model" },
                     { data: "custodian_unit" },
                     { data: "date_of_purchase" },
+                    { data: "quantity" },
                     { 
                         data: "amount",
                         className: "amount-column",
@@ -195,6 +197,7 @@
                                 ',' + "'" + data.custodian_unit + "'" +
                                 ',' + "'" + data.date_of_purchase + "'" +
                                 ',' + "'" + data.amount + "'" +
+                                ',' + "'" + data.quantity + "'" +                               
                                 ')"><i class="fas fa-edit"></i></button>' +
                                 '<a href="/item/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-wrench"></i></a>' +
                                 '<button class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' + data.Id +
@@ -250,7 +253,7 @@
 
     <script>
         // Function to open the edit modal and populate fields
-        function editRow(id, name, description, manufacturer, model, custodian_unit, date_of_purchase, amount) {
+        function editRow(id, name, description, manufacturer, model, custodian_unit, date_of_purchase, amount, quantity) {
             $('#editItemId').val(id);
             $('#editItemName').val(name);
             $('#editItemDescription').val(description);
@@ -259,6 +262,7 @@
             $('#editItemcustodianunit').val(custodian_unit);
             $('#editItemDateofpurchase').val(date_of_purchase);
             $('#editItemamount').val(amount);
+            $('#editQuantity').val(quantity);
 
             $('#editItemModal').modal('show');
         }
@@ -370,6 +374,10 @@
                         <div class="form-group">
                             <label for="editItemamount">Amount:</label>
                             <input type="text" class="form-control" id="editItemamount" name="editItemamount" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editQuantity">Quantity:</label>
+                            <input type="text" class="form-control" id="editQuantity" name="editQuantity" required>
                         </div>
                         <input type="hidden" id="editItemId" name="item_id">
                         <button type="button" class="btn btn-primary" onclick="submitEditItemForm()">Save Changes</button>

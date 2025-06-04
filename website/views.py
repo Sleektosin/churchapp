@@ -930,6 +930,7 @@ def update_item_data():
         editItemcustodianunit = request.form.get('editItemcustodianunit')
         editItemDateofpurchase = request.form.get('editItemDateofpurchase')
         editItemamount = request.form.get('editItemamount')
+        editQuantity = request.form.get('editQuantity')
   
         # Convert the date_of_birth from string to Python date object
         if editItemDateofpurchase:
@@ -951,6 +952,7 @@ def update_item_data():
             item.custodian_unit = editItemcustodianunit
             item.date_of_purchase = editItemDateofpurchase
             item.amount = editItemamount
+            item.quantity = editQuantity
             # Commit the changes to the database
             db.session.commit()
 
@@ -1054,7 +1056,8 @@ def get_items_data():
     Item.model,
     Item.custodian_unit,
     Item.date_of_purchase,
-    Item.amount
+    Item.amount,
+    Item.quantity
 )
 
     # Apply search filter
@@ -1093,6 +1096,7 @@ def get_items_data():
             'custodian_unit': item.custodian_unit,
             'date_of_purchase': item.date_of_purchase.strftime('%Y-%m-%d'),  # Format date if needed
             'amount': item.amount,
+            'quantity': item.quantity,
             'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
             'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
         })
@@ -1514,7 +1518,8 @@ def item(id):
         Item.model,
         Item.custodian_unit,
         Item.date_of_purchase,
-        Item.amount
+        Item.amount,
+        Item.quantity
     ).filter_by(id=id).first()
 
     if not product:
