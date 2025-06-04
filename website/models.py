@@ -118,6 +118,7 @@ class Item(db.Model):
     custodian_unit = db.Column(db.String(100))
     date_of_purchase = db.Column(db.Date, default=datetime.utcnow)
     amount = db.Column(db.Numeric(18, 2), nullable=True)  # Modify the datatype if necessary
+    quantity = db.Column(db.Integer, nullable=False, default=1)  # New quantity field
 
     # Relationship with Maintenance and Inventory
     maintenance = db.relationship('Maintenance', backref='item', lazy=True)
