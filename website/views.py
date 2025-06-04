@@ -991,6 +991,7 @@ def get_users_data():
             or_(
             User.username.ilike(f'%{search_value}%'),
             User.first_name.ilike(f'%{search_value}%'),
+            User.last_name.ilike(f'%{search_value}%'),
             User.phone_no.ilike(f'%{search_value}%'),
             func.cast(User.date_of_birth, db.String).ilike(f'%{search_value}%')
             )
