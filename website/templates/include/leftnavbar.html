@@ -21,9 +21,9 @@
           <!-- Sidebar navigation-->
           <nav class="sidebar-nav">
             <ul id="sidebarnav" class="pt-4">
-              <li class="sidebar-item {% if sessions or activity %}parent-active{% endif %}">
+              <li class="sidebar-item {% if sessions or activity or sessiondetails %}parent-active{% endif %}">
                 <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity %}active{% endif %}"
+                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity or sessiondetails %}active{% endif %}"
                   href="{{url_for('views.sessions')}}"
                   aria-expanded="false"
                   ><i class="mdi mdi-view-dashboard"></i

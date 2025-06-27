@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="keywords"
+      content="wrappixel, admin dashboard, html css dashboard, web dashboard, bootstrap 5 admin, bootstrap 5, css3 dashboard, bootstrap 5 dashboard, Matrix lite admin bootstrap 5 dashboard, frontend, responsive bootstrap 5 admin template, Matrix admin lite design, Matrix admin lite dashboard bootstrap 5 dashboard template"
+    />
+    <meta
+      name="description"
+      content="Matrix Admin Lite Free Version is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Sleek</title>
+    <!-- Favicon icon -->
+       <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='styles/style.min.css')}}"
+    />
+     <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="static/uploads/chemonics_fav.png"
+    />
+    <!-- Custom CSS -->
+    <link
+      href="static/lib/fullcalendar/dist/fullcalendar.min.css"
+      rel="stylesheet"
+    />
+   <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">-->
+ <!--
+      <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='lib/bootstrap/dist/css/bootstrap.min.css')}}"
+    />-->
+
+ 
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+     <style>
+        #saveQrBtn:hover {
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+        #saveQrBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+</style>
+  </head>
+
+  <body>
+    <!-- ============================================================== -->
+    <!-- Preloader - style you can find in spinners.css -->
+    <!-- ============================================================== -->
+    <div class="preloader">
+      <div class="lds-ripple">
+        <div class="lds-pos"></div>
+        <div class="lds-pos"></div>
+      </div>
+    </div>
+    <!-- ============================================================== -->
+    <!-- Main wrapper - style you can find in pages.scss -->
+    <!-- ============================================================== -->
+    <div
+      id="main-wrapper"
+      data-layout="vertical"
+      data-navbarbg="skin5"
+      data-sidebartype="full"
+      data-sidebar-position="absolute"
+      data-header-position="absolute"
+      data-boxed-layout="full"
+    >
+      <!-- ============================================================== -->
+      <!-- Topbar header - style you can find in pages.scss -->
+      <!-- ============================================================== -->
+      {% include "include/header.html" %}
+      <!-- ============================================================== -->
+      <!-- End Topbar header -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      {% include "include/leftnavbar.html" %}
+      <!-- ============================================================== -->
+      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
+      <!-- ============================================================== -->
+      <!-- ============================================================== -->
+      <!-- Page wrapper  -->
+      <!-- ============================================================== -->
+      <div class="page-wrapper">
+        <!-- ============================================================== -->
+        <!-- Breadcrumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+        <div class="page-breadcrumb">
+            <div class="row">
+                <div class="col-12 d-flex no-block align-items-center">
+                    <div class="ms-auto text-end">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <!-- <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">
+                                  Library
+                                </li>-->
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Breadcrumb and right sidebar toggle -->
+        <!-- ============================================================== -->
+    
+        <!-- ============================================================== -->
+        <!-- Container fluid  -->
+        <!-- ============================================================== -->
+        <div class="container-fluid">
+            <!-- ============================================================== -->
+            <!-- Start Page Content -->
+            <!-- ============================================================== -->
+           <div class="row">
+                  <div class="col-md-12">
+                      <!-- Session Details Card -->
+                      <div class="card">
+                          <div class="card-body">
+                              <h3 class="mb-4"><b>Session Details</b></h3>
+                              
+                              <!-- Session Information Section -->
+                              <div class="row">
+                                  <!-- Left Column - Session Info -->
+                                  <div class="col-md-6">
+                                      <div class="p-4">
+                                          <div class="form-group mb-3">
+                                              <label for="sessionName"><b>Session Name:</b></label>
+                                              <input type="text" class="form-control" readonly value="{{session.name}}" name="sessionName">
+                                          </div>
+                                          
+                                          <div class="form-group mb-3">
+                                              <label for="sessionDate"><b>Date & Time:</b></label>
+                                              <div class="input-group">
+                                                  <input type="text" class="form-control" readonly 
+                                                      value="{{ session.date.strftime('%Y-%m-%d') }} • 
+                                                      {% if session.start_time %}{{ session.start_time.strftime('%H:%M') }}{% endif %}
+                                                      {% if session.end_time %} - {{ session.end_time.strftime('%H:%M') }}{% endif %}">
+                                              </div>
+                                          </div>
+                                          
+                                          <div class="form-group mb-3">
+                                              <label for="sessionLocation"><b>Location:</b></label>
+                                              <input type="text" class="form-control" readonly value="{{session.location or 'Not specified'}}" name="sessionLocation">
+                                          </div>
+                                          
+                                          <div class="form-group mb-3">
+                                              <label for="sessionStatus"><b>Status:</b></label>
+                                              <div class="input-group">
+                                                  <input type="text" class="form-control" readonly 
+                                                      value="{{ session.status|capitalize }}"
+                                                      style="color: {% if session.status == 'active' %}#28a745{% elif session.status == 'completed' %}#6c757d{% elif session.status == 'cancelled' %}#dc3545{% else %}#007bff{% endif %}; font-weight: 500;">
+                                              </div>
+                                          </div>
+                                           <!-- Check-in Information -->
+                                          <div class="checkin-info p-3" style="background: #f8f9fa; border-radius: 8px;">
+                                              <h5 class="mb-3"><b>Check-in Window</b></h5>
+                                              <div class="d-flex justify-content-between mb-2">
+                                                  <span>Opens:</span>
+                                                  <span class="font-weight-bold">
+                                                      {{ session.checkin_opens_minutes }} minutes before start
+                                                  </span>
+                                              </div>
+                                              <div class="d-flex justify-content-between">
+                                                  <span>Closes:</span>
+                                                  <span class="font-weight-bold">
+                                                      {{ session.checkin_closes_minutes }} minutes after start
+                                                  </span>
+                                              </div>
+                                              
+                                              <!-- Self Check-in Status -->
+                                              <div class="mt-3 pt-3 border-top">
+                                                  <div class="d-flex justify-content-between align-items-center">
+                                                      <span>Self Check-in:</span>
+                                                      <span class="badge badge-{% if session.allow_self_checkin %}success{% else %}danger{% endif %}">
+                                                          {% if session.allow_self_checkin %}Enabled{% else %}Disabled{% endif %}
+                                                      </span>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  <!-- Right Column - QR Code and Check-in Info -->
+                                  <div class="col-md-6">
+                                      <div class="p-4">
+                                          <!-- QR Code Section (Center of Attention) -->
+                                            <div class="text-center mb-4">
+                                                <div class="qr-code-container p-3 bg-white rounded-lg shadow-sm" style="max-width: 320px; margin: 0 auto;">
+                                                    {% if session.qr_code %}
+                                                        {# For old sessions without stored files #}
+                                                        <img src="{{ url_for('views.generate_qr', qr_code=session.qr_code) }}"
+                                                            alt="QR Code for {{ session.name }}"
+                                                            class="img-fluid border p-2"
+                                                            style="width: 100%; height: auto;"
+                                                            onerror="this.style.display='none'; document.getElementById('qr-fallback').style.display='block'">
+                                                        
+                                                        <div id="qr-fallback" style="display: none;" class="alert alert-warning">
+                                                            Failed to generate QR code. Manual code: <strong>{{ session.qr_code }}</strong>
+                                                        </div>
+                                                        
+                                                        <p class="mt-2 text-muted">
+                                                            <i class="fas fa-info-circle me-2"></i>
+                                                            Scan this code to check in attendees
+                                                        </p>
+                                                    {% else %}
+                                                        <div class="alert alert-warning p-2">
+                                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                                            QR code not generated for this session
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <!-- Session Description -->
+                              <div class="row mt-2">
+                                  <div class="col-md-12">
+                                      <div class="p-3">
+                                          <label for="sessionDescription"><b>Description:</b></label>
+                                          <div class="description-box p-3" style="background: #f8f9fa; border-radius: 8px; min-height: 80px;">
+                                              {{ session.description or 'No description provided' }}
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <!-- Action Buttons -->
+                              <div class="row mt-4">
+                                  <div class="col-md-12 text-center">
+                                      {% if session.qr_code %}
+                                      <a href="{{ url_for('static', filename='qrcodes/qr-' + session.name|replace(' ', '-')|lower + '-' + session.id|string + '-' + session.qr_code + '.png') }}" 
+                                        download="session-{{ session.name|replace(' ', '-')|lower }}-{{ session.id }}-qr.png"
+                                        class="btn btn-primary mt-2">
+                                        <i class="fas fa-download me-2"></i> Download QR Code
+                                      </a>
+                                      {% endif %}
+                                      <button class="btn btn-outline-secondary" onclick="window.print()">
+                                          <i class="fas fa-print"></i> Print Details
+                                      </button>
+                                      <button class="btn btn-success ml-2" id="startScanBtn">
+                                          <i class="fas fa-qrcode"></i> Scan Another Code
+                                      </button>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+    
+            <!-- ============================================================== -->
+            <!-- End Page Content -->
+            <!-- ============================================================== -->
+        </div>
+        <!-- ============================================================== -->
+        <!-- End Container fluid  -->
+        <!-- ============================================================== -->
+    
+        <!-- ============================================================== -->
+        <!-- Footer -->
+        <!-- ============================================================== -->
+        <footer class="footer text-center">
+            All Rights Reserved by &copy; Sleektech. Designed and Developed by
+            <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a>
+        </footer>
+        <!-- ============================================================== -->
+        <!-- End Footer -->
+        <!-- ============================================================== -->
+    </div>
+    
+      <!-- ============================================================== -->
+      <!-- End Page wrapper  -->
+      <!-- ============================================================== -->
+    </div>
+    <!-- JavaScript for QR Code Download -->
+<script>
+document.getElementById('downloadQrCodeBtn').addEventListener('click', function() {
+    const qrCodeImg = document.querySelector('.qr-code-container img');
+    if (qrCodeImg) {
+        const link = document.createElement('a');
+        link.href = qrCodeImg.src;
+        link.download = 'session-qr-code-{{ session.id }}.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+});
+
+
+// Check if QR file exists on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const qrPath = "{{ url_for('static', filename='qrcodes/qr-' + session.name|replace(' ', '-')|lower + '-' + session.id|string + '-' + session.qr_code + '.png') }}";
+    
+    fetch(qrPath)
+        .then(response => {
+            if (!response.ok) {
+                // Show save button if file doesn't exist
+                document.getElementById('saveQrBtn').style.display = 'inline-block';
+                document.getElementById('downloadQrBtn').style.display = 'none';
+            }
+        })
+        .catch(() => {
+            document.getElementById('saveQrBtn').style.display = 'inline-block';
+            document.getElementById('downloadQrBtn').style.display = 'none';
+        });
+});
+
+// Function to save QR code
+function saveQrCode(sessionId) {
+    const btn = document.getElementById('saveQrBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating...';
+    
+    fetch(`/save-qr/${sessionId}`)
+        .then(response => {
+            if (response.ok) {
+                // Reload page after successful generation
+                window.location.reload();
+            } else {
+                alert('Failed to generate QR code');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
+        });
+}
+
+</script>
+    <!-- ============================================================== -->
+    <!-- End Wrapper -->
+    <!-- ============================================================== -->
+    <!-- ============================================================== -->
+    <!-- All Jquery -->
+    <!-- ============================================================== -->
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>-->
+    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+
+    <script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <!--<script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>-->
+    <!-- <script src="../assets/libs/jquery/dist/jquery.min.js"></script> -->
+    <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
+    <!--<script src="../dist/js/jquery.ui.touch-punch-improved.js"></script> -->
+    <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
+    <!--<script src="../dist/js/jquery-ui.min.js"></script> -->
+    <!-- Bootstrap tether Core JavaScript -->
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
+    <!--<script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script> -->
+    <!-- slimscrollbar scrollbar JavaScript -->
+    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
+    <!--<script src="../assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>-->
+    <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
+    <!--<script src="../assets/extra-libs/sparkline/sparkline.js"></script> -->
+    <!--Wave Effects -->
+    <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
+    <!--<script src="../dist/js/waves.js"></script>-->
+    <!--Menu sidebar -->
+    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+    <!--<script src="../dist/js/sidebarmenu.js"></script>-->
+    <!--Custom JavaScript -->
+    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
+    <!--<script src="../dist/js/custom.min.js"></script>-->
+    <!-- this page js -->
+    <script src="{{url_for('static',filename='lib/moment/min/moment.min.js')}}"></script>
+    <!--<script src="../assets/libs/moment/min/moment.min.js"></script>-->
+    <script src="{{url_for('static',filename='lib/fullcalendar/dist/fullcalendar.min.js')}}"></script>
+    <!--<script src="../assets/libs/fullcalendar/dist/fullcalendar.min.js"></script>-->
+    <script src="{{url_for('static',filename='javascript/pages/calendar/cal-init.js')}}"></script>
+
+    <!--<script src="../dist/js/pages/calendar/cal-init.js"></script>-->
+    
+</script>
+<script>
+  document.getElementById('downloadQrCodeBtn')?.addEventListener('click', () => {
+      const qrImg = document.querySelector('.form-group img');
+      if (qrImg) {
+          try {
+              // Get user's first name and last name from the form inputs
+              const firstName = document.querySelector('input[name="firstname"]').value;
+              const lastName = document.querySelector('input[name="lastname"]').value;
+              
+              // Create filename (sanitize to remove special characters)
+              const sanitize = (str) => str.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+              const filename = `${sanitize(firstName)}_${sanitize(lastName)}_qrcode.png`;
+              
+              const link = document.createElement('a');
+              link.href = qrImg.src;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          } catch (error) {
+              console.error('Download failed:', error);
+              alert('Failed to download QR code. Please try again.');
+          }
+      }
+  });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  </body>
+</html>

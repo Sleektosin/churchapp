@@ -7,7 +7,8 @@ from sqlalchemy import Column, Integer, String, Table
 from datetime import datetime
 import base64
 from sqlalchemy import DateTime
-from datetime import datetime, timezone
+from datetime import datetime, timezone,date, time, timedelta
+import uuid
 #from sqlalchemy.orm import declarative_base
 
 #Base = declarative_base()
@@ -35,7 +36,7 @@ user_roles = db.Table('user_roles',
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(150), unique=True, nullable= False)
+    email = db.Column(db.String(150), unique=True, nullable= True)
     password = db.Column(db.String(255))
     username = db.Column(db.String(150), unique=True, nullable = False)
     first_name = db.Column(db.String(150))
@@ -51,6 +52,7 @@ class User(db.Model, UserMixin):
     date_joined = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     # Define the relationship with roles
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
+    attendances = db.relationship('Attendance', back_populates='user')
 
 
     def __init__(self, username, email, password, qr_code, first_name, last_name, 
@@ -89,13 +91,144 @@ class User(db.Model, UserMixin):
 
 # Define the Session model
 class Session(db.Model):
+    """
+    Enhanced Session model for scalable attendance tracking
+    """
+    # Basic session information
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    date = db.Column(db.Date, nullable=False)
+
+    # Scheduling fields
+    date = db.Column(db.Date, nullable=False)   # When session happens
+    start_time = db.Column(db.Time)             # Session start time
+    end_time = db.Column(db.Time)               # Session end time
+    location = db.Column(db.String(200))        # Where session happens 
+
+    # Capacity management
+    max_capacity = db.Column(db.Integer)        # Maximum attendees allowed
+
+    # QR Code and self-service fields
+    qr_code = db.Column(db.String(255), unique=True, nullable=False)  # Unique QR identifier
+    qr_expires_at = db.Column(db.DateTime)                       # Optional QR expiration
+    allow_self_checkin = db.Column(db.Boolean, default=True)     # Enable/disable self check-in
+
+    # Check-in window settings
+    checkin_opens_minutes = db.Column(db.Integer, default=30)    # Minutes before start time
+    checkin_closes_minutes = db.Column(db.Integer, default=15)   # Minutes after start time
+    
+    # Session lifecycle management
+    status = db.Column(db.String(20), default='scheduled')       # scheduled, active, completed, cancelled
+    
+    # Audit trail
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) # When record was created
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
     # Define the many-to-many relationship with users
-    users = db.relationship('User', secondary='session_users', backref=db.backref('sessions', lazy='dynamic'))        
+    users = db.relationship('User', secondary='session_users', backref=db.backref('sessions', lazy='dynamic'))   
+    attendances = db.relationship('Attendance', backref='session_ref', lazy='dynamic', cascade='all, delete-orphan')    
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Auto-generate QR code if not provided
+        if not self.qr_code:
+            self.qr_code = str(uuid.uuid4()) 
+
+    @property
+    def qr_code_url(self):
+        """Generate the full URL for QR code scanning"""
+        return f"https://churchapp-8ael.onrender.com/checkin/{self.qr_code}"  
+
+
+    def is_checkin_open(self):
+        """Check if check-in window is currently open"""
+        if not self.start_time or not self.date:
+            return False
+            
+        session_datetime = datetime.combine(self.date, self.start_time)
+        now = datetime.now()
+        
+        checkin_opens = session_datetime - timedelta(minutes=self.checkin_opens_minutes)
+        checkin_closes = session_datetime + timedelta(minutes=self.checkin_closes_minutes)
+        
+        return checkin_opens <= now <= checkin_closes 
+
+
+    def get_attendance_count(self):
+        """Get current number of attendees"""
+        return self.attendances.filter_by(status='present').count()     
+    
+
+    def is_at_capacity(self):
+        if not self.max_capacity:
+            return False
+        return self.get_attendance_count() >= self.max_capacity
+
+
+    def __repr__(self):
+        return f'<Session {self.name} - {self.date}>'  
+
+
+
+class Attendance(db.Model):
+    """
+    Enhanced Attendance model for detailed tracking
+    """
+    __tablename__ = 'attendances'
+    
+    # Primary keys and relationships
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey('session.id'), nullable=False)
+    
+    # Attendance status and method
+    status = db.Column(db.String(20), default='present')          # present, absent, late, left_early
+    check_in_method = db.Column(db.String(30), default='qr_scan') # qr_scan, admin_add, manual, self_checkin
+    
+    # Timing information
+    check_in_time = db.Column(db.DateTime, default=datetime.utcnow)  # When user checked in
+    check_out_time = db.Column(db.DateTime)                       # When user checked out (optional)
+    
+    # Security and tracking
+    ip_address = db.Column(db.String(45))                         # IP address for web check-ins
+    user_agent = db.Column(db.String(500))                        # Browser/device info
+
+    
+    # Additional information
+    notes = db.Column(db.Text)                                    # Admin notes about attendance
+    verified_by_admin = db.Column(db.Boolean, default=False)      # Manual verification flag
+    
+    # Audit trail
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # When attendance record was created
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref='attendances_ref')
+    session = db.relationship('Session', backref='attendances_ref')
+    
+    # Unique constraint - one attendance record per user per session
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'session_id', name='unique_user_session_attendance'),
+    )
+    
+    def get_duration_minutes(self):
+        """Calculate attendance duration in minutes"""
+        if not self.check_out_time:
+            return None
+        delta = self.check_out_time - self.check_in_time2
+        return int(delta.total_seconds() / 60)
+    
+    def was_on_time(self):
+        """Check if user checked in on time"""
+        if not self.session.start_time or not self.session.date:
+            return None
+        
+        session_start = datetime.combine(self.session.date, self.session.start_time)
+        return self.check_in_time <= session_start
+    
+    def __repr__(self):
+        return f'<Attendance {self.user.name} - {self.session.name}>'          
 
 
 # Define the association table for the many-to-many relationship

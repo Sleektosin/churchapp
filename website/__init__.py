@@ -140,7 +140,7 @@ def create_app():
     'pool_pre_ping': True,
     'pool_recycle': 3600,
     'pool_timeout': 30,
-    'max_overflow': 30,
+    'max_overflow': 50,
     'pool_size': 20
 }
     # app.config['SQLALCHEMY_BINDS'] = {
@@ -176,6 +176,13 @@ def create_app():
     db.init_app(app)
     api.init_app(app)
     migrate = Migrate(app, db)
+
+    # Add teardown handler
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db.session.remove()
+        engine = db.get_engine(app)
+        engine.dispose()  # Cleanup connection pool
 
     from .views import views
     from .auth import auth

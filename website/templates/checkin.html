@@ -1,0 +1,194 @@
+{% include "include/header.html" %} 
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-user-check me-2"></i>
+                Check-In to: {{ session.name }}
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">
+                                <i class="fas fa-qrcode me-2"></i>
+                                Scan Your ID
+                            </h4>
+                            
+                            <div id="scanner-container" class="my-3">
+                                <video id="scanner-video" width="100%" style="border: 1px solid #dee2e6;"></video>
+                            </div>
+                            
+                            <p class="text-muted small">
+                                Position your QR code within the frame
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Session Information
+                            </h4>
+                            
+                            <div class="session-details">
+                                <p><strong>Date:</strong> {{ session.date.strftime('%b %d, %Y') }}</p>
+                                <p><strong>Time:</strong> 
+                                    {% if session.start_time %}
+                                        {{ session.start_time.strftime('%I:%M %p') }}
+                                        {% if session.end_time %} 
+                                            - {{ session.end_time.strftime('%I:%M %p') }}
+                                        {% endif %}
+                                    {% endif %}
+                                </p>
+                                <p><strong>Location:</strong> {{ session.location or 'Not specified' }}</p>
+                                <hr>
+                                <p class="text-success">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Check-in open until: 
+                                    {{ (datetime.combine(session.date, session.start_time) + timedelta(minutes=session.checkin_closes_minutes)|datetimeformat('%I:%M %p') }}
+                                </p>
+                            </div>
+                            
+                            <hr>
+                            
+                            <form id="checkinForm" method="POST" class="mt-3">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="form-group mb-3">
+                                    <label for="userIdentifier" class="form-label">
+                                        <i class="fas fa-id-card me-2"></i>
+                                        Enter Your ID or Scan QR
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="userIdentifier"
+                                           name="user_qr"
+                                           placeholder="Scan QR code or enter ID"
+                                           required
+                                           autofocus>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Check In
+                                    </button>
+                                    
+                                    <a href="{{ url_for('views.session_details', id=session.id) }}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Back to Session
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Scanner Implementation -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById("scanner-video");
+    const userInput = document.getElementById("userIdentifier");
+    let scannerActive = true;
+    
+    // Start scanner when page loads
+    function startScanner() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+                scanQR();
+            })
+            .catch(function(err) {
+                console.error("Camera error: ", err);
+                document.getElementById("scanner-container").innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-video-slash me-2"></i>
+                        Camera access denied. Please enter ID manually.
+                    </div>
+                `;
+            });
+    }
+    
+    // QR Scanning function
+    function scanQR() {
+        if (!scannerActive) return;
+        
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (code) {
+                userInput.value = code.data;
+                document.getElementById("checkinForm").submit();
+            }
+        }
+        
+        requestAnimationFrame(scanQR);
+    }
+    
+    // Start the scanner
+    startScanner();
+    
+    // Clean up when leaving page
+    window.addEventListener('beforeunload', function() {
+        scannerActive = false;
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+</script>
+
+<style>
+.session-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#scanner-video {
+    border-radius: 8px;
+    background: #000;
+}
+
+#scanner-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+#scanner-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid rgba(0, 150, 255, 0.5);
+    border-radius: 8px;
+    pointer-events: none;
+}
+</style>
+{% endblock %}

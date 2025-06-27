@@ -13,13 +13,13 @@ from datetime import timedelta
 from unicodedata import category
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 import requests
-from .models import User, Session,session_users, Role,Item, Maintenance 
+from .models import User, Session,session_users, Role,Item, Maintenance, Attendance 
 from website import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_login import LoginManager
 import os
-from flask import send_from_directory
+from flask import send_from_directory, send_file,abort
 from sqlalchemy.ext.automap import automap_base
 from . import create_app, mail, api
 from flask_paginate import Pagination, get_page_args
@@ -54,6 +54,7 @@ from sqlalchemy import text
 from flask import session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
+import uuid
 
 
 
@@ -639,15 +640,21 @@ def get_sessions_users(session_id):
         User.id,
         User.username,
         User.email,
+        User.first_name,
+        User.last_name,
         session_users.c.date.label('added_date')
         ).join(session_users).filter(session_users.c.session_id == session_id)
 
     # Apply search filter
     if search_value:
         base_query = base_query.filter(
+            or_(
             (User.username.ilike(f'%{search_value}%')) | 
             (User.email.ilike(f'%{search_value}%')) |
+            (User.first_name.ilike(f'%{search_value}%')) |
+            (User.last_name.ilike(f'%{search_value}%')) |
             func.cast(session_users.c.date, db.String).like(f'%{search_value}%')
+            )
         )
 
     # Get the total number of records before filtering
@@ -657,19 +664,19 @@ def get_sessions_users(session_id):
     paginated_query = base_query.offset(start).limit(length)
 
     # Fetch filtered data
-    items = paginated_query.all()
+    users = paginated_query.all()
 
     # Prepare data for DataTables response
     data = []
     nigeria_tz = pytz.timezone('Africa/Lagos')
-    for item in items:
-        if item.added_date:
+    for user in users:
+        if user.added_date:
             # Check if added_date is already a datetime object
-            if isinstance(item.added_date, datetime):
-                added_date_utc = pytz.utc.localize(item.added_date)
+            if isinstance(user.added_date, datetime):
+                added_date_utc = pytz.utc.localize(user.added_date)
             else:
                 # If added_date is a date object, convert it to a datetime object
-                added_date_datetime = datetime.combine(item.added_date, time.min)
+                added_date_datetime = datetime.combine(user.added_date, time.min)
                 added_date_utc = pytz.utc.localize(added_date_datetime)
         
             # Convert the UTC datetime to Nigeria time zone
@@ -680,9 +687,11 @@ def get_sessions_users(session_id):
         else:
             added_date_str = None
         data.append({
-            'Id': item.id,
-            'username': item.username,
-            'email': item.email,
+            'Id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
             'added_date': added_date_str,
             'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
             'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
@@ -691,7 +700,7 @@ def get_sessions_users(session_id):
     response = {
         'draw': draw,
         'recordsTotal': total_records,
-        'recordsFiltered': total_records if not search_value else len(items),
+        'recordsFiltered': total_records if not search_value else len(users),
         'data': data,
     }
 
@@ -1315,16 +1324,229 @@ def get_sessions_summary_data():
 @login_required
 def addsession():
     if request.method == 'POST':
-        activityname = request.form.get("activityname")
-        activitydescription = request.form.get("activitydescription")
-        activitydate = request.form.get("activitydate")
-        date_object = datetime.strptime(activitydate, '%Y-%m-%d').date()
-        new_activity = Session(name = activityname, description = activitydescription, date = date_object)
-        db.session.add(new_activity)
-        db.session.commit()
-        flash("New Activity Added Successfully")
-        return redirect(url_for('views.sessions'))
+        try:
+            # Basic session information
+            name = request.form.get("activityname")
+            description = request.form.get("activitydescription")
+            
+            # Scheduling fields
+            date_str = request.form.get("activitydate")
+            date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
+            start_time_str = request.form.get("starttime")
+            start_time = datetime.strptime(start_time_str, '%H:%M').time() if start_time_str else None
+            end_time_str = request.form.get("endtime")
+            end_time = datetime.strptime(end_time_str, '%H:%M').time() if end_time_str else None
+            location = request.form.get("location")
+            
+            # Capacity management
+            max_capacity = request.form.get("maxcapacity")
+            max_capacity = int(max_capacity) if max_capacity else None
+            
+            # Check-in window settings
+            checkin_opens_minutes = int(request.form.get("checkinopens") or 30)
+            checkin_closes_minutes = int(request.form.get("checkincloses") or 15)
+            
+            # Session settings
+            allow_self_checkin = request.form.get("allowselfcheckin") == 'on'
+            status = request.form.get("status", "scheduled")
+            
+            # Generate QR code data
+            qr_code = str(uuid.uuid4())
+            checkin_url = url_for('views.scan_session', qr_code=qr_code, _external=True)
+
+            # Create new session object first to get ID
+            new_session = Session(
+                name=name,
+                description=description,
+                date=date,
+                start_time=start_time,
+                end_time=end_time,
+                location=location,
+                max_capacity=max_capacity,
+                checkin_opens_minutes=checkin_opens_minutes,
+                checkin_closes_minutes=checkin_closes_minutes,
+                allow_self_checkin=allow_self_checkin,
+                status=status,
+                qr_code=qr_code,
+                qr_expires_at=None
+            )
+            
+            db.session.add(new_session)
+            db.session.flush()  # Assigns ID without committing
+            
+            # Now create filename with the new session's ID
+            safe_name = "".join(c for c in name.lower() 
+                              if c.isalnum() or c in (' ', '-')).strip().replace(' ', '-')
+            filename = f"qr-{safe_name}-{new_session.id}-{qr_code}.png"
+            
+            # Generate QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(checkin_url)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save QR code
+            qr_dir = os.path.join(current_app.root_path, 'static', 'qrcodes')
+            os.makedirs(qr_dir, exist_ok=True)
+            qr_img.save(os.path.join(qr_dir, filename))
+            
+            # Final commit
+            db.session.commit()
+            
+            flash("New session added successfully!", "success")
+            return redirect(url_for('views.sessions', id=new_session.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error creating session: {str(e)}")
+            flash("Failed to create session. Please try again.", "error")
+            return redirect(url_for('views.sessions'))
+        
+
+
+@views.route('/save-qr/<int:session_id>')
+@login_required
+def save_qr(session_id):
+    session = Session.query.get_or_404(session_id)
     
+    try:
+        # Create filename-safe version of session name
+        safe_name = "".join(c for c in session.name.lower() 
+                          if c.isalnum() or c in (' ', '-')).strip().replace(' ', '-')
+        filename = f"qr-{safe_name}-{session.id}-{session.qr_code}.png"
+        qr_path = os.path.join(current_app.static_folder, 'qrcodes', filename)
+        
+        # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url_for('views.scan_session', qr_code=session.qr_code, _external=True))
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(qr_path), exist_ok=True)
+        
+        # Save image
+        img.save(qr_path)
+        
+        # Set proper permissions
+        os.chmod(qr_path, 0o644)
+        
+        return jsonify({'success': True, 'message': 'QR code generated successfully'})
+    
+    except Exception as e:
+        current_app.logger.error(f"Failed to generate QR for session {session_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+
+@views.route('/generate-qr/<qr_code>')
+def generate_qr(qr_code):
+    try:
+        # Create QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url_for('views.scan_session', qr_code=qr_code, _external=True))
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Save to memory buffer
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+        
+        # Check if download was requested
+        if request.args.get('download'):
+            return send_file(
+                buffer,
+                mimetype='image/png',
+                as_attachment=True,
+                download_name=f"session-{qr_code}.png"
+            )
+        return send_file(buffer, mimetype='image/png')
+        
+    except Exception as e:
+        current_app.logger.error(f"Failed to generate QR code {qr_code}: {str(e)}")
+        abort(404, description="QR code generation failed")         
+    
+
+
+# @views.route('/regenerate-qrcodes')
+# @login_required
+# def regenerate_qrcodes():
+#     try:
+#         batch_size = 50  # Process 50 sessions at a time
+#         qr_dir = os.path.join(current_app.root_path, 'static', 'qrcodes')
+#         os.makedirs(qr_dir, exist_ok=True)
+        
+#         # Get total count first
+#         total_sessions = Session.query.filter(Session.qr_code.isnot(None)).count()
+#         processed = 0
+        
+#         for offset in range(0, total_sessions, batch_size):
+#             # Get batch of sessions
+#             sessions = Session.query.filter(Session.qr_code.isnot(None)) \
+#                                   .offset(offset).limit(batch_size).all()
+            
+#             for session in sessions:
+#                 try:
+#                     # Generate the proper check-in URL
+#                     checkin_url = url_for('views.scan_session', 
+#                                         qr_code=session.qr_code, 
+#                                         _external=True)
+                    
+#                     # Create and save QR code
+#                     qr = qrcode.QRCode(
+#                         version=1,
+#                         error_correction=qrcode.constants.ERROR_CORRECT_L,
+#                         box_size=10,
+#                         border=4,
+#                     )
+#                     qr.add_data(checkin_url)
+#                     qr.make(fit=True)
+#                     qr_img = qr.make_image(fill_color="black", back_color="white")
+#                     qr_img.save(os.path.join(qr_dir, f"{session.qr_code}.png"))
+                    
+#                     processed += 1
+                    
+#                 except Exception as e:
+#                     current_app.logger.error(f"Failed session {session.id}: {str(e)}")
+#                     db.session.rollback()
+#                     continue
+            
+#             # Commit after each batch
+#             db.session.commit()
+#             db.session.close()  # Explicitly close the session
+            
+#             # Progress feedback
+#             current_app.logger.info(f"Processed {processed}/{total_sessions} sessions")
+#             time.sleep(0.5)  # Brief pause between batches
+        
+#         flash(f"Successfully regenerated QR codes for {processed} sessions", "success")
+    
+#     except Exception as e:
+#         db.session.rollback()
+#         current_app.logger.error(f"QR regeneration failed: {str(e)}")
+#         flash(f"Error regenerating QR codes: {str(e)}", "error")
+#     finally:
+#         db.session.close()
+    
+#     return redirect(url_for('views.sessions'))
+
+
 
 
 @views.route('/additem', methods=['POST'])
@@ -1642,6 +1864,130 @@ def userdetails(id):
     return render_template("userdetail.html", 
                         user=user, 
                         qr_code_data=qr_code_data,userdetails=True)
+
+
+
+
+
+@views.route('/scan-session/<qr_code>')
+def scan_session(qr_code):
+    session = Session.query.filter_by(qr_code=qr_code).first()
+    
+    if not session:
+        flash('Invalid session code', 'error')
+        return redirect(url_for('views.sessions'))
+    
+    # Check if check-in window is active
+    now = datetime.now()
+    start_time = datetime.combine(session.date, session.start_time) if session.start_time else None
+    checkin_active = False
+    
+    if start_time:
+        opens = start_time - timedelta(minutes=session.checkin_opens_minutes)
+        closes = start_time + timedelta(minutes=session.checkin_closes_minutes)
+        checkin_active = opens <= now <= closes
+    
+    if not checkin_active:
+        window_msg = f"Check-in available from {opens.strftime('%Y-%m-%d %H:%M')} to {closes.strftime('%Y-%m-%d %H:%M')}" if start_time else "No check-in window set"
+        flash(f'Check-in is currently closed. {window_msg}', 'warning')
+        return redirect(url_for('views.session_details', id=session.id))
+    
+    # Store session ID in session for the check-in process
+    session['checkin_session_id'] = session.id
+    return redirect(url_for('views.user_checkin'))
+
+
+
+@views.route('/user-checkin', methods=['GET', 'POST'])
+@login_required
+def user_checkin():
+    session_id = session.get('checkin_session_id')
+    if not session_id:
+        flash('No session selected for check-in', 'error')
+        return redirect(url_for('views.sessions'))
+    
+    current_session = Session.query.get(session_id)
+    
+    if request.method == 'POST':
+        user_qr = request.form.get('user_qr')
+        user = User.query.filter_by(qr_code=user_qr).first()
+        
+        if not user:
+            flash('Invalid user QR code', 'error')
+            return render_template('checkin.html', session=current_session)
+        
+        # Check if user is already checked in
+        existing = Attendance.query.filter_by(
+            session_id=session_id,
+            user_id=user.id
+        ).first()
+        
+        if existing:
+            flash(f'{user.username} is already checked in', 'warning')
+        else:
+            # Create new attendance record
+            new_attendance = Attendance(
+                session_id=session_id,
+                user_id=user.id,
+                check_in_time=datetime.now()
+            )
+            db.session.add(new_attendance)
+            db.session.commit()
+            flash(f'Successfully checked in {user.username}', 'success')
+        
+        return redirect(url_for('views.sessiondetails', id=session_id))
+    
+    return render_template('checkin.html', session=current_session)
+
+
+
+
+
+@views.route('/sessiondetails/<int:id>')
+@login_required
+def sessiondetails(id):
+    session = Session.query.get(id)
+    if not session:
+        flash("Session not found", "error")
+        return redirect(url_for('views.sessions'))
+    
+    qr_code_base64 = None
+    if session.qr_code:
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(session.qr_code)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    # Calculate check-in window times
+    checkin_window = {}
+    if session.start_time:
+        try:
+            start_datetime = datetime.combine(session.date, session.start_time)
+            opens_time = start_datetime - timedelta(minutes=session.checkin_opens_minutes)
+            closes_time = start_datetime + timedelta(minutes=session.checkin_closes_minutes)
+            
+            checkin_window = {
+                'opens': opens_time,
+                'closes': closes_time,
+                'is_active': datetime.now() >= opens_time and datetime.now() <= closes_time,
+                'opens_relative': f"{session.checkin_opens_minutes} mins before",
+                'closes_relative': f"{session.checkin_closes_minutes} mins after"
+            }
+        except Exception as e:
+            print(f"Error calculating check-in window: {e}")
+    
+    return render_template("sessiondetail.html", 
+                         session=session,
+                         user = current_user,
+                         qr_code_base64=qr_code_base64,  # Pass the UUID directly
+                         checkin_window=checkin_window,
+                         current_time=datetime.now(),sessiondetails = True)
+
+
 
 # Helper function to check if a string is valid base64
 def is_valid_base64(s):
