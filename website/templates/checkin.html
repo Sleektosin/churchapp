@@ -1,4 +1,219 @@
-{% include "include/header.html" %} 
+<style>
+/* ===== BASE STYLING ===== */
+:root {
+  --primary: #4361ee;
+  --secondary: #3f37c9;
+  --accent: #4cc9f0;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --dark: #1e293b;
+  --light: #f8fafc;
+}
+
+body {
+  background: radial-gradient(circle at center, #f0f9ff 0%, #e0f2fe 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+/* ===== CENTERED CONTAINER ===== */
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+/* ===== MAIN CARD ===== */
+.card {
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(67, 97, 238, 0.2);
+  width: 100%;
+  max-width: 1100px;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-header h3 {
+  font-weight: 700;
+  font-size: 1.75rem;
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  transform: rotate(30deg);
+}
+
+/* ===== SCANNER SECTION ===== */
+#scanner-container {
+  position: relative;
+  margin: 1.5rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  background: var(--dark);
+  aspect-ratio: 1/1;
+  max-height: 320px;
+}
+
+#scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 70%;
+  border: 3px dashed rgba(76, 201, 240, 0.7);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* ===== SESSION INFO ===== */
+.session-details {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border-left: 4px solid var(--accent);
+}
+
+.session-details p {
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-details strong {
+  color: var(--dark);
+  min-width: 80px;
+  display: inline-block;
+}
+
+/* ===== FORM STYLING ===== */
+#checkinForm {
+  margin-top: 1.5rem;
+}
+
+.form-control {
+  padding: 0.875rem 1.25rem;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.form-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.3);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  border: none;
+  box-shadow: 0 4px 6px rgba(67, 97, 238, 0.2);
+}
+
+.btn-primary:hover {
+  background: var(--secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(67, 97, 238, 0.3);
+}
+
+.btn-outline-secondary {
+  border: 2px solid #cbd5e1;
+  color: #64748b;
+}
+
+.btn-outline-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: var(--dark);
+}
+
+/* ===== ICONS ===== */
+.fas {
+  font-size: 1.1em;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.card-header i {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .container {
+    margin: 1rem auto;
+    padding: 0 1rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1.4rem;
+  }
+  
+  .col-md-6 {
+    margin-bottom: 1.5rem;
+  }
+  
+  #scanner-container {
+    max-height: 280px;
+  }
+}
+</style>
+
+<!-- Add this inside your scanner container div -->
+
 
 {% block content %}
 <div class="container mt-4">
@@ -19,7 +234,7 @@
                                 Scan Your ID
                             </h4>
                             
-                            <div id="scanner-container" class="my-3">
+                            <div id="scanner-guide" class="my-3">
                                 <video id="scanner-video" width="100%" style="border: 1px solid #dee2e6;"></video>
                             </div>
                             
@@ -53,7 +268,7 @@
                                 <p class="text-success">
                                     <i class="fas fa-clock me-2"></i>
                                     Check-in open until: 
-                                    {{ (datetime.combine(session.date, session.start_time) + timedelta(minutes=session.checkin_closes_minutes)|datetimeformat('%I:%M %p') }}
+                                    {{ (datetime.combine(session.date, session.start_time) + timedelta(minutes=session.checkin_closes_minutes)).strftime('%I:%M %p') }}
                                 </p>
                             </div>
                             
@@ -82,7 +297,7 @@
                                         Check In
                                     </button>
                                     
-                                    <a href="{{ url_for('views.session_details', id=session.id) }}" 
+                                    <a href="{{ url_for('views.sessiondetails', id=session.id) }}" 
                                        class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left me-2"></i>
                                         Back to Session

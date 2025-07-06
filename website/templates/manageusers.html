@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users Management</title>
@@ -160,6 +161,9 @@
                 ajax: {
                     url: "/get_users_data",
                     type: "POST",
+                     "beforeSend": function(xhr) {
+                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                        }
                 },
                 columns: [
                     { data: "Id" },

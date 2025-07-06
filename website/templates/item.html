@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assets Management</title>
@@ -166,6 +167,9 @@
                 ajax: {
                     url: "/get_items_data",
                     type: "POST",
+                    "beforeSend": function(xhr) {
+                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                        }
                 },
                 columns: [
                     { data: "Id" },
@@ -297,6 +301,7 @@
                 </div>
                 <div class="modal-body">
                     <form action="{{url_for('views.additem')}}" id="addActivityForm" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="form-group">
                             <label for="addItemName">Item Name:</label>
                             <input type="text" class="form-control" id="addItemName" name="addItemName" required>

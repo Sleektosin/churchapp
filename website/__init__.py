@@ -22,6 +22,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask_restx import Api
 from .config import Config
+from flask_wtf.csrf import CSRFProtect
 
 
 mail = Mail()
@@ -126,7 +127,7 @@ engine2 = create_engine(database_con, echo=True)
 
 
 # ------------------------------------
-
+csrf = CSRFProtect()
 
 def create_app():   
     app = Flask(__name__)
@@ -143,6 +144,7 @@ def create_app():
     'max_overflow': 50,
     'pool_size': 20
 }
+    csrf.init_app(app) # Initialize CSRF protection
     # app.config['SQLALCHEMY_BINDS'] = {
     #     'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
     # Flask-Mail configuration for Gmail

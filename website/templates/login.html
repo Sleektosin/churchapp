@@ -112,6 +112,7 @@
             </p>
             {% endif %} {% endfor %} {% endif%} {% endwith %}
             <form method="post" action="">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <div class="form-row">
                 <div class="col-lg-7">
                   <input

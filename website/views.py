@@ -21,7 +21,7 @@ from flask_login import LoginManager
 import os
 from flask import send_from_directory, send_file,abort
 from sqlalchemy.ext.automap import automap_base
-from . import create_app, mail, api
+from . import create_app, mail, api,csrf
 from flask_paginate import Pagination, get_page_args
 from flask_sqlalchemy import SQLAlchemy
 from json2html import json2html
@@ -55,6 +55,8 @@ from flask import session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 import uuid
+from flask import session as flask_session
+from flask_wtf.csrf import CSRFProtect
 
 
 
@@ -304,6 +306,7 @@ def barcodelogin():
 
 
 @views.route('/addUsersToSession/<id>',methods=['GET', 'POST'])  
+@csrf.exempt
 def addUsersToSession_handler(id):
     if id:
         returned_qr_code = request.form.get('qr_code')
@@ -402,9 +405,15 @@ from sqlalchemy.exc import OperationalError
 
 @views.route('/login', methods=['GET', 'POST'])
 def login():
+    # If already logged in, redirect appropriately
+    if current_user.is_authenticated:
+        if 'next' in session and session['next'] == url_for('views.user_checkin'):
+            return handle_checkin_redirect()
+        return redirect(url_for('views.sessions'))
+
     if request.method == 'GET':
         return render_template("login.html")
-    
+
     # POST handling
     email = request.form.get("email")
     password = request.form.get("password")        
@@ -413,29 +422,46 @@ def login():
         user = User.query.filter_by(email=email).first()
         
         if not user:
-            flash('Email does not exist.', category='error')
+            flash('Invalid credentials', category='error')  # Generic message for security
             return render_template("login.html", user=current_user)
         
         if check_password_hash(user.password, password):
-            # get random code for user's authentication
+            # Generate and store validation code
             code = generate_code()
             session['pending_user'] = user.username
             session['validation_code'] = code
-            #send_login_validation_email(user.email,user.username, code)  # Send code to user's email
-            flash('Logged in successfully!', category='success')
+            
+            # Send email (uncomment when ready)
+            # send_login_validation_email(user.email, user.username, code)
+            
+            # Login user immediately or after validation based on your flow
             login_user(user, remember=True)
+            
+            # Handle check-in redirect if coming from QR scan
+            if 'next' in session and session['next'] == url_for('views.user_checkin'):
+                return handle_checkin_redirect()
+                
+            flash('Logged in successfully!', category='success')
             return redirect(url_for('views.sessions'))
-            # return redirect(url_for('views.prevalidate'))
+            
         else:
-            # Never reveal whether password was wrong vs email doesn't exist
             flash('Invalid credentials', category='error')
             return render_template("login.html", user=current_user)
             
     except OperationalError as e:
-        # Handle database connection error
         flash('Database connection error. Please try again later.', category='error')
         return render_template("login.html", user=current_user)
 
+def handle_checkin_redirect():
+    """Helper function to handle check-in session redirects"""
+    session_id = session.get('checkin_session_id')
+    if session_id and Session.query.get(session_id):
+        # Clear the redirect flags
+        session.pop('next', None)
+        return redirect(url_for('views.user_checkin'))
+    # Fallback if session is invalid
+    flash('Check-in session expired', category='warning')
+    return redirect(url_for('views.sessions'))
 
 def get_gender_count_by_date():
     query = db.session.query(
@@ -555,6 +581,7 @@ def datatable():
 
 # Route to delete user
 @views.route('/userdelete/<id>/', methods=['POST'])
+@csrf.exempt
 def userdelete(id):
     my_data = User.query.get(id)
     if my_data:
@@ -567,6 +594,7 @@ def userdelete(id):
 
 # Route to delete session
 @views.route('/sessiondelete/<id>/', methods=['POST'])
+@csrf.exempt
 def sessiondelete(id):
     my_data = Session.query.get(id)
     if my_data:
@@ -581,6 +609,7 @@ def sessiondelete(id):
 
 # Route to delete session
 @views.route('/itemdelete/<id>/', methods=['POST'])
+@csrf.exempt
 def itemdelete(id):
     my_data = Item.query.get(id)
     if my_data:
@@ -609,6 +638,7 @@ def maintenancdelete(id):
 
 # Route to delete user from session
 @views.route('/remove_user_from_session/<userId>/<sessionId>', methods=['POST'])
+@csrf.exempt
 def remove_user_from_session(userId, sessionId):
     user = User.query.get(userId)
     session = Session.query.get(sessionId)
@@ -708,6 +738,7 @@ def get_sessions_users(session_id):
 
 
 @views.route('/get_roles', methods=['GET'])
+@csrf.exempt
 def get_roles():
     user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
 
@@ -732,6 +763,7 @@ def get_roles():
 
 
 @views.route('/get_roless', methods=['GET'])
+@csrf.exempt
 def get_roless():
     user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
 
@@ -757,6 +789,7 @@ def get_roless():
 from datetime import datetime  # Import datetime module
 
 @views.route('/update_user_data', methods=['POST'])
+@csrf.exempt
 def update_user_data():
     try:
         # Get form data from the AJAX request
@@ -928,6 +961,7 @@ def update_session_data():
 
 
 @views.route('/update_item_data', methods=['POST'])
+@csrf.exempt
 def update_item_data():
     try:
         # Get form data from the AJAX request
@@ -1049,6 +1083,7 @@ def get_users_data():
 
 
 @views.route('/get_items_data', methods=['POST','GET'])
+@csrf.exempt
 def get_items_data():
     # Define parameters for server-side processing
     draw = request.form.get('draw')
@@ -1321,6 +1356,7 @@ def get_sessions_summary_data():
 
 
 @views.route('/addsession', methods=['POST'])
+@csrf.exempt
 @login_required
 def addsession():
     if request.method == 'POST':
@@ -1550,6 +1586,7 @@ def generate_qr(qr_code):
 
 
 @views.route('/additem', methods=['POST'])
+@csrf.exempt
 @login_required
 def additem():
     if request.method == 'POST':
@@ -1585,6 +1622,7 @@ def adduserstosession():
 
 
 @views.route('/insert', methods=['POST'])
+@csrf.exempt
 @login_required
 def insert():
     if request.method == 'POST':
@@ -1684,6 +1722,7 @@ def insert():
 
 
 @views.route('/update', methods=['GET', 'POST'])
+@csrf.exempt
 @login_required
 def update():
     if request.method == 'POST':
@@ -1719,6 +1758,7 @@ def addroletouser(id):
     
 
 @views.route('/activity/<id>', methods=['GET', 'POST'])    
+@csrf.exempt
 @login_required   
 def activity(id):
     if id:
@@ -1871,35 +1911,49 @@ def userdetails(id):
 
 @views.route('/scan-session/<qr_code>')
 def scan_session(qr_code):
-    session = Session.query.filter_by(qr_code=qr_code).first()
-    
-    if not session:
-        flash('Invalid session code', 'error')
+    try:
+        # Get session from database
+        session_obj = Session.query.filter_by(qr_code=qr_code).first()  # Renamed to avoid conflict
+        
+        if not session_obj:
+            flash('Invalid QR code', 'error')
+            return redirect(url_for('views.sessions'))
+            
+        # Check session timing
+        now = datetime.now()
+        if session_obj.start_time:
+            start_dt = datetime.combine(session_obj.date, session_obj.start_time)
+            opens = start_dt - timedelta(minutes=session_obj.checkin_opens_minutes)
+            closes = start_dt + timedelta(minutes=session_obj.checkin_closes_minutes)
+            
+            if now < opens:
+                flash(f'Check-in opens at {opens.strftime("%I:%M %p")}', 'warning')
+                return redirect(url_for('views.sessiondetails', id=session_obj.id))
+            elif now > closes:
+                flash('Check-in period has ended', 'warning')
+                return redirect(url_for('views.sessiondetails', id=session_obj.id))
+        
+        # Store in Flask session (not SQLAlchemy session)
+        from flask import session as flask_session
+        flask_session['checkin_session_id'] = session_obj.id
+        
+        # Check authentication
+        if not current_user.is_authenticated:
+            flask_session['next'] = url_for('views.user_checkin')
+            flash('Please login to complete check-in', 'info')
+            return redirect(url_for('login'))  # Adjust to your login route name
+            
+        return redirect(url_for('views.user_checkin'))
+        
+    except Exception as e:
+        current_app.logger.error(f"QR processing failed: {str(e)}", exc_info=True)
+        flash('System error during QR processing', 'error')
         return redirect(url_for('views.sessions'))
-    
-    # Check if check-in window is active
-    now = datetime.now()
-    start_time = datetime.combine(session.date, session.start_time) if session.start_time else None
-    checkin_active = False
-    
-    if start_time:
-        opens = start_time - timedelta(minutes=session.checkin_opens_minutes)
-        closes = start_time + timedelta(minutes=session.checkin_closes_minutes)
-        checkin_active = opens <= now <= closes
-    
-    if not checkin_active:
-        window_msg = f"Check-in available from {opens.strftime('%Y-%m-%d %H:%M')} to {closes.strftime('%Y-%m-%d %H:%M')}" if start_time else "No check-in window set"
-        flash(f'Check-in is currently closed. {window_msg}', 'warning')
-        return redirect(url_for('views.session_details', id=session.id))
-    
-    # Store session ID in session for the check-in process
-    session['checkin_session_id'] = session.id
-    return redirect(url_for('views.user_checkin'))
 
 
 
 @views.route('/user-checkin', methods=['GET', 'POST'])
-@login_required
+# @login_required
 def user_checkin():
     session_id = session.get('checkin_session_id')
     if not session_id:
@@ -1937,13 +1991,14 @@ def user_checkin():
         
         return redirect(url_for('views.sessiondetails', id=session_id))
     
-    return render_template('checkin.html', session=current_session)
+    return render_template('checkin.html', session=current_session,datetime = datetime, timedelta = timedelta)
 
 
 
 
 
 @views.route('/sessiondetails/<int:id>')
+@csrf.exempt
 @login_required
 def sessiondetails(id):
     session = Session.query.get(id)
@@ -2032,6 +2087,7 @@ def delete(id):
 
 
 @views.route('/sessions', methods=['GET', 'POST'])
+@csrf.exempt
 @login_required
 def sessions():
     all_activity = db.session.query(
@@ -2047,6 +2103,7 @@ def sessions():
 
 
 @views.route('/items', methods=['GET', 'POST'])
+@csrf.exempt
 @login_required
 def items():
     all_item = Item.query.all()
