@@ -280,13 +280,13 @@ body {
                                 <div class="form-group mb-3">
                                     <label for="userIdentifier" class="form-label">
                                         <i class="fas fa-id-card me-2"></i>
-                                        Enter Your ID or Scan QR
+                                        Enter Your Email or Scan QR
                                     </label>
                                     <input type="text" 
                                            class="form-control" 
                                            id="userIdentifier"
                                            name="user_qr"
-                                           placeholder="Scan QR code or enter ID"
+                                           placeholder="Scan QR code or enter Email"
                                            required
                                            autofocus>
                                 </div>
@@ -318,46 +318,93 @@ body {
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById("scanner-video");
     const userInput = document.getElementById("userIdentifier");
+    const scannerGuide = document.getElementById("scanner-guide");
     let scannerActive = true;
+    
+    // Debugging function
+    function showScannerMessage(message, isError = false) {
+        scannerGuide.innerHTML = `
+            <div class="alert ${isError ? 'alert-danger' : 'alert-info'}">
+                <i class="fas fa-${isError ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+        `;
+    }
     
     // Start scanner when page loads
     function startScanner() {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(function(stream) {
-                video.srcObject = stream;
+        // Check if browser supports mediaDevices
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showScannerMessage("Your browser doesn't support camera access. Please enter ID manually.", true);
+            return;
+        }
+        
+        // Set video styling
+        video.style.backgroundColor = '#f8f9fa';
+        video.style.objectFit = 'cover';
+        
+        // Try to get camera access
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        })
+        .then(function(stream) {
+            video.srcObject = stream;
+            
+            video.onloadedmetadata = function() {
                 video.play();
                 scanQR();
-            })
-            .catch(function(err) {
-                console.error("Camera error: ", err);
-                document.getElementById("scanner-container").innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-video-slash me-2"></i>
-                        Camera access denied. Please enter ID manually.
-                    </div>
-                `;
-            });
+            };
+            
+            video.onerror = function() {
+                showScannerMessage("Error starting video stream. Please enter ID manually.", true);
+            };
+        })
+        .catch(function(err) {
+            console.error("Camera error: ", err);
+            let errorMessage = "Camera access denied. Please enter ID manually.";
+            
+            if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                errorMessage = "No camera found. Please enter ID manually.";
+            } else if (err.name === 'NotAllowedError') {
+                errorMessage = "Camera permission denied. Please allow camera access or enter ID manually.";
+            }
+            
+            showScannerMessage(errorMessage, true);
+        });
     }
     
     // QR Scanning function
     function scanQR() {
         if (!scannerActive) return;
         
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.height = video.videoHeight;
-            canvas.width = video.videoWidth;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            
-            if (code) {
-                userInput.value = code.data;
-                document.getElementById("checkinForm").submit();
+        try {
+            if (video.readyState >= video.HAVE_METADATA) {
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+                
+                // Set canvas dimensions to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                
+                if (code) {
+                    userInput.value = code.data;
+                    document.getElementById("checkinForm").submit();
+                    return; // Stop scanning after successful scan
+                }
             }
+        } catch (e) {
+            console.error("QR scanning error:", e);
         }
         
         requestAnimationFrame(scanQR);
@@ -372,6 +419,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
+    });
+    
+    // Add manual focus for the input field
+    userInput.addEventListener('focus', function() {
+        scannerActive = false;
+    });
+    
+    userInput.addEventListener('blur', function() {
+        scannerActive = true;
+        scanQR();
     });
 });
 </script>

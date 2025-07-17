@@ -185,6 +185,8 @@
                                 ',' + "'" + data.name + "'" +
                                 ',' + "'" + data.description + "'" +
                                 ',' + "'" + data.date + "'" +
+                                 ',' + "'" + (data.start_time || '') + "'" +
+                                ',' + "'" + (data.end_time || '') + "'" +
                                 ')"><i class="fas fa-edit"></i></button>' +   
                                 '<a href="/activity/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-user"></i></a>' +   
                                 '<a href="/sessiondetails/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-clock"></i></a>' +          
@@ -238,11 +240,13 @@
 
     <script>
         // Function to open the edit modal and populate fields
-        function editRow(id, name, description, date) {
+        function editRow(id, name, description, date, start_time, end_time) {
             $('#editactivitySessionId').val(id);
             $('#editactivityName').val(name);
             $('#editactivityDescription').val(description);
             $('#editactivitydate').val(date);
+            $('#editstartTime').val(start_time);
+            $('#editendTime').val(end_time);
             $('#editActivityModal').modal('show');
         }
 
@@ -372,37 +376,47 @@
 
     <!-- Edit activity Modal -->
     <div class="modal fade" id="editActivityModal" tabindex="-1" role="dialog" aria-labelledby="editActivityModal" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editActivityModal">Edit Activity</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="editSession" method="POST">
-                        <div class="form-group">
-                            <label for="editactivityName">Activity Name:</label>
-                            <input type="text" class="form-control" id="editactivityName" name="editactivityName" required="1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editActivityModal">Edit Activity</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editSession" method="POST">
+                    <div class="form-group">
+                        <label for="editactivityName">Activity Name:</label>
+                        <input type="text" class="form-control" id="editactivityName" name="editactivityName" required="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="editactivityDescription">Description:</label>
+                        <textarea class="form-control" id="editactivityDescription" name="editactivityDescription" required="1"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editactivitydate">Date:</label>
+                        <input type="date" class="form-control" id="editactivitydate" name="editactivitydate" required="1">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="editstartTime">Start Time:</label>
+                            <input type="time" class="form-control" id="editstartTime" name="editstartTime" required="1">
                         </div>
-                        <div class="form-group">
-                            <label for="editactivityDescription">Description:</label>
-                            <textarea class="form-control" id="editactivityDescription" name="editactivityDescription" required="1"></textarea>
+                        <div class="form-group col-md-6">
+                            <label for="editendTime">End Time:</label>
+                            <input type="time" class="form-control" id="editendTime" name="editendTime" required="1">
                         </div>
-                        <div class="form-group">
-                            <label for="editactivitydate">Date:</label>
-                            <input type="date" class="form-control" id="editactivitydate" name="editactivitydate" required="1">
-                        </div>
-                        <input type="hidden" id="editactivitySessionId" name="session_id">
-                        <button type="button" class="btn btn-primary" onclick="submitEditSessionForm()">Edit Activity</button>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
+                    </div>
+                    <input type="hidden" id="editactivitySessionId" name="session_id">
+                    <button type="button" class="btn btn-primary" onclick="submitEditSessionForm()">Edit Activity</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
+</div>
 </body>
 </html>

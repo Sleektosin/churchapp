@@ -848,6 +848,7 @@ def update_user_data():
 
 
 @views.route('/addmaintenance', methods=['POST'])
+@csrf.exempt
 @login_required
 def addmaintenance():
     print(request.form) 
@@ -886,6 +887,7 @@ def addmaintenance():
 
 
 @views.route('/update_maintenance_data', methods=['POST'])
+@csrf.exempt
 def update_maintenance_data():
     try:
         # Get form data from the AJAX request
@@ -924,6 +926,7 @@ def update_maintenance_data():
 
 
 @views.route('/update_session_data', methods=['POST'])
+@csrf.exempt
 def update_session_data():
     try:
         # Get form data from the AJAX request
@@ -931,23 +934,41 @@ def update_session_data():
         editactivityName = request.form.get('editactivityName')
         editactivityDescription = request.form.get('editactivityDescription')
         editactivitydate = request.form.get('editactivitydate')
+        editstartTime = request.form.get('editstartTime')
+        editendTime = request.form.get('editendTime')
   
-        # Convert the date_of_birth from string to Python date object
+        # Convert the date from string to Python date object
         if editactivitydate:
             try:
-                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
                 editactivitydate = datetime.strptime(editactivitydate, "%Y-%m-%d").date()
             except ValueError:
                 return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
 
-        # Find the user by ID
+        # Convert time strings to time objects
+        start_time = None
+        end_time = None
+        if editstartTime:
+            try:
+                start_time = datetime.strptime(editstartTime, "%H:%M").time()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid start time format'}), 400
+        if editendTime:
+            try:
+                end_time = datetime.strptime(editendTime, "%H:%M").time()
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid end time format'}), 400
+
+        # Find the session by ID
         session = Session.query.get(editactivitySessionId)
 
         if session:
-            # Update the user's details
+            # Update the session's details
             session.name = editactivityName
             session.description = editactivityDescription
             session.date = editactivitydate
+            session.start_time = start_time
+            session.end_time = end_time
+            
             # Commit the changes to the database
             db.session.commit()
             return jsonify({'status': 'success', 'message': 'Session data updated successfully'})
@@ -1174,6 +1195,8 @@ def get_sessions_data():
         Session.name,
         Session.description,
         Session.date,
+        Session.start_time,
+        Session.end_time,
         func.coalesce(func.count(session_users.c.user_id), 0).label('user_count')
     ).outerjoin(session_users).group_by(Session.id)
 
@@ -1207,6 +1230,8 @@ def get_sessions_data():
             'name': item.name,
             'description': item.description,
             'date': item.date.strftime('%Y-%m-%d'),  # Format date if needed
+            'start_time': item.start_time.strftime('%H:%M') if item.start_time else '',  # Format time
+            'end_time': item.end_time.strftime('%H:%M') if item.end_time else '',      # Format time
             'user_count': item.user_count,
             'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
             'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
@@ -1953,7 +1978,6 @@ def scan_session(qr_code):
 
 
 @views.route('/user-checkin', methods=['GET', 'POST'])
-# @login_required
 def user_checkin():
     session_id = session.get('checkin_session_id')
     if not session_id:
@@ -1963,21 +1987,31 @@ def user_checkin():
     current_session = Session.query.get(session_id)
     
     if request.method == 'POST':
-        user_qr = request.form.get('user_qr')
-        user = User.query.filter_by(qr_code=user_qr).first()
+        user_identifier = request.form.get('user_qr', '').strip()  # Get and clean input
+        
+        # Check if input is empty
+        if not user_identifier:
+            flash('Please scan a QR code or enter an email', 'error')
+            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
+        
+        # Query user by QR code OR email
+        user = User.query.filter(
+            (User.qr_code == user_identifier) |
+            (User.email.ilike(user_identifier))  # Case-insensitive email match
+        ).first()
         
         if not user:
-            flash('Invalid user QR code', 'error')
-            return render_template('checkin.html', session=current_session)
+            flash('Invalid QR code or email address', 'error')
+            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
         
-        # Check if user is already checked in
-        existing = Attendance.query.filter_by(
+        # Check for existing attendance
+        existing_attendance = Attendance.query.filter_by(
             session_id=session_id,
             user_id=user.id
         ).first()
         
-        if existing:
-            flash(f'{user.username} is already checked in', 'warning')
+        if existing_attendance:
+            flash(f'{user.username} is already checked in for this session', 'warning')
         else:
             # Create new attendance record
             new_attendance = Attendance(
@@ -1991,7 +2025,7 @@ def user_checkin():
         
         return redirect(url_for('views.sessiondetails', id=session_id))
     
-    return render_template('checkin.html', session=current_session,datetime = datetime, timedelta = timedelta)
+    return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
 
 
 
