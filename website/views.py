@@ -1794,6 +1794,7 @@ def activity(id):
 
 
 @views.route('/item/<id>', methods=['GET'])
+@csrf.exempt
 @login_required 
 def item(id):
     # Fetch the selected product details
@@ -1818,7 +1819,8 @@ def item(id):
 
 
 
-@views.route('/get_product_maintenance/<product_id>/maintenance', methods=['GET', 'POST'])    
+@views.route('/get_product_maintenance/<product_id>/maintenance', methods=['GET', 'POST']) 
+@csrf.exempt   
 @login_required   
 def get_product_maintenance(product_id):
     # Define parameters for server-side processing
@@ -1884,6 +1886,7 @@ def get_product_maintenance(product_id):
 
 
 @views.route('/userdetails/<id>')
+@csrf.exempt
 @login_required
 def userdetails(id):
     user = User.query.get(id)
@@ -1935,6 +1938,7 @@ def userdetails(id):
 
 
 @views.route('/scan-session/<qr_code>')
+@csrf.exempt
 def scan_session(qr_code):
     try:
         # Get session from database
@@ -1978,6 +1982,7 @@ def scan_session(qr_code):
 
 
 @views.route('/user-checkin', methods=['GET', 'POST'])
+@csrf.exempt
 def user_checkin():
     session_id = session.get('checkin_session_id')
     if not session_id:
@@ -1993,6 +1998,17 @@ def user_checkin():
         if not user_identifier:
             flash('Please scan a QR code or enter an email', 'error')
             return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
+        
+        # Extract email if the input is in "Username: ... Email: ..." format
+        if user_identifier.startswith('Username:') and 'Email:' in user_identifier:
+            try:
+                # Extract the email portion
+                email_part = user_identifier.split('Email:')[1].strip()
+                # Clean up any trailing punctuation
+                email = email_part.split('.')[0] if email_part.endswith('.') else email_part
+                user_identifier = email.strip()
+            except (IndexError, AttributeError):
+                pass
         
         # Query user by QR code OR email
         user = User.query.filter(
@@ -2026,9 +2042,6 @@ def user_checkin():
         return redirect(url_for('views.sessiondetails', id=session_id))
     
     return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
-
-
-
 
 
 @views.route('/sessiondetails/<int:id>')

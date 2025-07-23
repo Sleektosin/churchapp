@@ -59,6 +59,31 @@
             opacity: 0.7;
             cursor: not-allowed;
         }
+
+    /* Flash message styling */
+    .alert {
+        margin: 15px 0;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+        color: #856404;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+
 </style>
   </head>
 
@@ -124,7 +149,23 @@
         <!-- ============================================================== -->
         <!-- End Breadcrumb and right sidebar toggle -->
         <!-- ============================================================== -->
-    
+        <!-- ADD FLASH MESSAGES HERE -->
+<div class="row">
+    <div class="col-md-12">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
         <!-- ============================================================== -->
         <!-- Container fluid  -->
         <!-- ============================================================== -->
@@ -354,6 +395,25 @@ function saveQrCode(sessionId) {
         });
 }
 
+</script>
+<script>
+
+// Auto-dismiss flash messages after 5 seconds
+$(document).ready(function(){
+    setTimeout(function(){
+        $('.alert').fadeOut('slow', function(){
+            $(this).remove();
+        });
+    }, 5000);
+    
+    // Manual dismiss
+    $('.alert .close').on('click', function(){
+        $(this).parent().fadeOut('slow', function(){
+            $(this).remove();
+        });
+    });
+});
+</script>
 </script>
     <!-- ============================================================== -->
     <!-- End Wrapper -->
