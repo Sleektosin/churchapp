@@ -2028,6 +2028,12 @@ def user_checkin():
         
         if existing_attendance:
             flash(f'{user.username} is already checked in for this session', 'warning')
+            return render_template('usersessionadd.html', 
+                                session=current_session, 
+                                user=user, 
+                                attendance=existing_attendance,
+                                datetime=datetime, 
+                                timedelta=timedelta)
         else:
             # Create new attendance record
             new_attendance = Attendance(
@@ -2038,11 +2044,14 @@ def user_checkin():
             db.session.add(new_attendance)
             db.session.commit()
             flash(f'Successfully checked in {user.username}', 'success')
-        
-        return redirect(url_for('views.sessiondetails', id=session_id))
+            return render_template('usersessionadd.html', 
+                                session=current_session, 
+                                user=user, 
+                                attendance=new_attendance,
+                                datetime=datetime, 
+                                timedelta=timedelta)
     
     return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
-
 
 @views.route('/sessiondetails/<int:id>')
 @csrf.exempt
