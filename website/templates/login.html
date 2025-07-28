@@ -9,148 +9,209 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
     />
-
     <!-- jQuery library -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js"></script>
-
     <!-- Popper JS -->
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-
     <!-- Latest compiled JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
     <style>
+      :root {
+        --primary-color: #4a6bff;
+        --secondary-color: #f5f7ff;
+        --text-color: #333;
+        --light-gray: #f0f0f0;
+      }
+      
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       }
-      .container {
-        padding-top: 120px;
-      }
+      
       body {
-        background-color: rgb(219, 226, 226);
+        background-color: var(--secondary-color);
       }
-      .row {
+      
+      .login-container {
+        max-width: 100%;
+        padding: 20px;
+      }
+      
+      .login-card {
         background-color: white;
-        border-radius: 30px;
-        box-shadow: 12px 12px 22px grey;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
       }
-      img {
-        border-top-left-radius: 30px;
-        border-bottom-left-radius: 30px;
-      }
-
-      .btn1 {
-        border: none;
-        outline: none;
-        height: 50px;
+      
+      .login-image {
         width: 100%;
-        background-color: black;
-        color: white;
-        border-radius: 4px;
-        font-weight: bold;
+        height: 250px;
+        object-fit: cover;
+        display: block;
       }
-      .btn1:hover {
-        background: white;
-        border: 1px solid;
-        color: black;
+      
+      .login-form {
+        padding: 30px;
+      }
+      
+      .form-control {
+        height: 50px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding-left: 15px;
+        font-size: 16px;
+      }
+      
+      .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: none;
+      }
+      
+      .btn-login {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        height: 50px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s;
+      }
+      
+      .btn-login:hover {
+        background-color: #3a5bef;
+        transform: translateY(-2px);
+      }
+      
+      .login-links {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      
+      .login-links a {
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+      
+      .login-links a:hover {
+        text-decoration: underline;
+      }
+      
+      .alert {
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+      }
+      
+      /* Responsive adjustments */
+      @media (min-width: 768px) {
+        .login-container {
+          padding-top: 80px;
+          max-width: 900px;
+          margin: 0 auto;
+        }
+        
+        .login-card {
+          display: flex;
+        }
+        
+        .login-image-col {
+          flex: 0 0 40%;
+          max-width: 40%;
+        }
+        
+        .login-image {
+          height: 100%;
+          border-radius: 15px 0 0 15px;
+        }
+        
+        .login-form-col {
+          flex: 0 0 60%;
+          max-width: 60%;
+          padding: 40px;
+        }
+      }
+      
+      @media (max-width: 767px) {
+        .login-image {
+          border-radius: 15px 15px 0 0;
+        }
+        
+        .login-form {
+          padding: 25px;
+        }
       }
     </style>
   </head>
   <body>
-    <section class="Form my-4 mx-5">
-      <div class="container">
-        <div class="row no-gutters">
-          <div class="col-lg-5">
-            <img
-              src="{{url_for('static',filename = 'uploads/login_final.jpg')}}"
-              alt=""
-              class="img-fluid" style="height: 390px;"
-            />
-          </div>
-          <div class="col-lg-7 px-5 pt-5">
-            <!-- <h4>Sign Into Your Account</h4> -->
-
-            {% with messages = get_flashed_messages(with_categories=true) %} {%
-            if messages%} {% for category, message in messages %} {% if category
-            == 'error' %}
-            <p
-              class="alert alert-danger alter-dismissable fade show"
-              role="alert"
-              style="
-                padding-top: 1px;
-                padding-bottom: 1px;
-                padding-right: 5px;
-                padding-left: 5px;
-                width: auto;
-                height: auto;
-                font-size: 13px;
-              "
-            >
-              {{message}}
-              <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </p>
-            {% else %}
-            <p
-              class="alert alert-success alter-dismissable fade show"
-              role="alert"
-              style="
-                padding-top: 1px;
-                padding-bottom: 1px;
-                padding-right: 5px;
-                padding-left: 5px;
-                width: auto;
-                height: 34px;
-              "
-            >
-              {{message}}
-              <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </p>
-            {% endif %} {% endfor %} {% endif%} {% endwith %}
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-image-col">
+          <img
+            src="{{url_for('static',filename = 'uploads/login_final.jpg')}}"
+            alt="Login"
+            class="login-image"
+          />
+        </div>
+        <div class="login-form-col">
+          <div class="login-form">
+            <h2 class="mb-4">Sign In</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            
             <form method="post" action="">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <div class="form-row">
-                <div class="col-lg-7">
-                  <input
-                    type="email"
-                    placeholder="Email-Address"
-                    name="email"
-                    id="email"
-                    class="form-control my-3 p-4"
-                  />
-                </div>
+              
+              <div class="form-group">
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  name="email"
+                  id="email"
+                  class="form-control"
+                  required
+                />
               </div>
-              <div class="form-row">
-                <div class="col-lg-7">
-                  <input
-                    type="password"
-                    placeholder="******"
-                    name="password"
-                    id="password"
-                    class="form-control my-3 p-4"
-                  />
-                </div>
+              
+              <div class="form-group">
+                <input
+                  type="password"
+                  placeholder="Password"
+                  name="password"
+                  id="password"
+                  class="form-control"
+                  required
+                />
               </div>
-              <div class="form-row">
-                <div class="col-lg-7">
-                  <button type="submit" class="btn1 mt-3 mb-5">Login</button>
-                </div>
+              
+              <button type="submit" class="btn btn-login btn-block mt-4">
+                Login
+              </button>
+              
+              <div class="login-links mt-3">
+                <a href="{{url_for('views.forgotpassword')}}">Forgot Password?</a>
+                <a href="{{url_for('views.register')}}">Don't have an account? Register here</a>
               </div>
-              <!-- <a href="{{url_for('views.barcodelogin')}}">QR Code Login</a> || -->
-              <a href="{{url_for('views.forgotpassword')}}">Forgot Password</a>            
-              <div id="qrCodeContainer"></div>         
-              <p>
-                Don't have an account?
-                <a href="{{url_for('views.register')}}">Register here</a>
-              </p>
             </form>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   </body>
 </html>
