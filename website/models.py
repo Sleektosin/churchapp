@@ -54,6 +54,10 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
     attendances = db.relationship('Attendance', back_populates='user')
 
+    def has_role(self, role_name):
+        """Check if user has the specified role"""
+        return any(role.name == role_name for role in self.roles)
+
 
     def __init__(self, username, email, password, qr_code, first_name, last_name, 
                  date_of_birth, gender, phone_no, home_address, is_first_timer=True,date_joined=None):

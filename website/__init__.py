@@ -23,6 +23,10 @@ from logging.handlers import RotatingFileHandler
 from flask_restx import Api
 from .config import Config
 from flask_wtf.csrf import CSRFProtect
+from datetime import datetime, timedelta
+from flask import Flask, session
+from flask_login import logout_user
+from pytz import utc 
 
 
 mail = Mail()
@@ -136,7 +140,7 @@ def create_app():
     app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=3)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 3600,
@@ -178,6 +182,27 @@ def create_app():
     db.init_app(app)
     api.init_app(app)
     migrate = Migrate(app, db)
+
+       # Add session timeout handler
+    @app.before_request
+    def before_request():
+        session.permanent = True
+    
+        # Handle idle timeout
+        last_activity = session.get('_last_activity')
+        if last_activity is not None:
+            # Ensure both datetimes are timezone-aware or both are naive
+            now = datetime.now(utc)  # Make current time timezone-aware
+            if isinstance(last_activity, datetime):
+                last_activity = last_activity.replace(tzinfo=utc)  # Make stored time aware
+                
+            inactive_time = now - last_activity
+            if inactive_time > app.permanent_session_lifetime:
+                logout_user()
+                session.clear()
+        
+        # Store as timezone-aware datetime
+        session['_last_activity'] = datetime.now(utc)
 
     # Add teardown handler
     @app.teardown_appcontext

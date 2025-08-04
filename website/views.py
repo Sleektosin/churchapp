@@ -451,6 +451,16 @@ def login():
     except OperationalError as e:
         flash('Database connection error. Please try again later.', category='error')
         return render_template("login.html", user=current_user)
+    
+
+
+@views.route('/silent_logout', methods=['POST'])
+def silent_logout():
+    logout_user()
+    session.clear()
+    return jsonify({'status': 'success'}), 200  
+
+
 
 def handle_checkin_redirect():
     """Helper function to handle check-in session redirects"""
@@ -520,13 +530,12 @@ def analytics():
 
     # Convert the data to JSON
     data_json = json.dumps(data)
-    return render_template("home.html", user=current_user, user_count = user_count, 
+    return render_template("analytics.html", user=current_user, user_count = user_count, 
                            session_count = session_count, male_count = male_count,
                              female_count = female_count,data = data_json)
 
 
 @views.route('/home')
-@login_required
 def home():
     return render_template("home.html", user=current_user)
 

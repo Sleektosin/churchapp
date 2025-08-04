@@ -21,6 +21,18 @@
           <!-- Sidebar navigation-->
           <nav class="sidebar-nav">
             <ul id="sidebarnav" class="pt-4">
+              {% if current_user.has_role('Admin') or current_user.has_role('User') or current_user.has_role('Guest') %}
+              <li class="sidebar-item {% if sessions or activity or sessiondetails %}parent-active{% endif %}">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity or sessiondetails %}active{% endif %}"
+                  href="{{url_for('views.home')}}"
+                  aria-expanded="false"
+                  ><i class="mdi mdi-home"></i
+                  ><span class="hide-menu">Home</span></a
+                >
+              </li>
+              {% endif %}
+              {% if current_user.has_role('Admin') or current_user.has_role('User') %}
               <li class="sidebar-item {% if sessions or activity or sessiondetails %}parent-active{% endif %}">
                 <a
                   class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity or sessiondetails %}active{% endif %}"
@@ -30,12 +42,17 @@
                   ><span class="hide-menu">Sessions</span></a
                 >
               </li>
+              {% endif %}
+              
+              {% if current_user.has_role('Admin') %}
               <li class="sidebar-item {% if createusers or userdetails %}parent-active{% endif %}">
                 <a href="{{url_for('views.manageusers')}}" class="sidebar-link {% if createusers or userdetails %}active{% endif %}"
                   ><i class="mdi mdi-account-key"></i
                   ><span class="hide-menu">Manage Users</span></a
                 >
               </li>
+              {% endif %}
+              {% if current_user.has_role('Admin') or current_user.has_role('User') %}
               <li class="sidebar-item {% if items or inventories or maintenances or item %}parent-active{% endif %}">
                 <a class="sidebar-link has-arrow" href="javascript:void(0)" aria-expanded="false">
                   <i class="mdi mdi-package-variant"></i>
@@ -65,18 +82,20 @@
                   </li>
                 </ul>
               </li>
+              {% endif %}
+              {% if current_user.has_role('Admin') or current_user.has_role('User') %}
               <li class="sidebar-item">
                 <a href="{{url_for('views.analytics')}}" class="sidebar-link {% if analytics %}active{% endif %}"
                   ><i class="mdi mdi-border-inside"></i
                     ><span class="hide-menu">Analytics</span></a>
               </li>
+              {% endif %}
               <br/><br/><br/>
               <li class="sidebar-item">
                 <a href="{{url_for('views.logout')}}" class="sidebar-link"
                   ><i class="mdi mdi-power"></i
                     ><span class="hide-menu">Logout</span></a>
               </li>
-
             </ul>
           </nav>
           <!-- End Sidebar navigation -->

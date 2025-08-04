@@ -124,3 +124,21 @@
       </div>
   </nav>
 </header>
+  <!-- Add this before the closing </head> tag -->
+<script>
+// Only run if user is logged in
+{% if current_user.is_authenticated %}
+window.addEventListener('beforeunload', function() {
+    // Use Beacon API for reliable delivery during page unload
+    navigator.sendBeacon("{{ url_for('views.silent_logout') }}");
+    
+    // Optional: Add a small delay for mobile browsers
+    setTimeout(function() {
+        fetch("{{ url_for('views.silent_logout') }}", {
+            method: 'POST',
+            credentials: 'same-origin'
+        }).catch(() => {}); // Silently ignore errors
+    }, 300);
+});
+{% endif %}
+</script>
