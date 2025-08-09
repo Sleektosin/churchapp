@@ -1198,7 +1198,7 @@ def get_sessions_data():
     length = int(request.form.get('length'))
     search_value = request.form.get('search[value]', '').strip().lower()
 
-    # Base query to get session data
+    # Base query to get session data with attendance count from Attendance model
     base_query = db.session.query(
         Session.id,
         Session.name,
@@ -1206,18 +1206,30 @@ def get_sessions_data():
         Session.date,
         Session.start_time,
         Session.end_time,
-        func.coalesce(func.count(session_users.c.user_id), 0).label('user_count')
-    ).outerjoin(session_users).group_by(Session.id)
+        Session.location,
+        Session.status,
+        Session.max_capacity,
+        func.coalesce(func.count(Attendance.id), 0).label('attendance_count'),
+        (Session.max_capacity - func.coalesce(func.count(Attendance.id), 0)).label('remaining_capacity')
+    ).outerjoin(
+        Attendance,
+        db.and_(
+            Attendance.session_id == Session.id,
+            Attendance.status == 'present'  # Only count present attendees
+        )
+    ).group_by(Session.id)
 
-    # Apply search filter
+    # Apply search filter (expanded to search more fields)
     if search_value:
         base_query = base_query.filter(
-    or_(
-        Session.name.ilike(f'%{search_value}%'),
-        Session.description.ilike(f'%{search_value}%'),
-        func.cast(Session.date, db.String).ilike(f'%{search_value}%')
+            or_(
+                Session.name.ilike(f'%{search_value}%'),
+                Session.description.ilike(f'%{search_value}%'),
+                func.cast(Session.date, db.String).ilike(f'%{search_value}%'),
+                Session.location.ilike(f'%{search_value}%'),
+                Session.status.ilike(f'%{search_value}%')
+            )
         )
-    )   
 
     # Get the total number of records before filtering
     total_records = db.session.query(func.count(Session.id)).scalar()
@@ -1225,25 +1237,35 @@ def get_sessions_data():
     # Get the total number of filtered records
     total_filtered_records = base_query.count()
 
-    # Apply pagination and sort by date (newest first)
-    query = base_query.order_by(Session.date.desc()).offset(start).limit(length)  # <-- Changed to date.desc()
+    # Apply pagination and sort by date (newest first) and time
+    query = base_query.order_by(
+        Session.date.desc(),
+        Session.start_time.desc()
+    ).offset(start).limit(length)
 
     # Fetch filtered data
     items = query.all()
 
-    # Prepare data for DataTables response
+    # Prepare data for DataTables response with additional fields
     data = []
     for item in items:
         data.append({
-            'Id': item.id,
+            'id': item.id,
             'name': item.name,
             'description': item.description,
-            'date': item.date.strftime('%Y-%m-%d'),  # Format date if needed
-            'start_time': item.start_time.strftime('%H:%M') if item.start_time else '',  # Format time
-            'end_time': item.end_time.strftime('%H:%M') if item.end_time else '',      # Format time
-            'user_count': item.user_count,
-            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
-            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+            'date': item.date.strftime('%Y-%m-%d') if item.date else '',
+            'start_time': item.start_time.strftime('%H:%M') if item.start_time else '',
+            'end_time': item.end_time.strftime('%H:%M') if item.end_time else '',
+            'location': item.location or '',
+            'status': item.status or '',
+            'capacity': f"{item.attendance_count}/{item.max_capacity}" if item.max_capacity else f"{item.attendance_count}",
+            'remaining': item.remaining_capacity if item.max_capacity else 'Unlimited',
+            'attendance_count': item.attendance_count,
+            'actions': f'''
+                <button class="btn btn-primary btn-sm update-btn" data-id="{item.id}">Update</button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="{item.id}">Delete</button>
+                <button class="btn btn-info btn-sm view-attendees-btn" data-id="{item.id}">Attendees</button>
+            '''
         })
 
     response = {
@@ -2156,13 +2178,39 @@ def delete(id):
 @login_required
 def sessions():
     all_activity = db.session.query(
-    Session.id,
-    Session.name,
-    Session.description,
-    Session.date,
-    func.coalesce(func.count(session_users.c.user_id),0).label('user_count')
-).outerjoin(session_users).group_by(Session.id, Session.name, Session.description, Session.date).all()
-    return render_template('session.html', user=current_user, activities = all_activity)
+        Session.id,
+        Session.name,
+        Session.description,
+        Session.date,
+        Session.start_time,
+        Session.end_time,
+        Session.location,
+        Session.status,
+        func.coalesce(func.count(Attendance.id), 0).label('attendance_count'),
+        Session.max_capacity,
+        (Session.max_capacity - func.coalesce(func.count(Attendance.id), 0)).label('remaining_capacity')
+    ).outerjoin(
+        Attendance, 
+        db.and_(
+            Attendance.session_id == Session.id,
+            Attendance.status == 'present'  # Only count present attendees
+        )
+    ).group_by(
+        Session.id,
+        Session.name,
+        Session.description,
+        Session.date,
+        Session.start_time,
+        Session.end_time,
+        Session.location,
+        Session.status,
+        Session.max_capacity
+    ).order_by(
+        Session.date.desc(),
+        Session.start_time.desc()
+    ).all()
+    
+    return render_template('session.html', user=current_user, activities=all_activity)
 
 
 

@@ -105,16 +105,22 @@
                                             </button>
                                             <hr>
                                             
-                                            <div class="table-responsive">
+                                          <div class="table-responsive">
                                                 <table id="activityTable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
                                                     <thead>
                                                         <tr>
                                                             <th>#</th>
-                                                            <th>Activity Name</th>
+                                                            <th>Session Name</th>
                                                             <th>Description</th>
                                                             <th>Date</th>
-                                                            <th>User Count</th>
-                                                            <th>Action</th>
+                                                            <th>Start Time</th>
+                                                            <th>End Time</th>
+                                                            <th>Location</th>
+                                                            <th>Status</th>
+                                                            <th>Attendance</th>
+                                                            <th>Capacity</th>
+                                                            <th>Remaining</th>
+                                                            <th>Actions</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -122,94 +128,189 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% include "include/footer.html" %}
-    </div>
 
-    <script>
-        $(document).ready(function() {
-            // Initialize DataTable with responsive extension
-            $('#activityTable').DataTable({
-                processing: true,
-                responsive: {
-                    details: {
-                        display: $.fn.dataTable.Responsive.display.modal({
-                            header: function(row) {
-                                var data = row.data();
-                                return 'Details for ' + data.name;
-                            }
-                        }),
-                        renderer: $.fn.dataTable.Responsive.renderer.tableAll({
-                            tableClass: 'table'
-                        })
-                    }
-                },
-                pageLength: 10,
-                paging: true,
-                lengthMenu: [
-                    [5, 10, 15, 20, 25, 50, 60, -1],
-                    [5, 10, 15, 20, 25, 50, 60, "All"]
-                ],
-                serverSide: true,
-                order: [[3, 'desc']],
-                sort: true,
-                searching: true,
-                ajax: {
-                    url: "/get_sessions_data",
-                    type: "POST",
-                    "beforeSend": function(xhr) {
-                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable with responsive extension
+        $('#activityTable').DataTable({
+            processing: true,
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function(row) {
+                            var data = row.data();
+                            return 'Details for ' + data.name;
                         }
-                },
-                columns: [
-                    { data: "Id" },
-                    { data: "name" },
-                    { data: "description" },
-                    { data: "date" },
-                    { data: "user_count" },
-                    {
-                        data: null,
-                        render: function (data, type, row) {
-                            return (
-                                '<div class="action-buttons">' +
-                                '<button id="edit-button-' + data.Id + '" class="btn btn-warning btn-xs edit-button" onclick="editRow(' +
-                                "'" + data.Id + "'" + 
-                                ',' + "'" + data.name + "'" +
-                                ',' + "'" + data.description + "'" +
-                                ',' + "'" + data.date + "'" +
-                                ',' + "'" + (data.start_time || '') + "'" +
-                                ',' + "'" + (data.end_time || '') + "'" +
-                                ')"><i class="fas fa-edit"></i></button>' +   
-                                '<a href="/activity/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-user"></i></a>' +   
-                                '<a href="/sessiondetails/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-clock"></i></a>' +          
-                                '<button class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' + data.Id +
-                                ')"><i class="fas fa-trash-alt"></i></button>' +
-                                "</div>"
-                            );
-                        },
-                        orderable: false,
-                        searchable: false
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll({
+                        tableClass: 'table'
+                    })
+                }
+            },
+            pageLength: 10,
+            paging: true,
+            lengthMenu: [
+                [5, 10, 15, 20, 25, 50, 60, -1],
+                [5, 10, 15, 20, 25, 50, 60, "All"]
+            ],
+            serverSide: true,
+            order: [[3, 'desc']], // Default sort by date (column index 3)
+            sort: true,
+            searching: true,
+            ajax: {
+                url: "/get_sessions_data",
+                type: "POST",
+                "beforeSend": function(xhr) {
+                    xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                }
+            },
+            columns: [
+                { data: "id", visible: false }, // Hide ID column but keep it available
+                { data: "name" },
+                { data: "description" },
+                { 
+                    data: "date",
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
                     }
-                ],
-                columnDefs: [
-                    { responsivePriority: 1, targets: 1 }, // Activity Name
-                    { responsivePriority: 2, targets: -1 }, // Action column
-                    { responsivePriority: 3, targets: 3 },   // Date
-                    { responsivePriority: 4, targets: 4 },  // User Count
-                    { responsivePriority: 5, targets: 2 },  // Description
-                    { responsivePriority: 6, targets: 0 }    // ID
-                ]
-            });
+                },
+                { 
+                    data: "start_time",
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                { 
+                    data: "end_time",
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                { 
+                    data: "location",
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                { 
+                    data: "status",
+                    render: function(data, type, row) {
+                        // Add badge styling based on status
+                        const statusClass = {
+                            'scheduled': 'badge badge-primary',
+                            'active': 'badge badge-info',
+                            'completed': 'badge badge-success',
+                            'cancelled': 'badge badge-danger'
+                        }[data] || 'badge badge-secondary';
+                        
+                        return `<span class="${statusClass}">${data || 'N/A'}</span>`;
+                    }
+                },
+                { 
+                    data: "attendance_count",
+                    render: function(data, type, row) {
+                        return data !== undefined ? data : '0';
+                    }
+                },
+                { 
+                    data: "capacity",
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                { 
+                    data: "remaining",
+                    render: function(data, type, row) {
+                        if (data === 'Unlimited') return data;
+                        return data !== undefined ? data : 'N/A';
+                    }
+                },
+                {
+                    data: "actions",
+                    render: function(data, type, row) {
+                        return `
+                            <div class="action-buttons">
+                                <button id="edit-button-${row.id}" 
+                                    class="btn btn-warning btn-xs edit-button" 
+                                    data-id="${row.id}"
+                                    data-name="${row.name}"
+                                    data-description="${row.description}"
+                                    data-date="${row.date}"
+                                    data-start-time="${row.start_time}"
+                                    data-end-time="${row.end_time}"
+                                    data-location="${row.location}"
+                                    data-status="${row.status}"
+                                    data-max-capacity="${row.max_capacity}"
+                                    data-attendance-count="${row.attendance_count}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-info btn-xs view-attendees-btn" 
+                                    data-id="${row.id}">
+                                    <i class="fas fa-users"></i>
+                                </button>
+                                <button class="btn btn-primary btn-xs view-details-btn" 
+                                    data-id="${row.id}">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                                <button class="btn btn-danger btn-xs delete-button" 
+                                    data-id="${row.id}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        `;
+                    },
+                    orderable: false,
+                    searchable: false
+                }
+            ],
+            columnDefs: [
+                { responsivePriority: 1, targets: 1 }, // Session Name
+                { responsivePriority: 2, targets: -1 }, // Action column
+                { responsivePriority: 3, targets: 3 },  // Date
+                { responsivePriority: 4, targets: 7 },  // Status
+                { responsivePriority: 5, targets: 8 },  // Attendance Count
+                { responsivePriority: 6, targets: 9 },  // Capacity
+                { responsivePriority: 7, targets: 2 },  // Description
+                { responsivePriority: 8, targets: 4 },  // Start Time
+                { responsivePriority: 9, targets: 5 },  // End Time
+                { responsivePriority: 10, targets: 6 },  // Location
+                { responsivePriority: 11, targets: 10 }  // Remaining
+            ]
         });
-    </script>
+
+        // Event delegation for dynamically created buttons
+        $('#activityTable').on('click', '.edit-button', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const description = $(this).data('description');
+            const date = $(this).data('date');
+            const startTime = $(this).data('start-time');
+            const endTime = $(this).data('end-time');
+            const location = $(this).data('location');
+            const status = $(this).data('status');
+            const maxCapacity = $(this).data('max-capacity');
+            const attendanceCount = $(this).data('attendance-count');
+            
+            // Call your edit function with all the data
+            editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity, attendanceCount);
+        });
+
+        $('#activityTable').on('click', '.view-attendees-btn', function() {
+            const sessionId = $(this).data('id');
+            window.location.href = `/activity/${sessionId}`;
+        });
+
+        $('#activityTable').on('click', '.view-details-btn', function() {
+            const sessionId = $(this).data('id');
+            window.location.href = `/sessiondetails/${sessionId}`;
+        });
+
+        $('#activityTable').on('click', '.delete-button', function() {
+            const sessionId = $(this).data('id');
+            deleteRow(sessionId);
+        });
+    });
+</script>
 
     <script>
         // Function to handle the delete action

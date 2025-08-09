@@ -285,8 +285,8 @@
             url: "/get_sessions_summary_data",
             type: "POST",
             "beforeSend": function(xhr) {
-                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
-                        }
+                xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                }
             },
             columns: [
               { data: "date" },

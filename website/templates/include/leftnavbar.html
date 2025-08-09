@@ -22,9 +22,9 @@
           <nav class="sidebar-nav">
             <ul id="sidebarnav" class="pt-4">
               {% if current_user.has_role('Admin') or current_user.has_role('User') or current_user.has_role('Guest') %}
-              <li class="sidebar-item {% if sessions or activity or sessiondetails %}parent-active{% endif %}">
+              <li class="sidebar-item {% if home %}parent-active{% endif %}">
                 <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link {% if sessions or activity or sessiondetails %}active{% endif %}"
+                  class="sidebar-link waves-effect waves-dark sidebar-link {% if home %}active{% endif %}"
                   href="{{url_for('views.home')}}"
                   aria-expanded="false"
                   ><i class="mdi mdi-home"></i
