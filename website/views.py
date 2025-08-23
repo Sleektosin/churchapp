@@ -304,30 +304,61 @@ def barcodelogin():
 
 
 
-
-@views.route('/addUsersToSession/<id>',methods=['GET', 'POST'])  
+@views.route('/addUsersToSession/<id>', methods=['GET', 'POST'])  
 @csrf.exempt
 def addUsersToSession_handler(id):
-    if id:
-        returned_qr_code = request.form.get('qr_code')
-        email = extract_user_info(returned_qr_code)
-        user = User.query.filter_by(email=email).first()
-        session = Session.query.get(id)
-        if user:
-            existing_entry = db.session.query(session_users).filter_by(session_id=session.id, user_id=user.id).first()
-            if not existing_entry:
-                stmt = session_users.insert().values(
-                    session_id=session.id,
-                    user_id=user.id,
-                    date=datetime.now()
-                )
-                db.session.execute(stmt)
-                db.session.commit()
-                flash('User added to session successfully!', 'success')
-            else:
-                flash('User is already in this session.', 'error')
-        else:
-            flash('User not found.', 'error')
+    session = Session.query.get(id)
+    if not session:
+        flash('Session not found.', 'error')
+        return render_template('adduserstosession.html', user=current_user, session_data=session)
+
+    returned_qr_code = request.form.get('qr_code')
+    email = extract_user_info(returned_qr_code)
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        flash('User not found.', 'error')
+        return render_template('adduserstosession.html', user=current_user, session_data=session)
+
+    # Check if attendance record already exists using the unique constraint
+    existing_attendance = Attendance.query.filter_by(
+        session_id=session.id, 
+        user_id=user.id
+    ).first()
+
+    if existing_attendance:
+        # Update existing record instead of creating new one
+        existing_attendance.status = 'present'
+        existing_attendance.check_in_method = 'qr_scan'
+        existing_attendance.check_in_time = datetime.utcnow()
+        existing_attendance.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        flash('User attendance updated successfully!', 'success')
+    else:
+        try:
+            # Create new attendance record
+            new_attendance = Attendance(
+                user_id=user.id,
+                session_id=session.id,
+                status='present',
+                check_in_method='qr_scan',
+                check_in_time=datetime.utcnow(),
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            db.session.add(new_attendance)
+            db.session.commit()
+            flash('User added to session successfully!', 'success')
+            
+        except IntegrityError:
+            db.session.rollback()
+            # Handle race condition where record might have been created by another process
+            flash('User is already in this session.', 'error')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding user to session: {str(e)}', 'error')
 
     return render_template('adduserstosession.html', user=current_user, session_data=session)
         
@@ -665,7 +696,6 @@ def remove_user_from_session(userId, sessionId):
     else:
         return 'User or session not found', 404
 
-
 @views.route('/get_sessions_users/<session_id>/users', methods=['POST','GET'])
 def get_sessions_users(session_id):
     # Define parameters for server-side processing
@@ -681,18 +711,19 @@ def get_sessions_users(session_id):
         User.email,
         User.first_name,
         User.last_name,
-        session_users.c.date.label('added_date')
-        ).join(session_users).filter(session_users.c.session_id == session_id)
+        Attendance.check_in_time.label('added_date')
+        ).join(Attendance, Attendance.user_id == User.id)\
+         .filter(Attendance.session_id == session_id)
 
     # Apply search filter
     if search_value:
         base_query = base_query.filter(
             or_(
-            (User.username.ilike(f'%{search_value}%')) | 
-            (User.email.ilike(f'%{search_value}%')) |
-            (User.first_name.ilike(f'%{search_value}%')) |
-            (User.last_name.ilike(f'%{search_value}%')) |
-            func.cast(session_users.c.date, db.String).like(f'%{search_value}%')
+                User.username.ilike(f'%{search_value}%'),
+                User.email.ilike(f'%{search_value}%'),
+                User.first_name.ilike(f'%{search_value}%'),
+                User.last_name.ilike(f'%{search_value}%'),
+                func.cast(Attendance.check_in_time, db.String).like(f'%{search_value}%')
             )
         )
 
@@ -700,7 +731,7 @@ def get_sessions_users(session_id):
     total_records = base_query.count()
 
     # Apply pagination
-    paginated_query = base_query.offset(start).limit(length)
+    paginated_query = base_query.order_by(Attendance.check_in_time.desc()).offset(start).limit(length)
 
     # Fetch filtered data
     users = paginated_query.all()
@@ -708,16 +739,17 @@ def get_sessions_users(session_id):
     # Prepare data for DataTables response
     data = []
     nigeria_tz = pytz.timezone('Africa/Lagos')
+    
     for user in users:
         if user.added_date:
-            # Check if added_date is already a datetime object
-            if isinstance(user.added_date, datetime):
+            # Check if datetime is timezone-aware
+            if user.added_date.tzinfo is None:
+                # If naive (no timezone), localize to UTC
                 added_date_utc = pytz.utc.localize(user.added_date)
             else:
-                # If added_date is a date object, convert it to a datetime object
-                added_date_datetime = datetime.combine(user.added_date, time.min)
-                added_date_utc = pytz.utc.localize(added_date_datetime)
-        
+                # If already timezone-aware, convert to UTC timezone first
+                added_date_utc = user.added_date.astimezone(pytz.utc)
+            
             # Convert the UTC datetime to Nigeria time zone
             added_date_nigeria = added_date_utc.astimezone(nigeria_tz)
             
@@ -725,6 +757,7 @@ def get_sessions_users(session_id):
             added_date_str = added_date_nigeria.strftime('%Y-%m-%d %H:%M:%S')
         else:
             added_date_str = None
+            
         data.append({
             'Id': user.id,
             'username': user.username,
@@ -739,10 +772,39 @@ def get_sessions_users(session_id):
     response = {
         'draw': draw,
         'recordsTotal': total_records,
-        'recordsFiltered': total_records if not search_value else len(users),
+        'recordsFiltered': total_records if not search_value else base_query.count(),
         'data': data,
     }
 
+    return jsonify(response)
+
+
+@views.route('/get_session_status_options')
+def get_session_status_options():
+    status_options = [
+        {"value": "scheduled", "label": "Scheduled"},
+        {"value": "active", "label": "Active"},
+        {"value": "completed", "label": "Completed"},
+        {"value": "cancelled", "label": "Cancelled"}
+    ]
+    
+    response = {
+        "status_options": status_options,
+        "current_status": None  # Initialize as None
+    }
+    
+    session_id = request.args.get('session_id')
+    if session_id:
+        try:
+            session = Session.query.get(session_id)
+            if session and session.status:
+                response['current_status'] = {
+                    "value": session.status,
+                    "label": session.status.capitalize()
+                }
+        except Exception as e:
+            views.logger.error(f"Error fetching session status: {str(e)}")
+    
     return jsonify(response)
 
 
@@ -937,56 +999,78 @@ def update_maintenance_data():
 @views.route('/update_session_data', methods=['POST'])
 @csrf.exempt
 def update_session_data():
+    print("Received form data:", request.form)  # Debug what's actually being received
+    
     try:
-        # Get form data from the AJAX request
-        editactivitySessionId = request.form.get('session_id')
-        editactivityName = request.form.get('editactivityName')
-        editactivityDescription = request.form.get('editactivityDescription')
-        editactivitydate = request.form.get('editactivitydate')
-        editstartTime = request.form.get('editstartTime')
-        editendTime = request.form.get('editendTime')
-  
-        # Convert the date from string to Python date object
-        if editactivitydate:
-            try:
-                editactivitydate = datetime.strptime(editactivitydate, "%Y-%m-%d").date()
-            except ValueError:
-                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
-
-        # Convert time strings to time objects
-        start_time = None
-        end_time = None
-        if editstartTime:
-            try:
-                start_time = datetime.strptime(editstartTime, "%H:%M").time()
-            except ValueError:
-                return jsonify({'status': 'error', 'message': 'Invalid start time format'}), 400
-        if editendTime:
-            try:
-                end_time = datetime.strptime(editendTime, "%H:%M").time()
-            except ValueError:
-                return jsonify({'status': 'error', 'message': 'Invalid end time format'}), 400
-
-        # Find the session by ID
-        session = Session.query.get(editactivitySessionId)
-
-        if session:
-            # Update the session's details
-            session.name = editactivityName
-            session.description = editactivityDescription
-            session.date = editactivitydate
-            session.start_time = start_time
-            session.end_time = end_time
+        # Validate required fields
+        session_id = request.form.get('session_id')
+        if not session_id:
+            return jsonify({'status': 'error', 'message': 'Missing session ID'}), 400
             
-            # Commit the changes to the database
-            db.session.commit()
-            return jsonify({'status': 'success', 'message': 'Session data updated successfully'})
-        else:
+        # Get the session
+        session = Session.query.get(session_id)
+        if not session:
             return jsonify({'status': 'error', 'message': 'Session not found'}), 404
 
+        # Update fields with validation
+        try:
+            # Get current attendance count before any updates
+            current_attendance = db.session.query(func.count(Attendance.id)).filter(
+                Attendance.session_id == session_id,
+                Attendance.status == 'present'
+            ).scalar()
+            
+            print(f"Current attendance: {current_attendance}")  # Debug logging
+
+            # Validate max capacity before applying changes
+            max_capacity = request.form.get('editmaxCapacity')
+            if max_capacity:
+                max_capacity_int = int(max_capacity)
+                print(f"Proposed max capacity: {max_capacity_int}")  # Debug logging
+                
+                # Check if new max capacity is less than current attendance
+                if max_capacity_int < current_attendance:
+                    return jsonify({
+                        'status': 'error', 
+                        'message': f'Cannot set max capacity to {max_capacity_int} because there are already {current_attendance} attendees. Max capacity must be at least {current_attendance}.'
+                    }), 400
+                
+                session.max_capacity = max_capacity_int
+
+            # Required fields
+            session.name = request.form.get('editactivityName')
+            session.description = request.form.get('editactivityDescription')
+            session.status = request.form.get('editstatus', 'scheduled')
+            
+            # Date field with validation
+            date_str = request.form.get('editactivitydate')
+            if date_str:
+                session.date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            
+            # Time fields with validation
+            time_fields = {
+                'start_time': request.form.get('editstartTime'),
+                'end_time': request.form.get('editendTime')
+            }
+            
+            for field, value in time_fields.items():
+                if value:
+                    setattr(session, field, datetime.strptime(value, "%H:%M").time())
+            
+            # Optional fields
+            session.location = request.form.get('editlocation')
+            
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Session updated successfully'})
+            
+        except ValueError as e:
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': f'Invalid data format: {str(e)}'}), 400
+            
     except Exception as e:
-        db.session.rollback()  # Rollback in case of an error
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        db.session.rollback()
+        print(f"Server error: {str(e)}")  # Detailed error logging
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 
 

@@ -228,6 +228,10 @@
                 {
                     data: "actions",
                     render: function(data, type, row) {
+                        // Extract max capacity from the formatted string "8/2500"
+                        const capacityParts = row.capacity.split('/');
+                        const maxCapacity = capacityParts.length > 1 ? capacityParts[1] : capacityParts[0];
+
                         return `
                             <div class="action-buttons">
                                 <button id="edit-button-${row.id}" 
@@ -240,7 +244,7 @@
                                     data-end-time="${row.end_time}"
                                     data-location="${row.location}"
                                     data-status="${row.status}"
-                                    data-max-capacity="${row.max_capacity}"
+                                    data-max-capacity="${maxCapacity}"
                                     data-attendance-count="${row.attendance_count}">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -277,7 +281,7 @@
                 { responsivePriority: 11, targets: 10 }  // Remaining
             ]
         });
-
+        fetchStatusOptions();
         // Event delegation for dynamically created buttons
         $('#activityTable').on('click', '.edit-button', function() {
             const id = $(this).data('id');
@@ -288,11 +292,12 @@
             const endTime = $(this).data('end-time');
             const location = $(this).data('location');
             const status = $(this).data('status');
-            const maxCapacity = $(this).data('max-capacity');
+            const maxCapacity = $(this).data('max-capacity'); 
             const attendanceCount = $(this).data('attendance-count');
-            
+
+
             // Call your edit function with all the data
-            editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity, attendanceCount);
+            editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity);
         });
 
         $('#activityTable').on('click', '.view-attendees-btn', function() {
@@ -341,51 +346,123 @@
 
     <script>
         // Function to open the edit modal and populate fields
-        function editRow(id, name, description, date, start_time, end_time) {
+        function editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity) 
+        {
             $('#editactivitySessionId').val(id);
             $('#editactivityName').val(name);
             $('#editactivityDescription').val(description);
             $('#editactivitydate').val(date);
-            $('#editstartTime').val(start_time);
-            $('#editendTime').val(end_time);
+            $('#editstartTime').val(startTime);
+            $('#editendTime').val(endTime);
+            $('#editlocation').val(location);
+            $('#editmaxCapacity').val(maxCapacity);
+            
+            // Call the function to populate status dropdown and set current value
+            fetchStatusOptionsForEdit(id);  // Pass the session ID
+            
             $('#editActivityModal').modal('show');
         }
 
         // Function to submit the edited data
-        function submitEditSessionForm() {
-            var formData = $('#editSession').serialize();
-            const messageContainer = document.querySelector('.alert');
-            const messageBox = document.getElementById('message-box');
-            
-            $.ajax({
-                url: '/update_session_data',
-                type: 'POST',
-                data: formData,
-                success: function(response) {       
-                    $('#editActivityModal').modal('hide');
-                    $('#activityTable').DataTable().ajax.reload();
-                    messageBox.textContent = response.message;
-                    messageBox.style.color = 'rgb(4, 126, 10)';
-                    messageContainer.className = 'alert alert-success alert-dismissable';
-                    messageContainer.style.display = 'block';
+function submitEditSessionForm() {
+    // Get all form data including status
+    const formData = {
+        session_id: $('#editactivitySessionId').val(),
+        editactivityName: $('#editactivityName').val(),
+        editactivityDescription: $('#editactivityDescription').val(),
+        editactivitydate: $('#editactivitydate').val(),
+        editstartTime: $('#editstartTime').val(),
+        editendTime: $('#editendTime').val(),
+        editlocation: $('#editlocation').val(),
+        editmaxCapacity: parseInt($('#editmaxCapacity').val()) || 0,
+        editstatus: $('#editstatus').val() || 'scheduled' // Default if not set
+    };
 
-                    setTimeout(() => {
-                        messageContainer.style.display = 'none';
-                    }, 5000);
-                },
-                error: function(error) {
-                    messageBox.textContent = error.responseJSON.message || 'An error occurred!';
-                    messageBox.style.color = 'red';
-                    messageContainer.className = 'alert alert-danger alert-dismissable';
-                    messageContainer.style.display = 'block';
-
-                    setTimeout(() => {
-                        messageContainer.style.display = 'none';
-                    }, 5000);
-                    console.log('Error:', error);
-                }
-            });
+    $.ajax({
+        url: '/update_session_data',
+        type: 'POST',
+        data: formData,
+        headers: {
+            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            // Handle success
+            $('#editActivityModal').modal('hide');
+            $('#activityTable').DataTable().ajax.reload(null, false);
+        },
+        error: function(error) {
+            console.error('Error:', error);
         }
+    });
+}
+
+// Function to fetch session status options and set current status
+function fetchStatusOptionsForEdit(sessionId) {
+    $.ajax({
+        url: '/get_session_status_options',
+        type: 'GET',
+        data: { session_id: sessionId },
+        success: function(response) {
+            const statusDropdown = $('#editstatus');
+            statusDropdown.empty();
+            
+            // Add options
+            response.status_options.forEach(option => {
+                statusDropdown.append(new Option(option.label, option.value));
+            });
+            
+            // Set current value if available
+            if (response.current_status) {
+                statusDropdown.val(response.current_status.value).trigger('change');
+            }
+        },
+        error: function() {
+            // Fallback options
+            $('#editstatus').html(`
+                <option value="scheduled">Scheduled</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            `);
+        }
+    });
+}
+
+
+
+
+// Function to fetch status options for new sessions
+function fetchStatusOptions() {
+    $.ajax({
+        url: '/get_session_status_options', // Same endpoint as edit form
+        type: 'GET',
+        success: function(response) {
+            var statusDropdown = $('#status');
+            statusDropdown.empty();
+            
+            // Add default option
+            statusDropdown.append('<option value="" disabled selected>Select Status</option>');
+            
+            // Add all status options
+            $.each(response.status_options, function(index, status) {
+                statusDropdown.append('<option value="' + status.value + '">' + status.label + '</option>');
+            });
+            
+            // Optionally set a default value (e.g., 'scheduled')
+            statusDropdown.val('scheduled');
+        },
+        error: function(error) {
+            console.log('Error fetching status options:', error);
+            // Fallback to static options if API fails
+            statusDropdown.html(`
+                <option value="scheduled" selected>Scheduled</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            `);
+        }
+    });
+}
     </script>
 
     <!-- Add activity Modal -->
@@ -457,11 +534,8 @@
                         
                         <div class="form-group">
                             <label for="status">Status:</label>
-                            <select class="form-control" id="status" name="status">
-                                <option value="scheduled" selected>Scheduled</option>
-                                <option value="active">Active</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
+                            <select class="form-control" id="status" name="status" required>
+                                <!-- Options will be populated dynamically -->
                             </select>
                         </div>
                         
@@ -476,7 +550,7 @@
     </div>
 
     <!-- Edit activity Modal -->
-    <div class="modal fade" id="editActivityModal" tabindex="-1" role="dialog" aria-labelledby="editActivityModal" aria-hidden="true">
+   <div class="modal fade" id="editActivityModal" tabindex="-1" role="dialog" aria-labelledby="editActivityModal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -489,28 +563,42 @@
                 <form id="editSession" method="POST">
                     <div class="form-group">
                         <label for="editactivityName">Activity Name:</label>
-                        <input type="text" class="form-control" id="editactivityName" name="editactivityName" required="1">
+                        <input type="text" class="form-control" id="editactivityName" name="editactivityName" required>
                     </div>
                     <div class="form-group">
                         <label for="editactivityDescription">Description:</label>
-                        <textarea class="form-control" id="editactivityDescription" name="editactivityDescription" required="1"></textarea>
+                        <textarea class="form-control" id="editactivityDescription" name="editactivityDescription" required></textarea>
                     </div>
                     <div class="form-group">
                         <label for="editactivitydate">Date:</label>
-                        <input type="date" class="form-control" id="editactivitydate" name="editactivitydate" required="1">
+                        <input type="date" class="form-control" id="editactivitydate" name="editactivitydate" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="editstartTime">Start Time:</label>
-                            <input type="time" class="form-control" id="editstartTime" name="editstartTime" required="1">
+                            <input type="time" class="form-control" id="editstartTime" name="editstartTime" required>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="editendTime">End Time:</label>
-                            <input type="time" class="form-control" id="editendTime" name="editendTime" required="1">
+                            <input type="time" class="form-control" id="editendTime" name="editendTime" required>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="editlocation">Location:</label>
+                        <input type="text" class="form-control" id="editlocation" name="editlocation">
+                    </div>
+                    <div class="form-group">
+                        <label for="editmaxCapacity">Max Capacity:</label>
+                        <input type="number" class="form-control" id="editmaxCapacity" name="editmaxCapacity" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editstatus">Status:</label>
+                        <select class="form-control" id="editstatus" name="editstatus" required>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
                     <input type="hidden" id="editactivitySessionId" name="session_id">
-                    <button type="button" class="btn btn-primary" onclick="submitEditSessionForm()">Edit Activity</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditSessionForm()">Update Session</button>
                 </form>
             </div>
             <div class="modal-footer">
