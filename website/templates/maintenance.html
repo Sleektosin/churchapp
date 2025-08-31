@@ -213,6 +213,9 @@
                 ajax: {
                     url: `/get_product_maintenance/${productId}/maintenance`,
                     type: "POST",
+                    "beforeSend": function(xhr) {
+                    xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                    }
                 },
                 columns: [
                     { data: "Id" },

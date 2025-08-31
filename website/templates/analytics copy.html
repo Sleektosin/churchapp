@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Management Analytics Dashboard</title>
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='styles/style.min.css')}}"
+    />
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
+    <!-- Font Awesome -->
+    
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <!-- jQuery (if needed for other functionality) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .left-sidebar{position:absolute;width:250px;height:100%;top:0px;z-index:10;padding-top:64px;background:#1f262d;-webkit-box-shadow:1px 0px 20px rgba(0, 0, 0, 0.08);box-shadow:1px 0px 20px rgba(0, 0, 0, 0.08)}
+        :root {
+            --primary: #4e73df;
+            --secondary: #858796;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 700;
+            padding: 15px 20px;
+        }
+        
+        .metric-card {
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-card.primary { border-left-color: var(--primary); }
+        .metric-card.success { border-left-color: var(--success); }
+        .metric-card.info { border-left-color: var(--info); }
+        .metric-card.warning { border-left-color: var(--warning); }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .metric-label {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+        
+        .recent-table {
+            font-size: 0.9rem;
+        }
+        
+        .recent-table th {
+            border-top: none;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        
+        .badge-attendance {
+            background-color: var(--info);
+            color: white;
+        }
+        
+        .badge-user {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .badge-inventory {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .page-container {
+            margin-left: 250px;
+            padding: 20px;
+            margin-top: 70px;
+        }
+        
+        @media (max-width: 768px) {
+            .page-container {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Header -->
+    {% include "include/header.html" %}
+
+    <!-- Include Left Navbar -->
+    {% include "include/leftnavbar.html" %}
+
+    <div class="page-container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1><i class="fas fa-church me-2"></i>Church Management Analytics</h1>
+            <p class="lead mb-0">Comprehensive overview of church operations and member engagement</p>
+        </div>
+        
+        <!-- Metrics Row -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card primary">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="metric-label">Total Members</div>
+                                <div class="metric-value" id="total-members">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card success">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="metric-label">Avg. Attendance</div>
+                                <div class="metric-value" id="avg-attendance">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card info">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="metric-label">Inventory Items</div>
+                                <div class="metric-value" id="total-items">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-box fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card warning">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="metric-label">Maintenance Costs</div>
+                                <div class="metric-value" id="maintenance-cost">$0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-tools fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row">
+            <!-- Attendance Chart -->
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Attendance Trends (Last 6 Months)
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="attendanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Demographics Chart -->
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user-friends me-2"></i>
+                        Member Demographics
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="demographicsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Charts Row -->
+        <div class="row">
+            <!-- Inventory Value Chart -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-boxes me-2"></i>
+                        Inventory Value by Category
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="inventoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Maintenance Costs Chart -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-tools me-2"></i>
+                        Maintenance Costs by Month
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="maintenanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity Row -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-history me-2"></i>Recent Activity</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="activityFilter" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-filter me-1"></i>Filter
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="activityFilter">
+                                <li><a class="dropdown-item" href="#">All Activities</a></li>
+                                <li><a class="dropdown-item" href="#">Attendance</a></li>
+                                <li><a class="dropdown-item" href="#">Members</a></li>
+                                <li><a class="dropdown-item" href="#">Inventory</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover recent-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-activity">
+                                    <!-- Recent activity will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Footer -->
+    {% include "include/footer.html" %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample data - In a real application, this would come from your Flask backend
+        const analyticsData = {
+            totalMembers: 245,
+            avgAttendance: 187,
+            totalItems: 143,
+            maintenanceCost: 1250,
+            
+            attendanceTrend: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                data: [165, 178, 192, 205, 190, 187]
+            },
+            
+            demographics: {
+                labels: ['Children', 'Youth', 'Adults', 'Seniors'],
+                data: [45, 62, 98, 40]
+            },
+            
+            inventory: {
+                labels: ['Furniture', 'Electronics', 'Kitchen', 'Books', 'Other'],
+                data: [3500, 5200, 1800, 900, 1200]
+            },
+            
+            maintenance: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                data: [850, 920, 1100, 780, 950, 1250]
+            },
+            
+            recentActivity: [
+                { date: '2023-06-15 09:23', type: 'attendance', description: 'Sunday Service - 192 attendees', user: 'System' },
+                { date: '2023-06-14 14:45', type: 'user', description: 'New member registration - John Doe', user: 'Admin' },
+                { date: '2023-06-13 11:30', type: 'inventory', description: 'Added 5 new chairs to inventory', user: 'Admin' },
+                { date: '2023-06-12 16:20', type: 'maintenance', description: 'Projector maintenance completed', user: 'Tech Team' },
+                { date: '2023-06-10 10:15', type: 'attendance', description: 'Bible Study - 45 attendees', user: 'System' }
+            ]
+        };
+
+        // Initialize metrics
+        document.getElementById('total-members').textContent = analyticsData.totalMembers;
+        document.getElementById('avg-attendance').textContent = analyticsData.avgAttendance;
+        document.getElementById('total-items').textContent = analyticsData.totalItems;
+        document.getElementById('maintenance-cost').textContent = '$' + analyticsData.maintenanceCost;
+
+        // Initialize charts
+        window.onload = function() {
+            // Attendance Trend Chart
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(attendanceCtx, {
+                type: 'line',
+                data: {
+                    labels: analyticsData.attendanceTrend.labels,
+                    datasets: [{
+                        label: 'Attendance',
+                        data: analyticsData.attendanceTrend.data,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                        pointBackgroundColor: '#4e73df',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#4e73df',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 150,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Demographics Chart
+            const demographicsCtx = document.getElementById('demographicsChart').getContext('2d');
+            new Chart(demographicsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: analyticsData.demographics.labels,
+                    datasets: [{
+                        data: analyticsData.demographics.data,
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'],
+                        hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a'],
+                        hoverBorderColor: 'rgba(234, 236, 244, 1)',
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Inventory Value Chart
+            const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
+            new Chart(inventoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.inventory.labels,
+                    datasets: [{
+                        label: 'Value ($)',
+                        data: analyticsData.inventory.data,
+                        backgroundColor: '#36b9cc',
+                        hoverBackgroundColor: '#2c9faf',
+                        borderColor: 'transparent'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Maintenance Costs Chart
+            const maintenanceCtx = document.getElementById('maintenanceChart').getContext('2d');
+            new Chart(maintenanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.maintenance.labels,
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: analyticsData.maintenance.data,
+                        backgroundColor: '#f6c23e',
+                        hoverBackgroundColor: '#dda20a',
+                        borderColor: 'transparent'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Populate recent activity
+            const activityTable = document.getElementById('recent-activity');
+            analyticsData.recentActivity.forEach(activity => {
+                const row = document.createElement('tr');
+                
+                let badgeClass = '';
+                if (activity.type === 'attendance') badgeClass = 'badge-attendance';
+                else if (activity.type === 'user') badgeClass = 'badge-user';
+                else if (activity.type === 'inventory') badgeClass = 'badge-inventory';
+                else badgeClass = 'badge-secondary';
+                
+                row.innerHTML = `
+                    <td>${activity.date}</td>
+                    <td><span class="badge ${badgeClass}">${activity.type}</span></td>
+                    <td>${activity.description}</td>
+                    <td>${activity.user}</td>
+                `;
+                
+                activityTable.appendChild(row);
+            });
+        };
+    </script>
+</body>
+</html>

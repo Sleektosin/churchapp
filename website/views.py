@@ -57,6 +57,7 @@ from sqlalchemy import or_
 import uuid
 from flask import session as flask_session
 from flask_wtf.csrf import CSRFProtect
+from collections import defaultdict
 
 
 
@@ -365,6 +366,7 @@ def addUsersToSession_handler(id):
 
 # adding maintenance to product
 @views.route('/addMaintenanceToProduct/<id>', methods=['POST'])  
+@csrf.exempt
 @login_required
 def addMaintenanceToProduct(id):
     # Fetch the selected product details
@@ -663,7 +665,8 @@ def itemdelete(id):
 
 
 # Route to delete session
-@views.route('/maintenancdelete/<id>/', methods=['POST'])
+@views.route('/maintenancdelete/<id>/', methods=['GET', 'POST'])
+@csrf.exempt
 def maintenancdelete(id):
     my_data = Maintenance.query.get(id)
     if my_data:
@@ -671,7 +674,7 @@ def maintenancdelete(id):
         db.session.commit()
         return jsonify({"message": "Record Deleted Successfully"}), 200
     else:
-        return jsonify({"message": "Item Not Found"}), 404   
+        return jsonify({"message": "Item Not Found"}), 404
 
 
 
@@ -1364,58 +1367,82 @@ def get_sessions_data():
 
 @views.route('/get_sessions_summary_data', methods=['POST','GET'])
 def get_sessions_summary_data():
-    # Define parameters for server-side processing
-    draw = request.form.get('draw')
-    start = int(request.form.get('start'))
-    length = int(request.form.get('length'))
-    search_value = request.form.get('search[value]').strip().lower()
+    try:
+        # Handle both GET and POST requests
+        if request.method == 'GET':
+            # For GET requests, use args instead of form
+            draw = request.args.get('draw', '0')
+            start = int(request.args.get('start', 0))
+            length = int(request.args.get('length', 10))
+            search_value = request.args.get('search[value]', '').strip().lower()
+        else:
+            # For POST requests, use form data
+            draw = request.form.get('draw', '0')
+            start = int(request.form.get('start', 0))
+            length = int(request.form.get('length', 10))
+            search_value = request.form.get('search[value]', '').strip().lower()
 
-    # Base query to get session data
-    base_query = db.session.query(
-        Session.date,
-        Session.name,
-        func.coalesce(func.count(session_users.c.user_id), 0).label('user_count')
-    ).outerjoin(session_users).group_by(Session.id)
+        # Base query to get session data with attendance count
+        base_query = db.session.query(
+            Session.id,
+            Session.date,
+            Session.name,
+            Session.description,
+            func.coalesce(func.count(Attendance.id), 0).label('user_count')
+        ).outerjoin(
+            Attendance,
+            db.and_(
+                Attendance.session_id == Session.id,
+                Attendance.status == 'present'
+            )
+        ).group_by(Session.id, Session.date, Session.name, Session.description)
 
-    # Apply search filter
-    if search_value:
-        base_query = base_query.filter(
-            Session.name.like(f'%{search_value}%') |
-            Session.description.like(f'%{search_value}%') |
-            func.cast(Session.date, db.String).like(f'%{search_value}%')
-        )
+        # Apply search filter
+        if search_value:
+            base_query = base_query.filter(
+                Session.name.ilike(f'%{search_value}%') |
+                Session.description.ilike(f'%{search_value}%') |
+                func.cast(Session.date, db.String).ilike(f'%{search_value}%')
+            )
 
-    # Get the total number of records before filtering
-    total_records = db.session.query(func.count(Session.id)).scalar()
+        # Get the total number of records before filtering
+        total_records = db.session.query(func.count(Session.id)).scalar()
 
-    # Get the total number of filtered records
-    total_filtered_records = base_query.count()
+        # Get the total number of filtered records
+        total_filtered_records = base_query.count()
 
-    # Apply pagination and sort by date (newest first)
-    query = base_query.order_by(Session.date.desc()).offset(start).limit(length)  # <-- Changed to date.desc()
+        # Apply pagination and sort by date (newest first)
+        query = base_query.order_by(Session.date.desc()).offset(start).limit(length)
 
-    # Fetch filtered data
-    items = query.all()
+        # Fetch filtered data
+        items = query.all()
 
-    # Prepare data for DataTables response
-    data = []
-    for item in items:
-        data.append({
-            'date': item.date.strftime('%Y-%m-%d'),  # Format date if needed
-            'name': item.name,
-            'user_count': item.user_count,
-            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
-            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
-        })
+        # Prepare data for DataTables response
+        data = []
+        for item in items:
+            data.append({
+                'Id': item.id,
+                'date': item.date.strftime('%Y-%m-%d') if item.date else '',
+                'name': item.name,
+                'description': item.description or '',
+                'user_count': item.user_count
+            })
 
-    response = {
-        'draw': draw,
-        'recordsTotal': total_records,
-        'recordsFiltered': total_filtered_records,
-        'data': data,
-    }
+        response = {
+            'draw': draw,
+            'recordsTotal': total_records,
+            'recordsFiltered': total_filtered_records,
+            'data': data,
+        }
 
-    return jsonify(response)
+        return jsonify(response)
+        
+    except Exception as e:
+        print(f"Error in get_sessions_summary_data: {str(e)}")
+        return jsonify({
+            'error': 'Server error',
+            'message': str(e)
+        }), 500
 
 
 
@@ -2795,3 +2822,103 @@ def guest_token():
         html_table = json2html.convert(json=data)
         if html_table != None:
             return html_table
+        
+
+
+from flask import jsonify
+from sqlalchemy import func, extract, case, and_
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+@views.route('/api/analytics/dashboard')
+def dashboard_analytics():
+    """Endpoint to get all analytics data for the dashboard"""
+    
+    # Calculate total members
+    total_members = User.query.count()
+    
+    # Calculate average attendance for the last 6 months
+    six_months_ago = datetime.now() - timedelta(days=180)
+    attendance_count = db.session.query(
+        func.date(Attendance.check_in_time),
+        func.count(Attendance.id)
+    ).filter(
+        Attendance.check_in_time >= six_months_ago
+    ).group_by(func.date(Attendance.check_in_time)).all()
+    
+    avg_attendance = 0
+    if attendance_count:
+        avg_attendance = sum(count for date, count in attendance_count) // len(attendance_count)
+    
+    # Calculate total inventory items
+    total_items = Item.query.count()
+    
+    # Calculate total maintenance costs for the last month
+    last_month = datetime.now() - timedelta(days=30)
+    maintenance_costs = db.session.query(
+        func.sum(Maintenance.amount)
+    ).filter(
+        Maintenance.date >= last_month
+    ).scalar() or 0
+    
+    # Get demographics data
+    demographics = db.session.query(
+        case(
+            (func.date_diff(func.now(), User.date_of_birth) < 6570, "Children"),  # Under 18
+            (func.date_diff(func.now(), User.date_of_birth) < 10950, "Youth"),   # 18-30
+            (func.date_diff(func.now(), User.date_of_birth) < 25550, "Adults"),  # 30-70
+            else_="Seniors"                                                      # 70+
+        ).label('age_group'),
+        func.count(User.id)
+    ).group_by('age_group').all()
+    
+    # Get inventory value by category
+    inventory_value = db.session.query(
+        Item.custodian_unit,
+        func.sum(Item.amount * Item.quantity)
+    ).group_by(Item.custodian_unit).all()
+    
+    # Get maintenance costs by month for the last 6 months
+    maintenance_costs_by_month = db.session.query(
+        func.extract('month', Maintenance.date).label('month'),
+        func.sum(Maintenance.amount)
+    ).filter(
+        Maintenance.date >= six_months_ago
+    ).group_by('month').order_by('month').all()
+    
+    # Get recent activity
+    recent_sessions = Session.query.order_by(Session.date.desc()).limit(5).all()
+    recent_activity = []
+    for session in recent_sessions:
+        recent_activity.append({
+            'date': session.date.strftime('%Y-%m-%d %H:%M'),
+            'type': 'attendance',
+            'description': f'{session.name} - {session.attendances.count()} attendees',
+            'user': 'System'
+        })
+    
+    # Add some inventory activities
+    recent_items = Item.query.order_by(Item.id.desc()).limit(3).all()
+    for item in recent_items:
+        recent_activity.append({
+            'date': item.date_of_purchase.strftime('%Y-%m-%d'),
+            'type': 'inventory',
+            'description': f'Added {item.quantity} {item.name} to inventory',
+            'user': 'Admin'
+        })
+    
+    # Return all data as JSON
+    return jsonify({
+        'total_members': total_members,
+        'avg_attendance': avg_attendance,
+        'total_items': total_items,
+        'maintenance_cost': float(maintenance_costs),
+        'attendance_trend': {
+            'labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            'data': [165, 178, 192, 205, 190, 187]  # Sample data
+        },
+        'demographics': [{'group': d[0], 'count': d[1]} for d in demographics],
+        'inventory_value': [{'category': i[0], 'value': float(i[1] or 0)} for i in inventory_value],
+        'maintenance_by_month': [{'month': int(m[0]), 'cost': float(m[1] or 0)} for m in maintenance_costs_by_month],
+        'recent_activity': recent_activity
+    })
