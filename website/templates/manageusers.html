@@ -98,6 +98,23 @@
                                             </button>
                                             <div id="flashMessage"></div>
                                             <hr>
+
+                                            <!-- Download Buttons -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-12">
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-success" onclick="downloadData('csv')">
+                                                            <i class="fas fa-download"></i> Download CSV
+                                                        </button>
+                                                        <button type="button" class="btn btn-primary" onclick="downloadData('excel')">
+                                                            <i class="fas fa-file-excel"></i> Download Excel
+                                                        </button>
+                                                        <button type="button" class="btn btn-info" onclick="downloadData('json')">
+                                                            <i class="fas fa-file-code"></i> Download JSON
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             
                                             <div class="table-responsive">
                                                 <table id="userTable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
@@ -289,6 +306,7 @@
             }
         }
 
+
         // Function to fetch roles from the server
         function fetchRolesForEditUser(userId) {
             $.ajax({
@@ -366,6 +384,51 @@
                     console.log('Error:', error);
                 }
             });
+        }
+    </script>
+    <script>     
+
+        function downloadData(format) {
+            // Get current DataTable state
+            const table = $('#userTable').DataTable();
+            const searchValue = table.search();
+            const order = table.order();
+            
+            // Create a form to submit all current filters
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/download_users/${format}`;
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrf_token';
+            csrfToken.value = $('meta[name="csrf-token"]').attr('content');
+            form.appendChild(csrfToken);
+            
+            // Add search value
+            const searchInput = document.createElement('input');
+            searchInput.type = 'hidden';
+            searchInput.name = 'search_value';
+            searchInput.value = searchValue;
+            form.appendChild(searchInput);
+            
+            // Add sorting information with safety checks
+            const orderColumn = document.createElement('input');
+            orderColumn.type = 'hidden';
+            orderColumn.name = 'order_column';
+            orderColumn.value = order.length > 0 ? order[0][0] : '0'; // Default to first column
+            form.appendChild(orderColumn);
+            
+            const orderDirection = document.createElement('input');
+            orderDirection.type = 'hidden';
+            orderDirection.name = 'order_direction';
+            orderDirection.value = order.length > 0 ? order[0][1] : 'asc'; // Default to ascending
+            form.appendChild(orderDirection);
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
     </script>
 

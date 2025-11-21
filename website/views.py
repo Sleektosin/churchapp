@@ -7,7 +7,7 @@ from PIL import Image
 import qrcode
 import base64
 from tabnanny import check
-from io import BytesIO
+from io import BytesIO, StringIO
 from flask import Flask
 from datetime import timedelta
 from unicodedata import category
@@ -27,6 +27,9 @@ from flask_sqlalchemy import SQLAlchemy
 from json2html import json2html
 import urllib.parse
 import html, re
+import csv
+import pandas as pd
+from flask import Response
 from datetime import datetime,date
 from sqlalchemy import func
 from flask_mail import Message
@@ -1194,6 +1197,126 @@ def get_users_data():
     }
 
     return jsonify(response)
+
+
+@views.route('/download_users/<format>', methods=['POST'])
+def download_users(format):
+    # Get the same filters used in your DataTable
+    search_value = request.form.get('search_value', '').strip().lower()
+    order_column = request.form.get('order_column', '0')
+    order_direction = request.form.get('order_direction', 'asc')
+    
+    # Map column index to actual column name
+    column_map = {
+        '0': 'id',
+        '1': 'username', 
+        '2': 'first_name',
+        '3': 'last_name',
+        '4': 'date_of_birth',
+        '5': 'email',
+        '6': 'phone_no'
+    }
+    
+    order_by_column = column_map.get(order_column, 'id')
+    
+    # Base query (same as your DataTable endpoint)
+    base_query = User.query.with_entities(
+        User.id,
+        User.username,
+        User.first_name,
+        User.last_name,
+        User.date_of_birth,
+        User.email,
+        User.phone_no
+    )
+    
+    # Apply the same search filter
+    if search_value:
+        base_query = base_query.filter(
+            or_(
+                User.username.ilike(f'%{search_value}%'),
+                User.first_name.ilike(f'%{search_value}%'),
+                User.last_name.ilike(f'%{search_value}%'),
+                User.phone_no.ilike(f'%{search_value}%'),
+                func.cast(User.date_of_birth, db.String).ilike(f'%{search_value}%')
+            )
+        )
+    
+    # Apply sorting
+    order_column_obj = getattr(User, order_by_column)
+    if order_direction == 'desc':
+        base_query = base_query.order_by(order_column_obj.desc())
+    else:
+        base_query = base_query.order_by(order_column_obj.asc())
+    
+    # Get ALL data (no pagination for download)
+    items = base_query.all()
+    
+    # Prepare data
+    data = []
+    for item in items:
+        data.append({
+            'ID': item.id,
+            'Username': item.username,
+            'First Name': item.first_name,
+            'Last Name': item.last_name,
+            'Date of Birth': item.date_of_birth.strftime('%Y-%m-%d'),
+            'Email': item.email,
+            'Phone Number': item.phone_no
+        })
+    
+    # Handle different formats
+    if format == 'csv':
+        return download_csv(data)
+    elif format == 'excel':
+        return download_excel(data)
+    elif format == 'json':
+        return download_json(data)
+    else:
+        return "Invalid format", 400
+
+def download_csv(data):
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    if data:
+        writer.writerow(data[0].keys())
+    
+    # Write data
+    for row in data:
+        writer.writerow(row.values())
+    
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=users_data.csv"}
+    )
+
+def download_excel(data):
+    df = pd.DataFrame(data)
+    
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Users')
+    
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment;filename=users_data.xlsx"}
+    )
+
+def download_json(data):
+    return Response(
+        json.dumps(data, indent=2),
+        mimetype="application/json",
+        headers={"Content-Disposition": "attachment;filename=users_data.json"}
+    )
+
 
 
 

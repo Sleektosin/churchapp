@@ -30,7 +30,7 @@
         
         /* Header */
         header {
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80') no-repeat center center/cover;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("{{ url_for('static', filename='uploads/background/backgroundimagechurchapp.jpg') }}") no-repeat center center/cover;
             height: 100vh;
             color: white;
             display: flex;
@@ -577,22 +577,22 @@
         <div class="services-grid">
             <div class="service-card fade-in">
                 <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1503764654157-72d979d9af2f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80" alt="Sunday Service">
+                    <img src="../static/uploads/Worship.jpg" alt="worship" class="rounded-circle"/>
                 </div>
                 <div class="service-info">
                     <h3>Sunday Worship</h3>
-                    <span class="time">8:30 AM & 11:00 AM</span>
+                    <span class="time">7:30 AM & 11:30 AM</span>
                     <p>Join us for our uplifting Sunday worship services featuring inspiring music, prayer, and biblical teaching.</p>
                 </div>
             </div>
             
             <div class="service-card fade-in">
                 <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1566669437685-50e6def698ac?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" alt="Bible Study">
+                    <img src="../static/uploads/Biblestudy.jpg" alt="Bible Study" class="rounded-circle"/>
                 </div>
                 <div class="service-info">
                     <h3>Wednesday Bible Study</h3>
-                    <span class="time">7:00 PM</span>
+                    <span class="time">6:00 PM</span>
                     <p>Midweek gathering for in-depth Bible study and discussion to deepen your understanding of Scripture.</p>
                 </div>
             </div>
@@ -603,7 +603,7 @@
                 </div>
                 <div class="service-info">
                     <h3>Youth Fellowship</h3>
-                    <span class="time">Friday 6:30 PM</span>
+                    <span class="time">Monday 6:00 PM</span>
                     <p>Dynamic program for teens with games, worship, and relevant biblical teaching for today's youth.</p>
                 </div>
             </div>
