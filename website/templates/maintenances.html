@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="keywords"
+      content="wrappixel, admin dashboard, html css dashboard, web dashboard, bootstrap 5 admin, bootstrap 5, css3 dashboard, bootstrap 5 dashboard, Matrix lite admin bootstrap 5 dashboard, frontend, responsive bootstrap 5 admin template, Matrix admin lite design, Matrix admin lite dashboard bootstrap 5 dashboard template"
+    />
+    <meta
+      name="description"
+      content="Matrix Admin Lite Free Version is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Maintenance History - SleekTech</title>
+    
+    <!-- Favicon icon -->
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="{{url_for('static',filename='styles/style.min.css')}}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="{{url_for('static', filename='uploads/chemonics_fav.png')}}"
+    />
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap.min.css">
+    
+    <!-- Custom CSS for this page -->
+    <style>
+      .stats-card {
+        border-left: 4px solid #27a9e3;
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      }
+      .stats-card .icon {
+        font-size: 40px;
+        color: #27a9e3;
+        float: left;
+        margin-right: 15px;
+      }
+      .stats-card h3 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .stats-card p {
+        margin: 5px 0 0 0;
+        color: #6c757d;
+      }
+      .filter-section {
+        background: #fff;
+        padding: 20px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      }
+      .table-actions .btn {
+        padding: 3px 8px;
+        margin-right: 3px;
+      }
+      .dataTables_wrapper .dataTables_length,
+      .dataTables_wrapper .dataTables_filter,
+      .dataTables_wrapper .dataTables_info,
+      .dataTables_wrapper .dataTables_processing,
+      .dataTables_wrapper .dataTables_paginate {
+        color: #333;
+      }
+      .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.5em 1em;
+      }
+      .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #27a9e3 !important;
+        border-color: #27a9e3 !important;
+        color: white !important;
+      }
+      .badge-custom {
+        background: #27a9e3;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #27a9e3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .date-range-group {
+        display: flex;
+        gap: 10px;
+      }
+      .date-range-group input {
+        flex: 1;
+      }
+      .amount-range-group {
+        display: flex;
+        gap: 10px;
+      }
+      .amount-range-group input {
+        flex: 1;
+      }
+      .table td, .table th {
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Preloader -->
+    <div class="preloader">
+      <div class="lds-ripple">
+        <div class="lds-pos"></div>
+        <div class="lds-pos"></div>
+      </div>
+    </div>
+    
+    <!-- Main wrapper -->
+    <div
+      id="main-wrapper"
+      data-layout="vertical"
+      data-navbarbg="skin5"
+      data-sidebartype="full"
+      data-sidebar-position="absolute"
+      data-header-position="absolute"
+      data-boxed-layout="full"
+    >
+      <!-- Include Header -->
+      {% include "include/header.html" %}
+      
+      <!-- Include Left Sidebar -->
+      {% include "include/leftnavbar.html" %}
+      
+      <!-- Page wrapper -->
+      <div class="page-wrapper">
+        <!-- Bread crumb -->
+        <div class="page-breadcrumb">
+          <div class="row">
+            <div class="col-12 d-flex no-block align-items-center">
+              <h4 class="page-title"><i class="mdi mdi-wrench"></i> Maintenance History</h4>
+              <div class="ms-auto text-end">
+                <nav aria-label="breadcrumb">
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('views.home') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript:void(0)">Manage Inventory</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Maintenance History</li>
+                  </ol>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Container fluid -->
+        <div class="container-fluid">
+          <!-- Loading Overlay -->
+          <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+          </div>
+          
+          <!-- Statistics Row -->
+          <div class="row">
+            <div class="col-lg-3 col-md-6">
+              <div class="stats-card">
+                <div class="icon"><i class="mdi mdi-file-document-box-multiple"></i></div>
+                <h3 id="totalRecords">0</h3>
+                <p>Total Records</p>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="stats-card" style="border-left-color: #28a745;">
+                <div class="icon" style="color: #28a745;"><i class="mdi mdi-cash-multiple"></i></div>
+                <h3 id="totalAmount">₦0.00</h3>
+                <p>Total Amount</p>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="stats-card" style="border-left-color: #17a2b8;">
+                <div class="icon" style="color: #17a2b8;"><i class="mdi mdi-package-variant"></i></div>
+                <h3 id="activeItems">0</h3>
+                <p>Active Items</p>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="stats-card" style="border-left-color: #ffc107;">
+                <div class="icon" style="color: #ffc107;"><i class="mdi mdi-account-group"></i></div>
+                <h3 id="totalVendors">0</h3>
+                <p>Total Vendors</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Filters Card -->
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title"><i class="mdi mdi-filter-variant"></i> Filters & Search</h4>
+              
+              <!-- Search Bar -->
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+                    <input type="text" id="globalSearch" class="form-control" placeholder="Search across all fields...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                      <i class="mdi mdi-close"></i> Clear
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-success w-50" data-toggle="modal" data-target="#exportModal">
+                      <i class="mdi mdi-download"></i> Export
+                    </button>
+                    <button class="btn btn-primary w-50" id="refreshData">
+                      <i class="mdi mdi-refresh"></i> Refresh
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Filters -->
+              <div class="row">
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Item</label>
+                  <select id="itemFilter" class="form-control">
+                    <option value="">All Items</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Vendor</label>
+                  <select id="vendorFilter" class="form-control">
+                    <option value="">All Vendors</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Custodian Unit</label>
+                  <select id="custodianFilter" class="form-control">
+                    <option value="">All Units</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Description</label>
+                  <input type="text" id="descriptionFilter" class="form-control" placeholder="Filter by description...">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Date Range</label>
+                  <div class="date-range-group">
+                    <input type="date" id="startDate" class="form-control" placeholder="Start">
+                    <input type="date" id="endDate" class="form-control" placeholder="End">
+                  </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Amount Range (₦)</label>
+                  <div class="amount-range-group">
+                    <input type="number" id="minAmount" class="form-control" placeholder="Min" step="0.01">
+                    <input type="number" id="maxAmount" class="form-control" placeholder="Max" step="0.01">
+                  </div>
+                </div>
+                
+                <div class="col-md-3 mb-3 d-flex align-items-end">
+                  <button class="btn btn-secondary w-100" id="resetFilters">
+                    <i class="mdi mdi-filter-remove"></i> Reset All
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Main Table Card -->
+          <div class="row">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-md-flex align-items-center mb-3">
+                    <div>
+                      <h4 class="card-title"><i class="mdi mdi-history"></i> Maintenance Records</h4>
+                      <h6 class="card-subtitle">Track and manage maintenance history</h6>
+                    </div>
+                  </div>
+                  
+                  <div class="table-responsive">
+                    <table id="maintenanceTable" class="table table-striped table-bordered" style="width:100%">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Item Name</th>
+                          <th>Description</th>
+                          <th>Vendor</th>
+                          <th>Amount (₦)</th>
+                          <th>Custodian Unit</th>
+                          <th>Manufacturer</th>
+                          <th>Model</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Data will be populated dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        {% include "include/footer.html" %}
+      </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="exportModalLabel"><i class="mdi mdi-download"></i> Export Data</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Export Format</label>
+              <select class="form-control" id="exportFormat">
+                <option value="csv">CSV (Comma Separated Values)</option>
+                <option value="excel">Excel (.xlsx)</option>
+                <option value="pdf">PDF Document</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Include Columns</label>
+              <div class="row">
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colDate" checked>
+                    <label class="form-check-label" for="colDate">Date</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colItem" checked>
+                    <label class="form-check-label" for="colItem">Item Name</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colDescription" checked>
+                    <label class="form-check-label" for="colDescription">Description</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colVendor" checked>
+                    <label class="form-check-label" for="colVendor">Vendor</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colAmount" checked>
+                    <label class="form-check-label" for="colAmount">Amount</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="colUnit" checked>
+                    <label class="form-check-label" for="colUnit">Custodian Unit</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-info">
+              <i class="mdi mdi-information-outline"></i>
+              Only currently filtered records will be exported.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" id="exportButton">
+              <i class="mdi mdi-download"></i> Export Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="detailsModalLabel"><i class="mdi mdi-information-outline"></i> Maintenance Details</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" id="detailsContent">
+            <!-- Details will be loaded here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+              <i class="mdi mdi-printer"></i> Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap.min.js"></script>
+    
+    <!-- Your existing template scripts -->
+
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
+    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
+    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
+    <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
+    
+    <!-- Main JavaScript for Maintenance History -->
+    <script>
+        $(document).ready(function() {
+            let maintenanceData = [];
+            let filterTimeout;
+
+            // Initialize DataTable with Bootstrap 3 compatibility
+            const table = $('#maintenanceTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[0, 'desc']],
+                dom: '<"row"<"col-sm-6"l><"col-sm-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-5"i><"col-sm-7"p>>',
+                responsive: true,
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search in table...",
+                    lengthMenu: "_MENU_ records per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ records",
+                    infoEmpty: "Showing 0 to 0 of 0 records",
+                    infoFiltered: "(filtered from _MAX_ total records)"
+                    },
+                    columns: [
+                        {
+                            data: 'date',
+                            render: function(data) {
+                                return data ? new Date(data).toLocaleDateString('en-NG') : 'N/A';
+                                }
+                        },
+                        { 
+                            data: 'item_name',
+                            render: function(data) {
+                            return data || 'N/A';
+                            }
+                        },
+                        { 
+                            data: 'maintenance_description',
+                            render: function(data) {
+                            return data || 'No description';
+                            }
+                        },
+                        { 
+                            data: 'maintenance_vendor',
+                            render: function(data) {
+                            return data || 'N/A';
+                            }
+                        },
+                        { 
+                            data: 'amount',
+                            render: function(data) {
+                            return data ? '₦' + parseFloat(data).toLocaleString('en-NG', {minimumFractionDigits: 2}) : '₦0.00';
+                            },
+                            className: 'text-right'
+                        },
+                        { 
+                            data: 'custodian_unit',
+                            render: function(data) {
+                            return data || 'N/A';
+                            }
+                        },
+                        { 
+                            data: 'manufacturer',
+                            render: function(data) {
+                            return data || 'N/A';
+                            }
+                        },
+                        { 
+                            data: 'model',
+                            render: function(data) {
+                            return data || 'N/A';
+                            }
+                        },
+          {
+            data: null,
+            render: function(data) {
+              return `
+                <div class="table-actions">
+                  <button class="btn btn-info btn-sm view-details" title="View Details" data-id="${data.id}">
+                    <i class="mdi mdi-eye"></i>
+                  </button>
+                  <button class="btn btn-warning btn-sm edit-record" title="Edit" data-id="${data.id}">
+                    <i class="mdi mdi-pencil"></i>
+                  </button>
+                </div>
+              `;
+            },
+            orderable: false,
+            className: 'text-center'
+          }
+        ],
+        initComplete: function() {
+          // Custom styling for search box
+          $('.dataTables_filter input').addClass('form-control');
+          $('.dataTables_length select').addClass('form-control');
+        }
+      });
+      
+      // Load initial data
+      loadData();
+      
+      function loadData() {
+        showLoading();
+        console.log("DEBUG: Starting AJAX call to /api/maintenance/history");
+
+        $.ajax({
+          url: '/api/maintenance/history',
+          type: 'GET',
+          dataType: 'json',
+          success: function(response) {
+            console.log("DEBUG: AJAX Success! Full response:", response);
+            console.log("DEBUG: Response success status:", response.success);
+            console.log("DEBUG: Data length:", response.data ? response.data.length : 0);
+            console.log("DEBUG: Stats:", response.stats);
+
+            if (response.success) {
+                console.log("DEBUG: Processing successful response");
+              maintenanceData = response.data;
+              updateTable(response.data);
+              updateFilters(response.filters);
+              updateStatistics(response.stats);
+              hideLoading();
+            } else {
+                
+            }
+          },
+          error: function(error) {
+            console.error("DEBUG: AJAX Error!");
+            console.error("DEBUG: Status:", textStatus);
+            console.error("DEBUG: Error:", errorThrown);
+            console.error("DEBUG: Response text:", jqXHR.responseText);
+            showError('Failed to load data: ' + response.error);
+            showError('Error loading maintenance data. Please try again.');
+            console.error('Error:', error);
+            hideLoading();
+          }
+        });
+      }
+
+
+
+
+
+
+
+
+      
+      function updateTable(data) {
+        table.clear();
+        if (data && data.length > 0) {
+          table.rows.add(data).draw();
+        } else {
+          table.draw();
+        }
+      }
+      
+      function updateFilters(filterData) {
+        // Items filter
+        $('#itemFilter').empty().append('<option value="">All Items</option>');
+        filterData.items.forEach(item => {
+          $('#itemFilter').append(`<option value="${item.id}">${item.name}</option>`);
+        });
+        
+        // Vendors filter
+        $('#vendorFilter').empty().append('<option value="">All Vendors</option>');
+        filterData.vendors.forEach(vendor => {
+          if (vendor) {
+            $('#vendorFilter').append(`<option value="${vendor}">${vendor}</option>`);
+          }
+        });
+        
+        // Custodian units filter
+        $('#custodianFilter').empty().append('<option value="">All Units</option>');
+        filterData.custodian_units.forEach(unit => {
+          if (unit) {
+            $('#custodianFilter').append(`<option value="${unit}">${unit}</option>`);
+          }
+        });
+      }
+      
+      function updateStatistics(stats) {
+        $('#totalRecords').text(stats.total_records.toLocaleString());
+        $('#totalAmount').text('₦' + parseFloat(stats.total_amount).toLocaleString('en-NG', {minimumFractionDigits: 2}));
+        $('#activeItems').text(stats.active_items.toLocaleString());
+        $('#totalVendors').text(stats.total_vendors.toLocaleString());
+      }
+      
+      function applyFilters() {
+        const itemId = $('#itemFilter').val();
+        const vendor = $('#vendorFilter').val();
+        const description = $('#descriptionFilter').val().toLowerCase();
+        const custodian = $('#custodianFilter').val();
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+        const minAmount = $('#minAmount').val();
+        const maxAmount = $('#maxAmount').val();
+        const globalSearch = $('#globalSearch').val().toLowerCase();
+        
+        let filteredData = maintenanceData.filter(record => {
+          if (itemId && record.item_id != itemId) return false;
+          if (vendor && record.maintenance_vendor !== vendor) return false;
+          if (description && !record.maintenance_description?.toLowerCase().includes(description)) return false;
+          if (custodian && record.custodian_unit !== custodian) return false;
+          
+          // Date range filter
+          if (startDate && new Date(record.date) < new Date(startDate)) return false;
+          if (endDate && new Date(record.date) > new Date(endDate)) return false;
+          
+          // Amount range filter
+          const amount = parseFloat(record.amount || 0);
+          if (minAmount && amount < parseFloat(minAmount)) return false;
+          if (maxAmount && amount > parseFloat(maxAmount)) return false;
+          
+          // Global search
+          if (globalSearch) {
+            const searchableFields = [
+              record.item_name || '',
+              record.maintenance_description || '',
+              record.maintenance_vendor || '',
+              record.custodian_unit || '',
+              record.manufacturer || '',
+              record.model || ''
+            ].join(' ').toLowerCase();
+            
+            return searchableFields.includes(globalSearch);
+          }
+          
+          return true;
+        });
+        
+        updateTable(filteredData);
+      }
+      
+      // Event Listeners for filters
+      $('#itemFilter, #vendorFilter, #custodianFilter').on('change', applyFilters);
+      $('#descriptionFilter, #globalSearch').on('keyup', function() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(applyFilters, 300);
+      });
+      $('#startDate, #endDate, #minAmount, #maxAmount').on('change', applyFilters);
+      
+      $('#clearSearch').on('click', function() {
+        $('#globalSearch').val('');
+        applyFilters();
+      });
+      
+      $('#resetFilters').on('click', function() {
+        $('select').val('');
+        $('input[type="text"], input[type="date"], input[type="number"]').val('');
+        applyFilters();
+      });
+      
+      $('#refreshData').on('click', function() {
+        loadData();
+        showToast('Data refreshed successfully!', 'success');
+      });
+      
+      // View details
+      $(document).on('click', '.view-details', function() {
+        const id = $(this).data('id');
+        const record = maintenanceData.find(r => r.id == id);
+        if (record) {
+          const detailsHtml = `
+            <div class="row">
+              <div class="col-md-6">
+                <h5 class="text-primary">Maintenance Information</h5>
+                <table class="table table-bordered table-sm">
+                  <tr>
+                    <th width="40%">Date:</th>
+                    <td>${new Date(record.date).toLocaleDateString('en-NG')}</td>
+                  </tr>
+                  <tr>
+                    <th>Description:</th>
+                    <td>${record.maintenance_description || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <th>Vendor:</th>
+                    <td>${record.maintenance_vendor || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <th>Amount:</th>
+                    <td><strong>₦${parseFloat(record.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</strong></td>
+                  </tr>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h5 class="text-primary">Item Information</h5>
+                <table class="table table-bordered table-sm">
+                  <tr>
+                    <th width="40%">Item Name:</th>
+                    <td>${record.item_name}</td>
+                  </tr>
+                  <tr>
+                    <th>Custodian Unit:</th>
+                    <td>${record.custodian_unit || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <th>Manufacturer:</th>
+                    <td>${record.manufacturer || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <th>Model:</th>
+                    <td>${record.model || 'N/A'}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            <div class="mt-3">
+              <small class="text-muted">Record ID: ${record.id}</small>
+            </div>
+          `;
+          $('#detailsContent').html(detailsHtml);
+          $('#detailsModal').modal('show');
+        }
+      });
+      
+      // Edit record
+      $(document).on('click', '.edit-record', function() {
+        const id = $(this).data('id');
+        // In a real implementation, redirect to edit page
+        showToast('Edit functionality would redirect to edit page for record #' + id, 'info');
+        // window.location.href = `/maintenance/edit/${id}`;
+      });
+      
+      // Export functionality
+      $('#exportButton').on('click', function() {
+    const format = $('#exportFormat').val();
+    const selectedColumns = [];
+    if ($('#colDate').is(':checked')) selectedColumns.push('Date');
+    if ($('#colItem').is(':checked')) selectedColumns.push('Item Name');
+    if ($('#colDescription').is(':checked')) selectedColumns.push('Description');
+    if ($('#colVendor').is(':checked')) selectedColumns.push('Vendor');
+    if ($('#colAmount').is(':checked')) selectedColumns.push('Amount');
+    if ($('#colUnit').is(':checked')) selectedColumns.push('Custodian Unit');
+    
+    if (selectedColumns.length === 0) {
+        showToast('Please select at least one column to export!', 'warning');
+        return;
+    }
+    
+    // Get current filtered data
+    const exportData = getFilteredDataForExport();
+    
+    if (exportData.length === 0) {
+        showToast('No data to export!', 'warning');
+        return;
+    }
+    
+    $('#exportModal').modal('hide');
+    
+    switch(format) {
+        case 'csv':
+            exportToCSV(exportData, selectedColumns);
+            break;
+        case 'excel':
+            exportToExcel(exportData, selectedColumns);
+            break;
+        case 'pdf':
+            exportToPDF(exportData, selectedColumns);
+            break;
+        default:
+            showToast('Export format not supported!', 'error');
+    }
+});
+
+// Helper function to get filtered data
+function getFilteredDataForExport() {
+    // Reuse your existing filter logic
+    const itemId = $('#itemFilter').val();
+    const vendor = $('#vendorFilter').val();
+    const description = $('#descriptionFilter').val().toLowerCase();
+    const custodian = $('#custodianFilter').val();
+    const startDate = $('#startDate').val();
+    const endDate = $('#endDate').val();
+    const minAmount = $('#minAmount').val();
+    const maxAmount = $('#maxAmount').val();
+    const globalSearch = $('#globalSearch').val().toLowerCase();
+    
+    return maintenanceData.filter(record => {
+        if (itemId && record.item_id != itemId) return false;
+        if (vendor && record.maintenance_vendor !== vendor) return false;
+        if (description && !record.maintenance_description?.toLowerCase().includes(description)) return false;
+        if (custodian && record.custodian_unit !== custodian) return false;
+        
+        if (startDate && new Date(record.date) < new Date(startDate)) return false;
+        if (endDate && new Date(record.date) > new Date(endDate)) return false;
+        
+        const amount = parseFloat(record.amount || 0);
+        if (minAmount && amount < parseFloat(minAmount)) return false;
+        if (maxAmount && amount > parseFloat(maxAmount)) return false;
+        
+        if (globalSearch) {
+            const searchableFields = [
+                record.item_name || '',
+                record.maintenance_description || '',
+                record.maintenance_vendor || '',
+                record.custodian_unit || '',
+                record.manufacturer || '',
+                record.model || ''
+            ].join(' ').toLowerCase();
+            
+            return searchableFields.includes(globalSearch);
+        }
+        
+        return true;
+    });
+}
+
+// Excel export function
+function exportToExcel(data, columns) {
+    showToast('Excel export requires additional library (SheetJS). Using CSV instead.', 'info');
+    exportToCSV(data, columns); // Fallback to CSV
+}
+
+// PDF export function
+function exportToPDF(data, columns) {
+    showToast('PDF export requires additional library (jsPDF). Using CSV instead.', 'info');
+    exportToCSV(data, columns); // Fallback to CSV
+}
+      
+      // Utility functions
+      function showLoading() {
+        $('#loadingOverlay').show();
+        $('#maintenanceTable tbody').html(`
+          <tr>
+            <td colspan="9" class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-3 text-muted">Loading maintenance records...</p>
+            </td>
+          </tr>
+        `);
+      }
+      
+      function hideLoading() {
+        $('#loadingOverlay').hide();
+      }
+      
+      function showError(message) {
+        $('#maintenanceTable tbody').html(`
+          <tr>
+            <td colspan="9" class="text-center py-5">
+              <i class="mdi mdi-alert-circle-outline text-danger" style="font-size: 48px;"></i>
+              <h5 class="mt-3 text-danger">Error Loading Data</h5>
+              <p class="text-muted">${message}</p>
+              <button class="btn btn-primary btn-sm mt-2" onclick="loadData()">
+                <i class="mdi mdi-refresh"></i> Try Again
+              </button>
+            </td>
+          </tr>
+        `);
+      }
+      
+      function showToast(message, type = 'info') {
+        // Create toast element
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+          <div id="${toastId}" class="alert alert-${type} alert-dismissible fade show position-fixed" 
+               style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        `;
+        
+        $('body').append(toastHtml);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+          $(`#${toastId}`).alert('close');
+        }, 5000);
+      }
+      
+      // Auto-refresh every 5 minutes
+      setInterval(loadData, 300000);
+    });
+    </script>
+  </body>
+</html>

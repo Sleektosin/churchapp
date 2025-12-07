@@ -9,6 +9,7 @@ import base64
 from tabnanny import check
 from io import BytesIO, StringIO
 from flask import Flask
+from sqlalchemy import distinct
 from datetime import timedelta
 from unicodedata import category
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
@@ -2082,6 +2083,116 @@ def item(id):
     return render_template('maintenance.html', product=product,user=current_user)
 
 
+
+@views.route('/maintenance/history')
+@csrf.exempt
+@login_required
+def maintenance_history():
+    """Render the maintenance history page"""
+    # Set context for the left navbar active state
+    maintenances = True  # This will highlight the Maintenance sub-menu
+    return render_template('maintenances.html', maintenances=True, user=current_user)
+
+
+
+@views.route('/api/maintenance/history', methods=['GET'])
+@login_required
+def api_maintenance_history():
+    """API endpoint for maintenance history data"""
+    print("DEBUG: API endpoint called!")
+    
+    try:
+        # Get all maintenance records with item details
+        maintenance_data = db.session.query(
+            Maintenance,
+            Item.name.label('item_name'),
+            Item.custodian_unit,
+            Item.manufacturer,
+            Item.model
+        ).join(
+            Item, Maintenance.item_id == Item.id
+        ).order_by(
+            Maintenance.date.desc()
+        ).all()
+        
+        # Format data for JSON response
+        formatted_data = []
+        for maintenance, item_name, custodian_unit, manufacturer, model in maintenance_data:
+            formatted_data.append({
+                'id': maintenance.id,
+                'date': maintenance.date.isoformat() if maintenance.date else None,
+                'item_id': maintenance.item_id,
+                'item_name': item_name,
+                'maintenance_description': maintenance.maintenance_description,
+                'maintenance_vendor': maintenance.maintenance_vendor,
+                'amount': float(maintenance.amount) if maintenance.amount else 0.0,
+                'custodian_unit': custodian_unit,
+                'manufacturer': manufacturer,
+                'model': model
+            })
+        
+        # Calculate statistics
+        total_records = Maintenance.query.count()
+        
+        total_amount_result = db.session.query(func.sum(Maintenance.amount)).scalar()
+        total_amount = float(total_amount_result) if total_amount_result else 0.0
+        
+        # Count distinct items that have maintenance records
+        active_items = db.session.query(Maintenance.item_id).distinct().count()
+        
+        # Count distinct vendors
+        total_vendors = db.session.query(Maintenance.maintenance_vendor).filter(
+            Maintenance.maintenance_vendor.isnot(None),
+            Maintenance.maintenance_vendor != ''
+        ).distinct().count()
+        
+        # Get filter options
+        items = db.session.query(Item.id, Item.name).distinct().order_by(Item.name).all()
+        items_list = [{'id': item.id, 'name': item.name} for item in items]
+        
+        vendors = db.session.query(Maintenance.maintenance_vendor).filter(
+            Maintenance.maintenance_vendor.isnot(None),
+            Maintenance.maintenance_vendor != ''
+        ).distinct().order_by(Maintenance.maintenance_vendor).all()
+        vendors_list = [vendor[0] for vendor in vendors if vendor[0]]
+        
+        custodian_units = db.session.query(Item.custodian_unit).filter(
+            Item.custodian_unit.isnot(None),
+            Item.custodian_unit != ''
+        ).distinct().order_by(Item.custodian_unit).all()
+        units_list = [unit[0] for unit in custodian_units if unit[0]]
+        
+        response_data = {
+            'success': True,
+            'data': formatted_data,
+            'stats': {
+                'total_records': total_records,
+                'total_amount': total_amount,
+                'active_items': active_items,
+                'total_vendors': total_vendors
+            },
+            'filters': {
+                'items': items_list,
+                'vendors': vendors_list,
+                'custodian_units': units_list
+            }
+        }
+        
+        print(f"DEBUG: Sending response with {len(formatted_data)} records")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"DEBUG: ERROR occurred: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': [],
+            'stats': {},
+            'filters': {}
+        }), 500
 
 
 @views.route('/get_product_maintenance/<product_id>/maintenance', methods=['GET', 'POST']) 

@@ -68,7 +68,7 @@
                   </li>
                   <!-- Maintenance Sub-Branch -->
                   <li class="sidebar-item">
-                    <a href="#" class="sidebar-link {% if maintenances %}active{% endif %}">
+                    <a href="{{ url_for('views.maintenance_history')}}" class="sidebar-link {% if maintenances %}active{% endif %}">
                       <i class="mdi mdi-wrench"></i>
                       <span class="hide-menu">Maintenances</span>
                     </a>
