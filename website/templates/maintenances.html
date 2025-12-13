@@ -39,6 +39,121 @@
     
     <!-- Custom CSS for this page -->
     <style>
+        /* Add to your existing CSS section */
+/* Add this to your CSS section */
+/* Make edit modal identical to details modal */
+/* Remove previous edit modal styles and add this minimal CSS */
+
+/* Ensure edit modal matches details modal styling */
+#editModal .modal-content {
+  /* Let Bootstrap handle the styling */
+}
+
+#editModal .modal-header {
+  /* Let Bootstrap handle the styling */
+}
+
+#editModal .modal-title {
+  color: #333;
+  font-weight: 600;
+}
+
+
+#editModal .modal-title i {
+  margin-right: 8px;
+  color: #27a9e3;
+}
+
+#editModal .form-group {
+  margin-bottom: 15px;
+}
+
+#editModal label {
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+#editModal .form-control {
+  border-radius: 3px;
+  border: 1px solid #ccc;
+}
+
+#editModal .form-control:focus {
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6);
+}
+
+#editModal textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+
+#editModal .alert {
+  margin-top: 15px;
+  margin-bottom: 0;
+}
+
+/* Make sure buttons match */
+#editModal .btn i {
+  margin-right: 5px;
+}
+
+/* Ensure z-index doesn't conflict */
+#editModal.modal {
+  z-index: 1060;
+}
+
+/*//////////////*/
+
+/* */
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.form-group.required label:after {
+  content: " *";
+  color: #dc3545;
+}
+
+/* Loading spinner for save button */
+.mdi-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}        
+#detailsModal.modal {
+  z-index: 1060 !important; /* Bootstrap modals typically use 1050-1060 */
+}
+
+#detailsModal.modal.fade.show {
+  z-index: 1061 !important;
+}
+
+.modal-backdrop {
+  z-index: 1049 !important; /* One less than the modal */
+}
+
+/* Force modal to be on top of everything */
+.modal.fade.in {
+  z-index: 999999 !important;
+}
+
+.modal-backdrop.fade.in {
+  z-index: 999998 !important;
+}
+
+/* Ensure modal is visible */
+.modal.show {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
       .stats-card {
         border-left: 4px solid #27a9e3;
         padding: 15px;
@@ -410,6 +525,7 @@
         </div>
       </div>
     </div>
+
     
     <!-- Details Modal -->
     <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel">
@@ -433,6 +549,79 @@
         </div>
       </div>
     </div>
+
+
+        <!-- Edit Modal -->
+   <!-- Edit Modal - Same structure as Details Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="editModalLabel">
+          <i class="mdi mdi-pencil"></i> Edit Maintenance Record
+        </h4>
+      </div>
+      <div class="modal-body">
+        <form id="editMaintenanceForm">
+          <input type="hidden" id="editRecordId" name="record_id">
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Maintenance Date *</label>
+                <input type="date" class="form-control" id="editDate" name="date" required>
+              </div>
+              
+              <div class="form-group">
+                <label>Item *</label>
+                <select class="form-control" id="editItem" name="item_id" required>
+                  <option value="">Select Item</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>Vendor</label>
+                <input type="text" class="form-control" id="editVendor" name="maintenance_vendor" placeholder="Enter vendor name">
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Amount (₦)</label>
+                <input type="number" class="form-control" id="editAmount" name="amount" step="0.01" placeholder="0.00">
+              </div>
+              
+              <div class="form-group">
+                <label>Custodian Unit</label>
+                <input type="text" class="form-control" id="editUnit" name="custodian_unit" placeholder="Enter unit">
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea class="form-control" id="editDescription" name="maintenance_description" rows="4" required placeholder="Describe the maintenance work done"></textarea>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="mdi mdi-information-outline"></i> Fields marked with * are required
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <i class="mdi mdi-close"></i> Cancel
+        </button>
+        <button type="submit" form="editMaintenanceForm" class="btn btn-primary">
+          <i class="mdi mdi-content-save"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
     
     <!-- JavaScript Libraries -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -451,7 +640,7 @@
     <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
-    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
+   
     <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
     <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
@@ -714,7 +903,9 @@
       });
       
       // View details
-      $(document).on('click', '.view-details', function() {
+      $(document).on('click', '.view-details', function(e) {
+        e.preventDefault();
+
         const id = $(this).data('id');
         const record = maintenanceData.find(r => r.id == id);
         if (record) {
@@ -769,17 +960,151 @@
           `;
           $('#detailsContent').html(detailsHtml);
           $('#detailsModal').modal('show');
+        } else {
+            console.error("DEBUG: Record not found in maintenanceData!");
+            console.log("DEBUG: Current maintenanceData:", maintenanceData);
         }
       });
-      
+
+
       // Edit record
-      $(document).on('click', '.edit-record', function() {
-        const id = $(this).data('id');
-        // In a real implementation, redirect to edit page
-        showToast('Edit functionality would redirect to edit page for record #' + id, 'info');
-        // window.location.href = `/maintenance/edit/${id}`;
-      });
+$(document).on('click', '.edit-record', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  const id = $(this).data('id');
+  console.log("DEBUG: Edit button clicked for ID:", id);
+  
+  const record = maintenanceData.find(r => r.id == id);
+  
+  if (!record) {
+    showToast('Record not found!', 'error');
+    return;
+  }
+  
+  console.log("DEBUG: Record found:", record);
+  
+  // Populate the edit form
+  $('#editRecordId').val(record.id);
+  $('#editDate').val(record.date ? record.date.split('T')[0] : '');
+  $('#editDescription').val(record.maintenance_description || '');
+  $('#editVendor').val(record.maintenance_vendor || '');
+  $('#editAmount').val(record.amount || '');
+  $('#editUnit').val(record.custodian_unit || '');
+  
+  // Populate items dropdown
+  populateEditItemsDropdown(record.item_id);
+  
+  // Show the modal
+  $('#editModal').modal('show');
+  
+  console.log("DEBUG: Edit modal should be showing now");
+});
+
+// Function to populate items dropdown for edit
+function populateEditItemsDropdown(selectedItemId) {
+  $('#editItem').empty().append('<option value="">Select Item</option>');
+  
+  // Get unique items from maintenanceData
+  const items = [...new Set(maintenanceData.map(record => ({
+    id: record.item_id,
+    name: record.item_name
+  })))].filter(item => item.id && item.name);
+  
+  items.forEach(item => {
+    $('#editItem').append(`<option value="${item.id}" ${item.id == selectedItemId ? 'selected' : ''}>${item.name}</option>`);
+  });
+}
+
+
+
+
+// Handle edit form submission
+$('#editMaintenanceForm').on('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = $(this).serialize();
+  const recordId = $('#editRecordId').val();
+  
+  console.log("DEBUG: Submitting form for record ID:", recordId);
+  console.log("DEBUG: Form data:", formData);
+  
+  // Show loading state
+  const saveBtn = $('#saveChangesBtn');
+  const originalText = saveBtn.html();
+  saveBtn.html('<i class="mdi mdi-loading mdi-spin"></i> Saving...').prop('disabled', true);
+  
+  $.ajax({
+    url: '/api/maintenance/update',
+    type: 'POST',
+    data: formData,
+    dataType: 'json',
+    success: function(response) {
+      console.log("DEBUG: Update response:", response);
       
+      if (response.success) {
+        showToast('Maintenance record updated successfully!', 'success');
+        $('#editModal').modal('hide');
+        
+        // Refresh the data
+        loadData();
+      } else {
+        showToast('Error: ' + (response.error || 'Failed to update record'), 'error');
+        saveBtn.html(originalText).prop('disabled', false);
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error("DEBUG: Update error:", error);
+      showToast('Error updating record. Please try again.', 'error');
+      saveBtn.html(originalText).prop('disabled', false);
+    }
+  });
+});
+
+
+// Close handler for edit modal
+$(document).on('click', '#editModal .close, #editModal [data-dismiss="modal"]', function(e) {
+  e.preventDefault();
+  $('#editModal').modal('hide');
+});
+
+// Reset form when modal is hidden
+$('#editModal').on('hidden.bs.modal', function() {
+  $('#editMaintenanceForm')[0].reset();
+  $('#editRecordId').val('');
+});
+
+
+      // Close Button
+      // Add this AFTER your view button handler
+$(document).on('click', '#detailsModal .close, #detailsModal [data-dismiss="modal"]', function(e) {
+  e.preventDefault();
+  console.log("DEBUG: Close button clicked");
+  
+  const modal = $('#detailsModal');
+  
+  // Hide modal with animation
+  modal.removeClass('in show');
+  modal.addClass('fade');
+  
+  // Remove backdrop
+  $('.modal-backdrop').remove();
+  $('body').removeClass('modal-open');
+  
+  // Hide modal after animation
+  setTimeout(function() {
+    modal.css('display', 'none');
+  }, 300);
+  
+  return false;
+});
+
+// Also close when clicking outside modal (on backdrop)
+$(document).on('click', '.modal-backdrop', function() {
+  console.log("DEBUG: Backdrop clicked");
+  $('#detailsModal').modal('hide');
+});
+            
       // Export functionality
       $('#exportButton').on('click', function() {
     const format = $('#exportFormat').val();
