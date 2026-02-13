@@ -3167,17 +3167,63 @@ def get_dashboard_data():
         # Get chart data
         print("Getting chart data...")
         try:
+            # First, get all charts normally with the filtered date range
             charts = get_filtered_chart_data(
                 user_query, session_query, attendance_query,
                 item_query, maintenance_query,
                 start_date_str, end_date_str
             )
+            
+            # ================ FIX FOR MEMBER GROWTH ================
+            # Override member growth to show FULL history regardless of date filter
+            print("=" * 50)
+            print("FIX: Overriding member growth with full history")
+            print("=" * 50)
+            
+            # Get the earliest user date for full history
+            earliest_user = User.query.filter(User.date_joined.isnot(None)).order_by(User.date_joined).first()
+            
+            if earliest_user and earliest_user.date_joined:
+                # Use the actual earliest user join date
+                history_start = earliest_user.date_joined.strftime('%Y-%m-%d')
+                print(f"Earliest user joined: {history_start}")
+            else:
+                # Fallback to a reasonable default
+                history_start = '2023-01-01'
+                print(f"No earliest user found, using fallback: {history_start}")
+            
+            # Get current date as end date
+            current_end = datetime.now().strftime('%Y-%m-%d')
+            print(f"Using full date range: {history_start} to {current_end}")
+            
+            # Get full history member growth data
+            full_member_growth = get_member_growth_chart(
+                user_query,  # Use the base user query
+                history_start,
+                current_end
+            )
+            
+            # Log what we got
+            print(f"Full member growth data - Days: {len(full_member_growth.get('labels', []))}")
+            if full_member_growth.get('labels'):
+                print(f"Date range: {full_member_growth['labels'][0]} to {full_member_growth['labels'][-1]}")
+                print(f"Final cumulative: {full_member_growth['cumulative'][-1] if full_member_growth['cumulative'] else 0}")
+            
+            # Replace the member growth data in the charts
+            if 'members' not in charts:
+                charts['members'] = {}
+            
+            charts['members']['member_growth'] = full_member_growth
+            print("Member growth successfully overridden with full history")
+            # ================ END OF FIX ================
+            
             print("Chart data retrieved successfully")
+            
         except Exception as chart_error:
             print(f"Error in chart data: {chart_error}")
             import traceback
             traceback.print_exc()
-            # Set empty charts
+            # Set empty charts with guaranteed structure
             charts = {
                 'overview': {
                     'age_distribution': {'labels': [], 'values': []},
@@ -3185,6 +3231,22 @@ def get_dashboard_data():
                     'gender_distribution': {'labels': [], 'values': []},
                     'inventory_status': {'labels': [], 'values': []},
                     'maintenance_timeline': []
+                },
+                'members': {
+                    'member_growth': {'labels': [], 'values': [], 'cumulative': []},
+                    'member_categories': {'labels': [], 'values': []}
+                },
+                'attendance': {
+                    'session_performance': {'labels': [], 'values': []},
+                    'checkin_methods': {'labels': [], 'values': []}
+                },
+                'inventory': {
+                    'inventory_value': {'labels': [], 'values': []},
+                    'inventory_category': {'labels': [], 'values': []}
+                },
+                'maintenance': {
+                    'maintenance_cost': {'labels': [], 'values': []},
+                    'maintenance_status': {'labels': [], 'values': []}
                 }
             }
         
@@ -3194,7 +3256,8 @@ def get_dashboard_data():
             item_query, maintenance_query
         )
         
-        return jsonify({
+        # Prepare the response
+        response_data = {
             'kpis': kpis,
             'charts': charts,
             'tables': tables,
@@ -3202,12 +3265,23 @@ def get_dashboard_data():
             'meta': {
                 'start_date': start_date_str,
                 'end_date': end_date_str,
-                'date_range_used': f"{start_date_str} to {end_date_str}"
+                'date_range_used': f"{start_date_str} to {end_date_str}",
+                'member_growth_note': 'Showing full history from earliest user to present'
             }
-        })
+        }
+        
+        print("=" * 50)
+        print("ANALYTICS DASHBOARD - SUCCESS")
+        print(f"Member growth labels: {len(charts['members']['member_growth'].get('labels', []))}")
+        print("=" * 50)
+        
+        return jsonify(response_data)
         
     except Exception as e:
-        print(f"Error in analytics dashboard: {str(e)}")
+        print("=" * 50)
+        print("ERROR IN ANALYTICS DASHBOARD")
+        print("=" * 50)
+        print(f"Error: {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -3216,7 +3290,6 @@ def get_dashboard_data():
             'error': str(e),
             'message': 'Failed to load analytics data'
         }), 500
-
 
     # app.py - Add these filter endpoints
 @views.route('/api/analytics/filters/sessions')
@@ -3231,6 +3304,39 @@ def get_session_filters():
         'date': session.date.strftime('%Y-%m-%d') if session.date else None,
         'location': session.location
     } for session in sessions])
+
+
+@views.route('/api/test-member-growth-only')
+@login_required
+def test_member_growth_only():
+    """Test ONLY member growth chart to isolate the error"""
+    try:
+        start_date = request.args.get('start_date', '2023-01-01')
+        end_date = request.args.get('end_date', '2025-12-31')
+        
+        print(f"Testing member growth with dates: {start_date} to {end_date}")
+        
+        # Call only the member growth function
+        result = get_member_growth_chart(User.query, start_date, end_date)
+        
+        return jsonify({
+            'success': True,
+            'member_growth': result,
+            'dates_used': {
+                'start': start_date,
+                'end': end_date
+            }
+        })
+    except Exception as e:
+        print(f"ERROR in test: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
 
 @views.route('/api/analytics/filters/roles')
 @login_required
@@ -3880,84 +3986,84 @@ import calendar
 
 
 def get_member_growth_chart(user_query, start_date, end_date):
-    """Get member growth over time chart data"""
-    # Initialize variables
-    labels = []
-    values = []
-    cumulative_values = []
-    
-    if not start_date or not end_date:
-        # Default to last 12 months
-        end_date_obj = datetime.now().date()
-        start_date_obj = end_date_obj - timedelta(days=365)
-    else:
-        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-    
-    days_diff = (end_date_obj - start_date_obj).days
-    
+    """Get member growth over time using date_joined field"""
     try:
-        if days_diff <= 30:
-            # Daily grouping
-            growth_data = user_query\
-                .filter(User.date_joined.between(start_date_obj, end_date_obj))\
-                .group_by(func.date(User.date_joined))\
-                .order_by(func.date(User.date_joined))\
-                .with_entities(
-                    func.date(User.date_joined).label('date'),
-                    func.count(User.id).label('count')
-                ).all()
+        print("=" * 60)
+        print("DEBUG: get_member_growth_chart")
+        print(f"DEBUG: Received start_date: {start_date}, end_date: {end_date}")
+        
+        # Convert to datetime if needed
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        if isinstance(end_date, str):
+            end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        # CRITICAL FIX: Ensure we have a proper date range
+        if not end_date:
+            end_date = datetime.now()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+        
+        # Convert to date objects for comparison
+        start_date_date = start_date.date() if hasattr(start_date, 'date') else start_date
+        end_date_date = end_date.date() if hasattr(end_date, 'date') else end_date
+        
+        print(f"DEBUG: Using date range: {start_date_date} to {end_date_date}")
+        print(f"DEBUG: Days in range: {(end_date_date - start_date_date).days + 1}")
+        
+        # Get all users ordered by date_joined
+        all_users = user_query.filter(User.date_joined.isnot(None)).order_by(User.date_joined).all()
+        
+        # Count users before start date
+        users_before = 0
+        users_by_day = {}
+        
+        for user in all_users:
+            user_date = user.date_joined.date()
+            if user_date < start_date_date:
+                users_before += 1
+            elif start_date_date <= user_date <= end_date_date:
+                users_by_day[user_date] = users_by_day.get(user_date, 0) + 1
+        
+        print(f"DEBUG: Users before range: {users_before}")
+        print(f"DEBUG: Users in range: {sum(users_by_day.values())}")
+        print(f"DEBUG: Users by day: {users_by_day}")
+        
+        # Generate data for EVERY day in the range
+        labels = []
+        values = []
+        cumulative = []
+        running_total = users_before
+        
+        current_date = start_date_date
+        while current_date <= end_date_date:
+            date_str = current_date.strftime('%Y-%m-%d')
+            day_count = users_by_day.get(current_date, 0)
             
-            labels = [d.date.strftime('%b %d') for d in growth_data]
-            values = [d.count for d in growth_data]
+            labels.append(date_str)
+            values.append(day_count)
+            running_total += day_count
+            cumulative.append(running_total)
             
-        elif days_diff <= 90:
-            # Weekly grouping
-            growth_data = user_query\
-                .filter(User.date_joined.between(start_date_obj, end_date_obj))\
-                .group_by(func.extract('year', User.date_joined), func.extract('week', User.date_joined))\
-                .order_by(func.extract('year', User.date_joined), func.extract('week', User.date_joined))\
-                .with_entities(
-                    func.extract('year', User.date_joined).label('year'),
-                    func.extract('week', User.date_joined).label('week'),
-                    func.count(User.id).label('count')
-                ).all()
-            
-            labels = [f'Week {d.week}' for d in growth_data]
-            values = [d.count for d in growth_data]
-            
-        else:
-            # Monthly grouping
-            growth_data = user_query\
-                .filter(User.date_joined.between(start_date_obj, end_date_obj))\
-                .group_by(func.extract('year', User.date_joined), func.extract('month', User.date_joined))\
-                .order_by(func.extract('year', User.date_joined), func.extract('month', User.date_joined))\
-                .with_entities(
-                    func.extract('year', User.date_joined).label('year'),
-                    func.extract('month', User.date_joined).label('month'),
-                    func.count(User.id).label('count')
-                ).all()
-            
-            labels = [f"{calendar.month_abbr[int(d.month)]} {int(d.year)}" for d in growth_data]
-            values = [d.count for d in growth_data]
-    
+            current_date += timedelta(days=1)
+        
+        print(f"DEBUG: Generated {len(labels)} days of data")
+        print(f"DEBUG: First 5 labels: {labels[:5]}")
+        print(f"DEBUG: First 5 values: {values[:5]}")
+        print(f"DEBUG: First 5 cumulative: {cumulative[:5]}")
+        
+        return {
+            'labels': labels,
+            'values': values,
+            'cumulative': cumulative
+        }
+        
     except Exception as e:
-        print(f"Error in member growth chart: {e}")
+        print(f"ERROR in get_member_growth_chart: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'labels': [], 'values': [], 'cumulative': []}
     
-    # Calculate cumulative totals
-    if values:
-        running_total = 0
-        cumulative_values = []
-        for value in values:
-            running_total += value
-            cumulative_values.append(running_total)
-    
-    return {
-        'labels': labels,
-        'values': values,
-        'cumulative': cumulative_values
-    }
-
 
 def get_member_categories_chart(user_query):
     """Get member categories breakdown"""
@@ -4960,12 +5066,12 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
     print("=" * 60)
     
     # Define empty chart structure
-    empty_chart = {'labels': [], 'values': []}
+    empty_chart = {'labels': [], 'values': [], 'cumulative': []} 
     empty_section = {
-        'attendance_trend': empty_chart,
-        'gender_distribution': empty_chart,
-        'age_distribution': empty_chart,
-        'inventory_status': empty_chart,
+        'attendance_trend': empty_chart.copy(),
+        'gender_distribution': empty_chart.copy(),
+        'age_distribution': empty_chart.copy(),
+        'inventory_status': empty_chart.copy(),
         'maintenance_timeline': []
     }
     
@@ -4995,10 +5101,11 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Attendance trend chart
         try:
             print("  Getting attendance trend...")
-            charts['overview']['attendance_trend'] = get_attendance_trend_chart(
+            attendance_trend_data = get_attendance_trend_chart(
                 attendance_query, start_date, end_date
             )
-            print(f"  Attendance trend: {len(charts['overview']['attendance_trend']['labels'])} labels")
+            charts['overview']['attendance_trend'] = attendance_trend_data
+            print(f"  Attendance trend: {len(attendance_trend_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in attendance trend: {e}")
             charts['overview']['attendance_trend'] = empty_chart.copy()
@@ -5006,8 +5113,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Gender distribution chart
         try:
             print("  Getting gender distribution...")
-            charts['overview']['gender_distribution'] = get_gender_distribution_chart(user_query)
-            print(f"  Gender distribution: {len(charts['overview']['gender_distribution']['labels'])} labels")
+            gender_data = get_gender_distribution_chart(user_query)
+            charts['overview']['gender_distribution'] = gender_data
+            print(f"  Gender distribution: {len(gender_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in gender distribution: {e}")
             charts['overview']['gender_distribution'] = empty_chart.copy()
@@ -5015,8 +5123,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Age distribution chart
         try:
             print("  Getting age distribution...")
-            charts['overview']['age_distribution'] = get_age_distribution_chart(user_query)
-            print(f"  Age distribution: {len(charts['overview']['age_distribution']['labels'])} labels")
+            age_data = get_age_distribution_chart(user_query)
+            charts['overview']['age_distribution'] = age_data
+            print(f"  Age distribution: {len(age_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in age distribution: {e}")
             charts['overview']['age_distribution'] = empty_chart.copy()
@@ -5024,8 +5133,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Inventory status chart
         try:
             print("  Getting inventory status...")
-            charts['overview']['inventory_status'] = get_inventory_status_chart(item_query, maintenance_query)
-            print(f"  Inventory status: {len(charts['overview']['inventory_status']['labels'])} labels")
+            inventory_status_data = get_inventory_status_chart(item_query, maintenance_query)
+            charts['overview']['inventory_status'] = inventory_status_data
+            print(f"  Inventory status: {len(inventory_status_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in inventory status: {e}")
             charts['overview']['inventory_status'] = empty_chart.copy()
@@ -5033,8 +5143,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Maintenance timeline
         try:
             print("  Getting maintenance timeline...")
-            charts['overview']['maintenance_timeline'] = get_maintenance_timeline_data(maintenance_query)
-            print(f"  Maintenance timeline: {len(charts['overview']['maintenance_timeline'])} items")
+            maintenance_timeline_data = get_maintenance_timeline_data(maintenance_query)
+            charts['overview']['maintenance_timeline'] = maintenance_timeline_data
+            print(f"  Maintenance timeline: {len(maintenance_timeline_data)} items")
         except Exception as e:
             print(f"  ERROR in maintenance timeline: {e}")
             charts['overview']['maintenance_timeline'] = []
@@ -5044,28 +5155,53 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Member growth chart
         try:
             print("  Getting member growth...")
-            charts['members']['member_growth'] = get_member_growth_chart(user_query, start_date, end_date)
-            print(f"  Member growth: {len(charts['members']['member_growth']['labels'])} labels")
+            # IMPORTANT FIX: Use date_joined instead of created_at
+            member_growth_data = get_member_growth_chart(user_query, start_date, end_date)
+            print(f"  Member growth raw data: {member_growth_data}")
+            print(f"  Member growth labels: {member_growth_data.get('labels', [])[:5]}")
+            print(f"  Member growth values: {member_growth_data.get('values', [])[:5]}")
+            print(f"  Member growth cumulative: {member_growth_data.get('cumulative', [])[:5]}")
+            
+            # Store in members section
+            charts['members']['member_growth'] = member_growth_data
+            # OPTION B: Also store in overview section for simpler frontend access
+            charts['overview']['member_growth'] = member_growth_data
+            
+            print(f"  Member growth: {len(member_growth_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in member growth: {e}")
-            charts['members']['member_growth'] = empty_chart.copy()
+            import traceback
+            traceback.print_exc()
+            empty = {'labels': [], 'values': [], 'cumulative': []}
+            charts['members']['member_growth'] = empty
+            charts['overview']['member_growth'] = empty
         
         # Member categories chart
         try:
             print("  Getting member categories...")
-            charts['members']['member_categories'] = get_member_categories_chart(user_query)
-            print(f"  Member categories: {len(charts['members']['member_categories']['labels'])} labels")
+            member_categories_data = get_member_categories_chart(user_query)
+            print(f"  Member categories data: {member_categories_data}")
+            
+            # Store in members section
+            charts['members']['member_categories'] = member_categories_data
+            # OPTION B: Also store in overview section
+            charts['overview']['member_categories'] = member_categories_data
+            
+            print(f"  Member categories: {len(member_categories_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in member categories: {e}")
-            charts['members']['member_categories'] = empty_chart.copy()
+            empty = {'labels': [], 'values': []}
+            charts['members']['member_categories'] = empty
+            charts['overview']['member_categories'] = empty
         
         print("\nDEBUG: Getting attendance charts...")
         
         # Session performance chart
         try:
             print("  Getting session performance...")
-            charts['attendance']['session_performance'] = get_session_performance_chart(session_query, attendance_query)
-            print(f"  Session performance: {len(charts['attendance']['session_performance']['labels'])} labels")
+            session_performance_data = get_session_performance_chart(session_query, attendance_query)
+            charts['attendance']['session_performance'] = session_performance_data
+            print(f"  Session performance: {len(session_performance_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in session performance: {e}")
             charts['attendance']['session_performance'] = empty_chart.copy()
@@ -5073,8 +5209,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Checkin methods chart
         try:
             print("  Getting checkin methods...")
-            charts['attendance']['checkin_methods'] = get_checkin_methods_chart(attendance_query)
-            print(f"  Checkin methods: {len(charts['attendance']['checkin_methods']['labels'])} labels")
+            checkin_methods_data = get_checkin_methods_chart(attendance_query)
+            charts['attendance']['checkin_methods'] = checkin_methods_data
+            print(f"  Checkin methods: {len(checkin_methods_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in checkin methods: {e}")
             charts['attendance']['checkin_methods'] = empty_chart.copy()
@@ -5084,8 +5221,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Inventory value chart
         try:
             print("  Getting inventory value...")
-            charts['inventory']['inventory_value'] = get_inventory_value_chart(item_query, start_date, end_date)
-            print(f"  Inventory value: {len(charts['inventory']['inventory_value']['labels'])} labels")
+            inventory_value_data = get_inventory_value_chart(item_query, start_date, end_date)
+            charts['inventory']['inventory_value'] = inventory_value_data
+            print(f"  Inventory value: {len(inventory_value_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in inventory value: {e}")
             charts['inventory']['inventory_value'] = empty_chart.copy()
@@ -5093,8 +5231,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Inventory category chart
         try:
             print("  Getting inventory category...")
-            charts['inventory']['inventory_category'] = get_inventory_category_chart(item_query)
-            print(f"  Inventory category: {len(charts['inventory']['inventory_category']['labels'])} labels")
+            inventory_category_data = get_inventory_category_chart(item_query)
+            charts['inventory']['inventory_category'] = inventory_category_data
+            print(f"  Inventory category: {len(inventory_category_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in inventory category: {e}")
             charts['inventory']['inventory_category'] = empty_chart.copy()
@@ -5104,8 +5243,9 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Maintenance cost chart
         try:
             print("  Getting maintenance cost...")
-            charts['maintenance']['maintenance_cost'] = get_maintenance_cost_chart(maintenance_query, start_date, end_date)
-            print(f"  Maintenance cost: {len(charts['maintenance']['maintenance_cost']['labels'])} labels")
+            maintenance_cost_data = get_maintenance_cost_chart(maintenance_query, start_date, end_date)
+            charts['maintenance']['maintenance_cost'] = maintenance_cost_data
+            print(f"  Maintenance cost: {len(maintenance_cost_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in maintenance cost: {e}")
             charts['maintenance']['maintenance_cost'] = empty_chart.copy()
@@ -5113,14 +5253,20 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         # Maintenance status chart
         try:
             print("  Getting maintenance status...")
-            charts['maintenance']['maintenance_status'] = get_maintenance_status_chart(maintenance_query)
-            print(f"  Maintenance status: {len(charts['maintenance']['maintenance_status']['labels'])} labels")
+            maintenance_status_data = get_maintenance_status_chart(maintenance_query)
+            charts['maintenance']['maintenance_status'] = maintenance_status_data
+            print(f"  Maintenance status: {len(maintenance_status_data.get('labels', []))} labels")
         except Exception as e:
             print(f"  ERROR in maintenance status: {e}")
             charts['maintenance']['maintenance_status'] = empty_chart.copy()
         
+        # Add summary debug
         print("\n" + "=" * 60)
-        print("DEBUG get_filtered_chart_data COMPLETE")
+        print("DEBUG: FINAL CHARTS SUMMARY")
+        print(f"Overview - member_growth: {len(charts['overview'].get('member_growth', {}).get('labels', []))} labels")
+        print(f"Overview - member_categories: {len(charts['overview'].get('member_categories', {}).get('labels', []))} labels")
+        print(f"Members - member_growth: {len(charts['members']['member_growth'].get('labels', []))} labels")
+        print(f"Members - member_categories: {len(charts['members']['member_categories'].get('labels', []))} labels")
         print("=" * 60)
         
         return charts
@@ -5133,28 +5279,150 @@ def get_filtered_chart_data(user_query, session_query, attendance_query, item_qu
         
         # Return empty structure on critical error
         return {
-            'overview': empty_section.copy(),
+            'overview': {
+                'attendance_trend': {'labels': [], 'values': []},
+                'gender_distribution': {'labels': [], 'values': []},
+                'age_distribution': {'labels': [], 'values': []},
+                'inventory_status': {'labels': [], 'values': []},
+                'maintenance_timeline': [],
+                'member_growth': {'labels': [], 'values': [], 'cumulative': []},  # Added
+                'member_categories': {'labels': [], 'values': []}  # Added
+            },
             'members': {
-                'member_growth': empty_chart.copy(),
-                'member_categories': empty_chart.copy()
+                'member_growth': {'labels': [], 'values': [], 'cumulative': []},
+                'member_categories': {'labels': [], 'values': []}
             },
             'attendance': {
-                'session_performance': empty_chart.copy(),
-                'checkin_methods': empty_chart.copy()
+                'session_performance': {'labels': [], 'values': []},
+                'checkin_methods': {'labels': [], 'values': []}
             },
             'inventory': {
-                'inventory_value': empty_chart.copy(),
-                'inventory_category': empty_chart.copy()
+                'inventory_value': {'labels': [], 'values': []},
+                'inventory_category': {'labels': [], 'values': []}
             },
             'maintenance': {
-                'maintenance_cost': empty_chart.copy(),
-                'maintenance_status': empty_chart.copy()
+                'maintenance_cost': {'labels': [], 'values': []},
+                'maintenance_status': {'labels': [], 'values': []}
             }
         }
     
 # Add helper functions for date handling
 # date_helpers.py (update with all functions)
 from datetime import datetime, date, timedelta
+
+@views.route('/api/debug-user-dates')
+@login_required
+def debug_user_dates():
+    """Check what date_joined values actually exist"""
+    try:
+        users = User.query.all()
+        
+        date_joined_info = []
+        null_count = 0
+        old_dates = []
+        
+        for user in users:
+            if user.date_joined is None:
+                null_count += 1
+                date_joined_info.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'date_joined': None,
+                    'status': 'NULL'
+                })
+            else:
+                date_str = user.date_joined.strftime('%Y-%m-%d %H:%M:%S')
+                date_joined_info.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'date_joined': date_str,
+                    'status': 'Has value'
+                })
+                if user.date_joined.year < 2025:  # Adjust this year as needed
+                    old_dates.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'date_joined': date_str
+                    })
+        
+        return jsonify({
+            'success': True,
+            'total_users': len(users),
+            'null_date_joined': null_count,
+            'old_dates_count': len(old_dates),
+            'old_dates': old_dates[:10],  # First 10 old dates
+            'sample_users': date_joined_info[:20],  # First 20 users
+            'has_date_joined_field': hasattr(User, 'date_joined')
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
+
+@views.route('/api/test-date-joined')
+@login_required
+def test_date_joined():
+    """Test date_joined field and member growth"""
+    try:
+        # Get date parameters
+        start_date = request.args.get('start_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+        end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
+        
+        # Parse dates
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        end = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        
+        # Query users by date_joined
+        users_in_range = User.query.filter(
+            User.date_joined >= start,
+            User.date_joined <= end
+        ).order_by(User.date_joined).all()
+        
+        # Get all users for total count
+        total_users = User.query.count()
+        
+        # Get users before start date
+        users_before = User.query.filter(User.date_joined < start).count()
+        
+        # Group by date
+        users_by_day = {}
+        for user in users_in_range:
+            day = user.date_joined.date().isoformat()
+            users_by_day[day] = users_by_day.get(day, 0) + 1
+        
+        return jsonify({
+            'success': True,
+            'debug_info': {
+                'total_users': total_users,
+                'users_in_date_range': len(users_in_range),
+                'users_before_start': users_before,
+                'start_date': start_date,
+                'end_date': end_date,
+                'users_by_day': users_by_day,
+                'sample_users': [
+                    {
+                        'id': u.id,
+                        'username': u.username,
+                        'date_joined': u.date_joined.isoformat() if u.date_joined else None
+                    } for u in users_in_range[:5]  # First 5 users
+                ]
+            },
+            'member_growth': {
+                'labels': list(users_by_day.keys()),
+                'values': list(users_by_day.values()),
+                'cumulative': []  # You can calculate this if needed
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 def ensure_datetime(dt_obj):
     """Ensure an object is a datetime (not date) - your existing function"""

@@ -1091,6 +1091,24 @@ function updateAllCharts(chartData) {
         console.log("No attendance trend data available");
         showEmptyChart('attendanceTrendChart', 'No attendance data for selected period');
     }
+
+    // MEMBER GROWTH CHART - Add this!
+    if (chartData.member_growth) {
+        console.log("Loading member growth chart");
+        renderMemberGrowthChart(chartData.member_growth);
+    } else {
+        console.log("No member growth data available");
+        showEmptyChart('memberGrowthChart', 'No member growth data');
+    }
+    
+    // MEMBER CATEGORIES CHART - Add this!
+    if (chartData.member_categories) {
+        console.log("Loading member categories chart");
+        renderMemberCategoriesChart(chartData.member_categories);
+    } else {
+        console.log("No member categories data available");
+        showEmptyChart('memberCategoriesChart', 'No category data');
+    }
     
     // Gender Distribution Chart
     if (chartData.gender_distribution) {
@@ -1148,6 +1166,203 @@ function updateAllCharts(chartData) {
 }
 
 // ============ CHART RENDERING FUNCTIONS ============
+// Add this function to render the member growth chart
+function renderMemberGrowthChart(data) {
+    const canvas = document.getElementById('memberGrowthChart');
+    if (!canvas) {
+        console.log("Member growth canvas not found");
+        return;
+    }
+    
+    // Destroy existing chart
+    if (charts.memberGrowth) {
+        charts.memberGrowth.destroy();
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        const labels = data.labels || [];
+        const values = data.values || [];
+        const cumulative = data.cumulative || [];
+        
+        if (labels.length === 0) {
+            showEmptyChart('memberGrowthChart', 'No member growth data');
+            return;
+        }
+        
+        console.log("Rendering member growth chart with", labels.length, "data points");
+        
+        // Create responsive line chart with two datasets
+        charts.memberGrowth = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'New Members',
+                        data: values,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Members',
+                        data: cumulative,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            maxTicksLimit: 12  // Limit labels to avoid crowding
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'New Members'
+                        },
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Total Members'
+                        },
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false  // Don't draw grid lines on this axis
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 6
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== undefined) {
+                                    label += context.parsed.y.toLocaleString();
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error rendering member growth chart:', error);
+        showEmptyChart('memberGrowthChart', 'Error loading data');
+    }
+}
+
+// Also add function for member categories chart
+function renderMemberCategoriesChart(data) {
+    const canvas = document.getElementById('memberCategoriesChart');
+    if (!canvas) {
+        console.log("Member categories canvas not found");
+        return;
+    }
+    
+    // Destroy existing chart
+    if (charts.memberCategories) {
+        charts.memberCategories.destroy();
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        const labels = data.labels || [];
+        const values = data.values || [];
+        
+        if (labels.length === 0) {
+            showEmptyChart('memberCategoriesChart', 'No category data');
+            return;
+        }
+        
+        // Color palette for categories
+        const colors = ['#667eea', '#f56565', '#f6ad55', '#48bb78', '#9f7aea'];
+        
+        charts.memberCategories = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error rendering member categories chart:', error);
+        showEmptyChart('memberCategoriesChart', 'Error loading data');
+    }
+}
+
+
 function renderAttendanceTrendChart(data) {
     const canvas = document.getElementById('attendanceTrendChart');
     if (!canvas) {
@@ -1433,47 +1648,203 @@ function getMaintenanceStatusText(daysUntil) {
 }
 
 // ============ TABLE FUNCTIONS ============
+// ============ SIMPLIFIED TABLE FUNCTIONS ============
+// Replace any existing updateAllTables function with this
+
 function updateAllTables(tableData) {
-    // First Timers Table
-    if (tableData.first_timers) {
-        updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
-            <td>
-                <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
-                <small class="text-muted">${user.email || ''}</small>
-            </td>
-            <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
-            <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
-            <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
-        `);
+    console.log("========== UPDATING TABLES ==========");
+    console.log("tableData received:", tableData);
+    
+    if (!tableData) {
+        console.error("No table data received!");
+        return;
     }
     
-    // Sessions Table
-    if (tableData.sessions) {
-        updateTable('sessionsTableBody', tableData.sessions, (session) => {
-            const attendance = session.attendance || 0;
-            const capacity = session.capacity || 1;
-            const occupancy = Math.round((attendance / capacity) * 100);
-            return `
-                <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
-                <td>
-                    <strong>${session.name || ''}</strong><br>
-                    <small class="text-muted">${session.location || 'No location'}</small>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">${attendance}</span>
-                        <div class="progress flex-grow-1" style="height: 6px;">
-                            <div class="progress-bar ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
-                                 style="width: ${occupancy}%"></div>
-                        </div>
-                    </div>
-                </td>
-                <td>${capacity}</td>
-            `;
-        });
+    // ============ ACTIVE MEMBERS TABLE ============
+    
+
+    console.log("Checking for active_members data...");
+    console.log("Full tableData structure:", tableData);
+
+    // Try to find active_members in the correct path: tableData.members.active_members
+    let activeMembers = null;
+
+    if (tableData && tableData.members && tableData.members.active_members) {
+        activeMembers = tableData.members.active_members;
+        console.log("✅ Found active_members in tableData.members.active_members");
+        console.log("Number of active members:", activeMembers.length);
+    } else {
+        console.log("❌ Could not find active_members in tableData.members.active_members");
+        // Debug: Show what's available
+        if (tableData) {
+            console.log("Available top-level keys:", Object.keys(tableData));
+            if (tableData.members) {
+                console.log("Keys in tableData.members:", Object.keys(tableData.members));
+            }
+        }
     }
+
+    // Update the Active Members Table
+    const activeTbody = document.getElementById('activeMembersTableBody');
+    if (activeTbody) {
+        if (activeMembers && Array.isArray(activeMembers) && activeMembers.length > 0) {
+            console.log(`✅ Loading ${activeMembers.length} active members into table`);
+            activeTbody.innerHTML = ''; // Clear existing content
+            
+            activeMembers.forEach((member, index) => {
+                const row = document.createElement('tr');
+                
+                // Format member name
+                const memberName = member.name || 'Unknown Member';
+                
+                // Format last active date
+                const lastActive = member.last_active || 'Never';
+                
+                // Get engagement info
+                const engagementClass = member.engagement?.class || 'secondary';
+                const engagementText = member.engagement?.text || 'Low';
+                const attendanceRate = member.attendance_rate || '0%';
+                const attendanceCount = member.attendance_count || 0;
+                
+                // Build the row HTML
+                row.innerHTML = `
+                    <td>
+                        <strong>${memberName}</strong><br>
+                        <small class="text-muted">${member.email || ''}</small>
+                    </td>
+                    <td><span class="badge bg-primary">${attendanceCount}</span></td>
+                    <td>${lastActive}</td>
+                    <td>
+                        <span class="badge bg-${engagementClass}">${engagementText}</span>
+                        <small class="text-muted ms-1">${attendanceRate}</small>
+                    </td>
+                `;
+                
+                activeTbody.appendChild(row);
+            });
+            
+            console.log("✅ Active members table populated successfully");
+        } else {
+            console.log("ℹ️ No active members to display");
+            activeTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No active members data available</td></tr>';
+        }
+    } else {
+        console.error("❌ Active members table body element not found!");
+    }
+    
+    // ============ FIRST TIMERS TABLE ============
+    console.log("Checking for first_timers data...");
+    
+    // Try multiple paths for first timers
+    let firstTimers = null;
+    
+    if (tableData.first_timers) {
+        firstTimers = tableData.first_timers;
+        console.log("✅ Found first_timers directly in tableData");
+    } else if (tableData.members && tableData.members.first_timers) {
+        firstTimers = tableData.members.first_timers;
+        console.log("✅ Found first_timers in tableData.members");
+    } else if (tableData.firstTimers) { // Alternative spelling
+        firstTimers = tableData.firstTimers;
+        console.log("✅ Found firstTimers (different spelling)");
+    }
+    
+    const firstTimersTbody = document.getElementById('firstTimersTableBody');
+    if (firstTimersTbody) {
+        if (firstTimers && Array.isArray(firstTimers) && firstTimers.length > 0) {
+            console.log(`✅ Loading ${firstTimers.length} first timers`);
+            firstTimersTbody.innerHTML = '';
+            
+            firstTimers.forEach(user => {
+                const row = document.createElement('tr');
+                
+                const userName = user.name || 
+                    `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+                    'Unknown';
+                
+                let joinDate = 'Unknown';
+                if (user.date_joined) {
+                    try {
+                        joinDate = new Date(user.date_joined).toLocaleDateString();
+                    } catch (e) {
+                        joinDate = user.date_joined;
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td>
+                        <strong>${userName}</strong><br>
+                        <small class="text-muted">${user.email || ''}</small>
+                    </td>
+                    <td>${joinDate}</td>
+                    <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
+                    <td><span class="badge ${getStatusClass(user.attendance_count || 0)}">${getStatusText(user.attendance_count || 0)}</span></td>
+                `;
+                
+                firstTimersTbody.appendChild(row);
+            });
+        } else {
+            firstTimersTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No first timers data available</td></tr>';
+        }
+    }
+    
+    console.log("========== TABLE UPDATE COMPLETE ==========");
 }
 
+// ============ HELPER FUNCTIONS ============
+function getStatusClass(count) {
+    if (count >= 10) return 'bg-success';
+    if (count >= 5) return 'bg-warning';
+    if (count >= 1) return 'bg-info';
+    return 'bg-secondary';
+}
+
+function getStatusText(count) {
+    if (count >= 10) return 'Regular';
+    if (count >= 5) return 'Active';
+    if (count >= 1) return 'New';
+    return 'Inactive';
+}
+
+function showEmptyTables() {
+    const tables = ['activeMembersTableBody', 'firstTimersTableBody', 'sessionsTableBody'];
+    tables.forEach(id => {
+        const tbody = document.getElementById(id);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>';
+        }
+    });
+}
+
+// ============ UPDATE YOUR MAIN DATA LOADING FUNCTION ============
+// Make sure your loadDashboardData function calls updateAllTables correctly
+
+// Add this to your loadDashboardData function after getting the data:
+// Inside the try block, after const data = await response.json();
+
+/*
+if (data.success) {
+    console.log("Data loaded successfully");
+    
+    // Update KPIs
+    if (data.kpis) updateKPICards(data.kpis);
+    
+    // Update charts
+    if (data.charts && data.charts.overview) {
+        updateAllCharts(data.charts.overview);
+    }
+    
+    // IMPORTANT: Update tables - pass the correct data structure
+    if (data.tables) {
+        console.log("Tables data structure:", data.tables);
+        updateAllTables(data.tables);
+    } else {
+        console.warn("No tables data in response");
+    }
+    
+    hasLoaded = true;
+}
+*/
 function updateTable(tbodyId, data, rowTemplate) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody || !Array.isArray(data)) return;
