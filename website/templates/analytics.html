@@ -1652,144 +1652,83 @@ function getMaintenanceStatusText(daysUntil) {
 // Replace any existing updateAllTables function with this
 
 function updateAllTables(tableData) {
-    console.log("========== UPDATING TABLES ==========");
-    console.log("tableData received:", tableData);
-    
-    if (!tableData) {
-        console.error("No table data received!");
-        return;
-    }
-    
-    // ============ ACTIVE MEMBERS TABLE ============
-    
-
-    console.log("Checking for active_members data...");
-    console.log("Full tableData structure:", tableData);
-
-    // Try to find active_members in the correct path: tableData.members.active_members
-    let activeMembers = null;
-
-    if (tableData && tableData.members && tableData.members.active_members) {
-        activeMembers = tableData.members.active_members;
-        console.log("✅ Found active_members in tableData.members.active_members");
-        console.log("Number of active members:", activeMembers.length);
-    } else {
-        console.log("❌ Could not find active_members in tableData.members.active_members");
-        // Debug: Show what's available
-        if (tableData) {
-            console.log("Available top-level keys:", Object.keys(tableData));
-            if (tableData.members) {
-                console.log("Keys in tableData.members:", Object.keys(tableData.members));
-            }
-        }
-    }
-
-    // Update the Active Members Table
-    const activeTbody = document.getElementById('activeMembersTableBody');
-    if (activeTbody) {
-        if (activeMembers && Array.isArray(activeMembers) && activeMembers.length > 0) {
-            console.log(`✅ Loading ${activeMembers.length} active members into table`);
-            activeTbody.innerHTML = ''; // Clear existing content
-            
-            activeMembers.forEach((member, index) => {
-                const row = document.createElement('tr');
-                
-                // Format member name
-                const memberName = member.name || 'Unknown Member';
-                
-                // Format last active date
-                const lastActive = member.last_active || 'Never';
-                
-                // Get engagement info
-                const engagementClass = member.engagement?.class || 'secondary';
-                const engagementText = member.engagement?.text || 'Low';
-                const attendanceRate = member.attendance_rate || '0%';
-                const attendanceCount = member.attendance_count || 0;
-                
-                // Build the row HTML
-                row.innerHTML = `
-                    <td>
-                        <strong>${memberName}</strong><br>
-                        <small class="text-muted">${member.email || ''}</small>
-                    </td>
-                    <td><span class="badge bg-primary">${attendanceCount}</span></td>
-                    <td>${lastActive}</td>
-                    <td>
-                        <span class="badge bg-${engagementClass}">${engagementText}</span>
-                        <small class="text-muted ms-1">${attendanceRate}</small>
-                    </td>
-                `;
-                
-                activeTbody.appendChild(row);
-            });
-            
-            console.log("✅ Active members table populated successfully");
-        } else {
-            console.log("ℹ️ No active members to display");
-            activeTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No active members data available</td></tr>';
-        }
-    } else {
-        console.error("❌ Active members table body element not found!");
-    }
-    
-    // ============ FIRST TIMERS TABLE ============
-    console.log("Checking for first_timers data...");
-    
-    // Try multiple paths for first timers
-    let firstTimers = null;
-    
+    // First Timers Table
     if (tableData.first_timers) {
-        firstTimers = tableData.first_timers;
-        console.log("✅ Found first_timers directly in tableData");
-    } else if (tableData.members && tableData.members.first_timers) {
-        firstTimers = tableData.members.first_timers;
-        console.log("✅ Found first_timers in tableData.members");
-    } else if (tableData.firstTimers) { // Alternative spelling
-        firstTimers = tableData.firstTimers;
-        console.log("✅ Found firstTimers (different spelling)");
+        updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
+            <td>
+                <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
+                <small class="text-muted">${user.email || ''}</small>
+            </td>
+            <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
+            <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
+            <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
+        `);
     }
-    
-    const firstTimersTbody = document.getElementById('firstTimersTableBody');
-    if (firstTimersTbody) {
-        if (firstTimers && Array.isArray(firstTimers) && firstTimers.length > 0) {
-            console.log(`✅ Loading ${firstTimers.length} first timers`);
-            firstTimersTbody.innerHTML = '';
+
+    // ACTIVE MEMBERS TABLE - Most active members (Top members by attendance)
+    if (tableData.active_members) {
+        console.log("Loading active members:", tableData.active_members.length);
+        updateTable('activeMembersTableBody', tableData.active_members, (member) => {
+            // Format last active date
+            let lastActive = member.last_active || '';
+            if (lastActive && !isNaN(Date.parse(lastActive))) {
+                lastActive = new Date(lastActive).toLocaleDateString();
+            }
             
-            firstTimers.forEach(user => {
-                const row = document.createElement('tr');
-                
-                const userName = user.name || 
-                    `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
-                    'Unknown';
-                
-                let joinDate = 'Unknown';
-                if (user.date_joined) {
-                    try {
-                        joinDate = new Date(user.date_joined).toLocaleDateString();
-                    } catch (e) {
-                        joinDate = user.date_joined;
-                    }
-                }
-                
-                row.innerHTML = `
-                    <td>
-                        <strong>${userName}</strong><br>
-                        <small class="text-muted">${user.email || ''}</small>
-                    </td>
-                    <td>${joinDate}</td>
-                    <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
-                    <td><span class="badge ${getStatusClass(user.attendance_count || 0)}">${getStatusText(user.attendance_count || 0)}</span></td>
-                `;
-                
-                firstTimersTbody.appendChild(row);
-            });
-        } else {
-            firstTimersTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No first timers data available</td></tr>';
+            // Get engagement class
+            const engagementClass = member.engagement?.class || 'secondary';
+            const engagementText = member.engagement?.text || 'Low';
+            
+            return `
+                <td>
+                    <strong>${member.name || ''}</strong><br>
+                    <small class="text-muted">${member.email || ''}</small>
+                </td>
+                <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
+                <td>${lastActive}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">${member.attendance_rate || '0%'}</span>
+                        <span class="badge bg-${engagementClass}">${engagementText}</span>
+                    </div>
+                </td>
+            `;
+        });
+    } else {
+        console.log("No active members data available");
+        const tbody = document.getElementById('activeMembersTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
         }
     }
     
-    console.log("========== TABLE UPDATE COMPLETE ==========");
+    // Sessions Table
+    if (tableData.sessions) {
+        updateTable('sessionsTableBody', tableData.sessions, (session) => {
+            const attendance = session.attendance || 0;
+            const capacity = session.capacity || 1;
+            const occupancy = Math.round((attendance / capacity) * 100);
+            return `
+                <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
+                <td>
+                    <strong>${session.name || ''}</strong><br>
+                    <small class="text-muted">${session.location || 'No location'}</small>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">${attendance}</span>
+                        <div class="progress flex-grow-1" style="height: 6px;">
+                            <div class="progress-bar ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${occupancy}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${capacity}</td>
+            `;
+        });
+    }
 }
+
 
 // ============ HELPER FUNCTIONS ============
 function getStatusClass(count) {
