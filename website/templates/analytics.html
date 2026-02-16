@@ -1092,6 +1092,15 @@ function updateAllCharts(chartData) {
         showEmptyChart('attendanceTrendChart', 'No attendance data for selected period');
     }
 
+    // SESSION PERFORMANCE CHART
+    if (chartData.session_performance) {
+        console.log("Loading session performance chart");
+        renderSessionPerformanceChart(chartData.session_performance);
+    } else {
+        console.log("No session performance data available");
+        showEmptyChart('sessionPerformanceChart', 'No session data');
+    }
+
     // MEMBER GROWTH CHART - Add this!
     if (chartData.member_growth) {
         console.log("Loading member growth chart");
@@ -1101,10 +1110,35 @@ function updateAllCharts(chartData) {
         showEmptyChart('memberGrowthChart', 'No member growth data');
     }
     
-    // MEMBER CATEGORIES CHART - Add this!
+   // MEMBER CATEGORIES CHART - Combine gender and status
     if (chartData.member_categories) {
         console.log("Loading member categories chart");
-        renderMemberCategoriesChart(chartData.member_categories);
+        
+        // Combine both datasets into one
+        let combinedLabels = [];
+        let combinedValues = [];
+        let combinedColors = [];
+        
+        // Add gender data
+        if (chartData.member_categories.by_gender) {
+            combinedLabels = combinedLabels.concat(chartData.member_categories.by_gender.labels);
+            combinedValues = combinedValues.concat(chartData.member_categories.by_gender.values);
+            combinedColors = combinedColors.concat(chartData.member_categories.by_gender.colors || ['#3b82f6', '#ec4899', '#8b5cf6']);
+        }
+        
+        // Add status data
+        if (chartData.member_categories.by_status) {
+            combinedLabels = combinedLabels.concat(chartData.member_categories.by_status.labels);
+            combinedValues = combinedValues.concat(chartData.member_categories.by_status.values);
+            combinedColors = combinedColors.concat(chartData.member_categories.by_status.colors || ['#f59e0b', '#10b981']);
+        }
+        
+        // Render combined chart
+        renderDonutChart('memberCategoriesChart', {
+            labels: combinedLabels,
+            values: combinedValues
+        }, combinedColors);
+        
     } else {
         console.log("No member categories data available");
         showEmptyChart('memberCategoriesChart', 'No category data');
@@ -1301,6 +1335,93 @@ function renderMemberGrowthChart(data) {
         showEmptyChart('memberGrowthChart', 'Error loading data');
     }
 }
+
+// ============ SESSION PERFORMANCE CHART ============
+function renderSessionPerformanceChart(data) {
+    const canvas = document.getElementById('sessionPerformanceChart');
+    if (!canvas) {
+        console.log("Session performance canvas not found");
+        return;
+    }
+    
+    // Destroy existing chart
+    if (charts.sessionPerformance) {
+        charts.sessionPerformance.destroy();
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        const labels = data.labels || [];
+        const values = data.values || [];
+        
+        if (labels.length === 0 || values.length === 0) {
+            showEmptyChart('sessionPerformanceChart', 'No session data');
+            return;
+        }
+        
+        console.log("Rendering session performance chart with", labels.length, "sessions");
+        
+        // Create responsive bar chart
+        charts.sessionPerformance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Attendance',
+                    data: values,
+                    backgroundColor: 'rgba(79, 172, 254, 0.8)',
+                    borderColor: '#4facfe',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Attendance: ${context.parsed.y}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Attendees'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error rendering session performance chart:', error);
+        showEmptyChart('sessionPerformanceChart', 'Error loading data');
+    }
+}
+
 
 // Also add function for member categories chart
 function renderMemberCategoriesChart(data) {
@@ -1665,40 +1786,72 @@ function updateAllTables(tableData) {
         `);
     }
 
-    // ACTIVE MEMBERS TABLE - Most active members (Top members by attendance)
-    if (tableData.active_members) {
-        console.log("Loading active members:", tableData.active_members.length);
-        updateTable('activeMembersTableBody', tableData.active_members, (member) => {
-            // Format last active date
-            let lastActive = member.last_active || '';
-            if (lastActive && !isNaN(Date.parse(lastActive))) {
-                lastActive = new Date(lastActive).toLocaleDateString();
+   // ACTIVE MEMBERS TABLE - Most active members (Top members by attendance)
+if (tableData.active_members) {
+    console.log('activeMembersTableBody element:', document.getElementById('activeMembersTableBody'));
+    console.log("Loading active members:", tableData.active_members);
+    updateTable('activeMembersTableBody', tableData.active_members, (member) => {
+        // Format last active date - handle different date formats
+        let lastActive = member.last_active || '';
+        if (lastActive && lastActive !== 'Never') {
+            // If it's already formatted like "Feb 06, 2026", use it as is
+            // Otherwise try to format it
+            if (!lastActive.includes(',')) {
+                try {
+                    const date = new Date(lastActive);
+                    if (!isNaN(date.getTime())) {
+                        lastActive = date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (e) {
+                    // Keep original if parsing fails
+                }
             }
-            
-            // Get engagement class
-            const engagementClass = member.engagement?.class || 'secondary';
-            const engagementText = member.engagement?.text || 'Low';
-            
-            return `
-                <td>
-                    <strong>${member.name || ''}</strong><br>
-                    <small class="text-muted">${member.email || ''}</small>
-                </td>
-                <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
-                <td>${lastActive}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">${member.attendance_rate || '0%'}</span>
-                        <span class="badge bg-${engagementClass}">${engagementText}</span>
-                    </div>
-                </td>
-            `;
-        });
-    } else {
-        console.log("No active members data available");
-        const tbody = document.getElementById('activeMembersTableBody');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
+        }
+        
+        // Get engagement class safely
+        let engagementClass = 'secondary';
+        let engagementText = 'Low';
+        
+        if (member.engagement) {
+            engagementClass = member.engagement.class || 'secondary';
+            engagementText = member.engagement.text || 'Low';
+        } else {
+            // Fallback based on attendance rate
+            const rate = parseFloat(member.attendance_rate) || 0;
+            if (rate >= 50) {
+                engagementClass = 'success';
+                engagementText = 'High';
+            } else if (rate >= 20) {
+                engagementClass = 'warning';
+                engagementText = 'Medium';
+            }
+        }
+        
+        return `
+            <td>
+                <strong>${member.name || ''}</strong><br>
+                <small class="text-muted">${member.email || ''}</small>
+            </td>
+            <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
+            <td>${lastActive || 'Never'}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <span class="me-2">${member.attendance_rate || '0%'}</span>
+                    <span class="badge bg-${engagementClass}">${engagementText}</span>
+                </div>
+            </td>
+        `;
+    });
+    } 
+    else {
+    console.log("No active members data available");
+    const tbody = document.getElementById('activeMembersTableBody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
         }
     }
     

@@ -3911,7 +3911,8 @@ def get_filtered_table_data(user_query, session_query, attendance_query, item_qu
     return {
         'overview': {
             'first_timers': get_recent_first_timers(user_query),
-            'sessions': get_recent_sessions(session_query, attendance_query)
+            'sessions': get_recent_sessions(session_query, attendance_query),
+            'active_members': get_active_members_table(user_query, attendance_query)
         },
         'members': {
             'first_timers': get_first_timers_table(user_query),
@@ -4066,30 +4067,38 @@ def get_member_growth_chart(user_query, start_date, end_date):
     
 
 def get_member_categories_chart(user_query):
-    """Get member categories breakdown"""
-    # Count by first timer status
+    """Return member categories in flat structure expected by frontend"""
+    
+    # Get gender distribution
+    gender_counts = user_query.with_entities(
+        User.gender, func.count(User.id)
+    ).group_by(User.gender).all()
+    
+    # Get status distribution (first timer vs returning)
+    total_users = user_query.count()
     first_timers = user_query.filter_by(is_first_timer=True).count()
-    returning = user_query.filter_by(is_first_timer=False).count()
+    returning = total_users - first_timers
     
-    # Count by gender
-    male = user_query.filter_by(gender='Male').count()
-    female = user_query.filter_by(gender='Female').count()
-    other = user_query.filter(User.gender.isnot(None)).filter(User.gender.notin_(['Male', 'Female'])).count()
+    # Create flat structure combining both dimensions
+    labels = []
+    values = []
     
-    # Count by role (if you want to include)
-    regular_members = user_query.join(User.roles).filter(Role.name.in_(['Member', 'Regular'])).distinct().count()
+    # Add gender data
+    gender_map = {'M': 'Male', 'F': 'Female', 'O': 'Other'}
+    for gender, count in gender_counts:
+        if gender in gender_map:
+            labels.append(gender_map[gender])
+            values.append(count)
+    
+    # Add status data
+    labels.append('First Timers')
+    values.append(first_timers)
+    labels.append('Returning')
+    values.append(returning)
     
     return {
-        'by_status': {
-            'labels': ['First Timers', 'Returning Members'],
-            'values': [first_timers, returning],
-            'colors': ['#f59e0b', '#10b981']
-        },
-        'by_gender': {
-            'labels': ['Male', 'Female', 'Other'],
-            'values': [male, female, other],
-            'colors': ['#3b82f6', '#ec4899', '#8b5cf6']
-        }
+        'labels': labels,
+        'values': values
     }
 
 def get_session_performance_chart(session_query, attendance_query):
