@@ -1,498 +1,875 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en">
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="keywords"
-      content="wrappixel, admin dashboard, html css dashboard, web dashboard, bootstrap 5 admin, bootstrap 5, css3 dashboard, bootstrap 5 dashboard, Matrix lite admin bootstrap 5 dashboard, frontend, responsive bootstrap 5 admin template, Matrix admin lite design, Matrix admin lite dashboard bootstrap 5 dashboard template"
-    />
-    <meta
-      name="description"
-      content="Matrix Admin Lite Free Version is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
-    />
-    <meta name="robots" content="noindex,nofollow" />
-    <title>Sleek</title>
-    <!-- Favicon icon -->
-       <link
-      type="text/css"
-      rel="stylesheet"
-      href="{{url_for('static',filename='styles/style.min.css')}}"
-    />
-     <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
-    />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="static/uploads/chemonics_fav.png"
-    />
+    <title>Session Details | Church Management System</title>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    
+    <!-- QR Code JS -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
     <!-- Custom CSS -->
-    <link
-      href="static/lib/fullcalendar/dist/fullcalendar.min.css"
-      rel="stylesheet"
-    />
-   <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">-->
- <!--
-      <link
-      type="text/css"
-      rel="stylesheet"
-      href="{{url_for('static',filename='lib/bootstrap/dist/css/bootstrap.min.css')}}"
-    />-->
-
- 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-     <style>
-        #saveQrBtn:hover {
-            background-color: #ffc107;
-            border-color: #ffc107;
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-dark: #0d9488;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --info: #3b82f6;
+            --info-dark: #2563eb;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
         }
 
-        #saveQrBtn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-    /* Flash message styling */
-    .alert {
-        margin: 15px 0;
-        border-radius: 4px;
-    }
-    
-    .alert-success {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-        color: #155724;
-    }
-    
-    .alert-warning {
-        background-color: #fff3cd;
-        border-color: #ffeeba;
-        color: #856404;
-    }
-    
-    .alert-danger {
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
-        color: #721c24;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
 
-</style>
-  </head>
+        /* Main Content Area - Matching admin pages */
+        .content-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
 
-  <body>
-    <!-- ============================================================== -->
-    <!-- Preloader - style you can find in spinners.css -->
-    <!-- ============================================================== -->
-    <div class="preloader">
-      <div class="lds-ripple">
-        <div class="lds-pos"></div>
-        <div class="lds-pos"></div>
-      </div>
-    </div>
-    <!-- ============================================================== -->
-    <!-- Main wrapper - style you can find in pages.scss -->
-    <!-- ============================================================== -->
-    <div
-      id="main-wrapper"
-      data-layout="vertical"
-      data-navbarbg="skin5"
-      data-sidebartype="full"
-      data-sidebar-position="absolute"
-      data-header-position="absolute"
-      data-boxed-layout="full"
-    >
-      <!-- ============================================================== -->
-      <!-- Topbar header - style you can find in pages.scss -->
-      <!-- ============================================================== -->
-      {% include "include/header.html" %}
-      <!-- ============================================================== -->
-      <!-- End Topbar header -->
-      <!-- ============================================================== -->
-      <!-- ============================================================== -->
-      <!-- Left Sidebar - style you can find in sidebar.scss  -->
-      <!-- ============================================================== -->
-      {% include "include/leftnavbar.html" %}
-      <!-- ============================================================== -->
-      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
-      <!-- ============================================================== -->
-      <!-- ============================================================== -->
-      <!-- Page wrapper  -->
-      <!-- ============================================================== -->
-      <div class="page-wrapper">
-        <!-- ============================================================== -->
-        <!-- Breadcrumb and right sidebar toggle -->
-        <!-- ============================================================== -->
-        <div class="page-breadcrumb">
+        .content-container {
+            width: 100%;
+            max-width: 1400px;
+            padding: 30px 30px 30px 30px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1800px) {
+            .content-container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .content-container {
+                max-width: 98%;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .content-area {
+                margin-left: 0;
+            }
+            .content-container {
+                padding: 100px 20px 20px;
+                max-width: 100%;
+            }
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: white;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem 2rem;
+            border: none;
+        }
+
+        .card-header-modern h3 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .card-header-modern p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* Session Header */
+        .session-header {
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            padding: 2rem;
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 35px -10px rgba(79, 70, 229, 0.3);
+        }
+
+        .session-header h1 {
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .session-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            flex-wrap: wrap;
+        }
+
+        .session-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+        }
+
+        .session-meta-item i {
+            font-size: 1rem;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge.scheduled { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+        .status-badge.active { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .status-badge.completed { background: rgba(100, 116, 139, 0.1); color: var(--gray); }
+        .status-badge.cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.2rem;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-label i {
+            color: var(--primary);
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        /* QR Code Container */
+        .qr-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            border: 2px solid #f1f5f9;
+        }
+
+        .qr-code-wrapper {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .qr-code-wrapper img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .qr-instruction {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin: 1rem 0;
+        }
+
+        /* Check-in Window Card */
+        .checkin-card {
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .checkin-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkin-header i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .checkin-header h5 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .checkin-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .checkin-row:last-child {
+            border-bottom: none;
+        }
+
+        .checkin-label {
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .checkin-value {
+            font-weight: 600;
+        }
+
+        .toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .toggle-switch.active {
+            background: var(--success);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        /* Description Box */
+        .description-box {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.5rem;
+            min-height: 100px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Button Styling */
+        .btn-modern {
+            padding: 0.75rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
+        }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+            color: white;
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, var(--success), var(--success-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--success);
+        }
+
+        .btn-success-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--success);
+            color: white;
+        }
+
+        .btn-outline-modern {
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            color: var(--gray);
+        }
+
+        .btn-outline-modern:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .btn-warning-modern {
+            background: linear-gradient(135deg, var(--warning), var(--warning-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--warning);
+        }
+
+        .btn-warning-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--warning);
+            color: white;
+        }
+
+        .btn-danger-modern {
+            background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--danger);
+        }
+
+        .btn-danger-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--danger);
+            color: white;
+        }
+
+        /* Alert Styling */
+        .alert-modern {
+            border-radius: 16px;
+            border: none;
+            padding: 1rem 1.5rem;
+            background: white;
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success-modern {
+            border-left-color: var(--success);
+        }
+
+        .alert-success-modern i {
+            color: var(--success);
+        }
+
+        .alert-warning-modern {
+            border-left-color: var(--warning);
+        }
+
+        .alert-warning-modern i {
+            color: var(--warning);
+        }
+
+        .alert-danger-modern {
+            border-left-color: var(--danger);
+        }
+
+        .alert-danger-modern i {
+            color: var(--danger);
+        }
+
+        /* Action Buttons Container */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .session-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .session-meta-item {
+                width: 100%;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons .btn-modern {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Preloader (hidden) */
+        .preloader {
+            display: none;
+        }
+
+        /* Footer */
+        .modern-footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+
+        .modern-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .modern-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Header and Sidebar -->
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="content-container">
+            <!-- Session Header -->
+            <div class="session-header">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-calendar-alt me-2"></i>{{ session.name }}
+                        </h1>
+                        <div class="session-meta">
+                            {% if session.date %}
+                            <div class="session-meta-item">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>{{ session.date.strftime('%B %d, %Y') }}</span>
+                            </div>
+                            {% endif %}
+                            {% if session.start_time %}
+                            <div class="session-meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>
+                                    {{ session.start_time.strftime('%I:%M %p') if session.start_time else '' }}
+                                    {% if session.end_time %} - {{ session.end_time.strftime('%I:%M %p') }}{% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% if session.location %}
+                            <div class="session-meta-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ session.location }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="status-badge {{ session.status or 'scheduled' }}">
+                        <i class="fas fa-circle"></i>
+                        {{ session.status|capitalize if session.status else 'Scheduled' }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
             <div class="row">
-                <div class="col-12 d-flex no-block align-items-center">
-                    <div class="ms-auto text-end">
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <!-- <li class="breadcrumb-item"><a href="#">Home</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">
-                                  Library
-                                </li>-->
-                            </ol>
-                        </nav>
+                <div class="col-12">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert-modern alert-{{ category }}-modern mb-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' if category == 'danger' else 'fa-info-circle' }} me-3 fa-lg"></i>
+                                        <div class="flex-grow-1">{{ message }}</div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+
+            <!-- Main Card -->
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h3><i class="fas fa-info-circle me-2"></i>Session Details</h3>
+                    <p>Complete information about this session</p>
+                </div>
+                <div class="p-4">
+                    <div class="row g-4">
+                        <!-- Left Column - Session Info -->
+                        <div class="col-lg-6">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-tag"></i>
+                                        <span>Session Name</span>
+                                    </div>
+                                    <div class="info-value">{{ session.name }}</div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Date & Time</span>
+                                    </div>
+                                    <div class="info-value">
+                                        {{ session.date.strftime('%Y-%m-%d') if session.date else 'Not set' }}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ session.start_time.strftime('%H:%M') if session.start_time else '--:--' }} - 
+                                            {{ session.end_time.strftime('%H:%M') if session.end_time else '--:--' }}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-map-pin"></i>
+                                        <span>Location</span>
+                                    </div>
+                                    <div class="info-value">{{ session.location or 'Not specified' }}</div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-flag"></i>
+                                        <span>Status</span>
+                                    </div>
+                                    <div class="info-value">
+                                        <span class="status-badge {{ session.status or 'scheduled' }}" style="padding: 0.25rem 1rem;">
+                                            {{ session.status|capitalize if session.status else 'Scheduled' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Check-in Information Card -->
+                            <div class="checkin-card mt-4">
+                                <div class="checkin-header">
+                                    <i class="fas fa-clock"></i>
+                                    <h5>Check-in Window</h5>
+                                </div>
+                                
+                                <div class="checkin-row">
+                                    <span class="checkin-label">
+                                        <i class="fas fa-door-open me-2 text-primary"></i>Opens:
+                                    </span>
+                                    <span class="checkin-value">
+                                        {{ session.checkin_opens_minutes }} minutes before start
+                                    </span>
+                                </div>
+                                
+                                <div class="checkin-row">
+                                    <span class="checkin-label">
+                                        <i class="fas fa-door-closed me-2 text-danger"></i>Closes:
+                                    </span>
+                                    <span class="checkin-value">
+                                        {{ session.checkin_closes_minutes }} minutes after start
+                                    </span>
+                                </div>
+                                
+                                <div class="checkin-row">
+                                    <span class="checkin-label">
+                                        <i class="fas fa-qrcode me-2 text-success"></i>Self Check-in:
+                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="checkin-value">
+                                            {% if session.allow_self_checkin %}Enabled{% else %}Disabled{% endif %}
+                                        </span>
+                                        <div class="toggle-switch {% if session.allow_self_checkin %}active{% endif %}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - QR Code -->
+                        <div class="col-lg-6">
+                            <div class="qr-container">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-qrcode text-primary me-2"></i>
+                                    Session QR Code
+                                </h5>
+                                
+                                <div class="qr-code-wrapper">
+                                    {% if session.qr_code %}
+                                        <img src="{{ url_for('views.generate_qr', qr_code=session.qr_code) }}" 
+                                             alt="QR Code for {{ session.name }}"
+                                             class="img-fluid"
+                                             id="qrCodeImg"
+                                             onerror="this.style.display='none'; document.getElementById('qr-fallback').style.display='block'">
+                                        
+                                        <div id="qr-fallback" style="display: none;" class="alert alert-warning-modern mt-3">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Failed to generate QR code. Manual code: <strong>{{ session.qr_code }}</strong>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning-modern">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            QR code not generated for this session
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <p class="qr-instruction">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                                    Scan this code to check in attendees
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session Description -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <label class="fw-bold mb-2">
+                                <i class="fas fa-align-left me-2 text-primary"></i>Description
+                            </label>
+                            <div class="description-box">
+                                {{ session.description or 'No description provided' }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <!-- Action Buttons - Updated with blue buttons and fixed download -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="action-buttons">
+                                {% if session.qr_code %}
+                                <button class="btn-modern btn-primary-modern" id="downloadQrCodeBtn">
+                                    <i class="fas fa-download"></i> Download QR Code
+                                </button>
+                                {% else %}
+                                <button class="btn-modern btn-primary-modern" id="saveQrBtn" onclick="saveQrCode('{{ session.id }}')">
+                                    <i class="fas fa-qrcode"></i> Generate QR Code
+                                </button>
+                                {% endif %}
+                                
+                                <button class="btn-modern btn-outline-modern" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Print Details
+                                </button>
+                                
+                                <a href="{{ url_for('views.adduserstosession', session_id=session.id) }}" 
+                                class="btn-modern btn-primary-modern">
+                                    <i class="fas fa-user-plus"></i> Manage Attendees
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- Footer -->
+            <footer class="modern-footer">
+                All Rights Reserved by &copy; Sleektech. Designed and Developed by
+                <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a>
+            </footer>
         </div>
-        <!-- ============================================================== -->
-        <!-- End Breadcrumb and right sidebar toggle -->
-        <!-- ============================================================== -->
-        <!-- ADD FLASH MESSAGES HERE -->
-<div class="row">
-    <div class="col-md-12">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
-</div>
-        <!-- ============================================================== -->
-        <!-- Container fluid  -->
-        <!-- ============================================================== -->
-        <div class="container-fluid">
-            <!-- ============================================================== -->
-            <!-- Start Page Content -->
-            <!-- ============================================================== -->
-           <div class="row">
-                  <div class="col-md-12">
-                      <!-- Session Details Card -->
-                      <div class="card">
-                          <div class="card-body">
-                              <h3 class="mb-4"><b>Session Details</b></h3>
-                              
-                              <!-- Session Information Section -->
-                              <div class="row">
-                                  <!-- Left Column - Session Info -->
-                                  <div class="col-md-6">
-                                      <div class="p-4">
-                                          <div class="form-group mb-3">
-                                              <label for="sessionName"><b>Session Name:</b></label>
-                                              <input type="text" class="form-control" readonly value="{{session.name}}" name="sessionName">
-                                          </div>
-                                          
-                                          <div class="form-group mb-3">
-                                              <label for="sessionDate"><b>Date & Time:</b></label>
-                                              <div class="input-group">
-                                                  <input type="text" class="form-control" readonly 
-                                                      value="{{ session.date.strftime('%Y-%m-%d') }} • 
-                                                      {% if session.start_time %}{{ session.start_time.strftime('%H:%M') }}{% endif %}
-                                                      {% if session.end_time %} - {{ session.end_time.strftime('%H:%M') }}{% endif %}">
-                                              </div>
-                                          </div>
-                                          
-                                          <div class="form-group mb-3">
-                                              <label for="sessionLocation"><b>Location:</b></label>
-                                              <input type="text" class="form-control" readonly value="{{session.location or 'Not specified'}}" name="sessionLocation">
-                                          </div>
-                                          
-                                          <div class="form-group mb-3">
-                                              <label for="sessionStatus"><b>Status:</b></label>
-                                              <div class="input-group">
-                                                  <input type="text" class="form-control" readonly 
-                                                      value="{{ session.status|capitalize }}"
-                                                      style="color: {% if session.status == 'active' %}#28a745{% elif session.status == 'completed' %}#6c757d{% elif session.status == 'cancelled' %}#dc3545{% else %}#007bff{% endif %}; font-weight: 500;">
-                                              </div>
-                                          </div>
-                                           <!-- Check-in Information -->
-                                          <div class="checkin-info p-3" style="background: #f8f9fa; border-radius: 8px;">
-                                              <h5 class="mb-3"><b>Check-in Window</b></h5>
-                                              <div class="d-flex justify-content-between mb-2">
-                                                  <span>Opens:</span>
-                                                  <span class="font-weight-bold">
-                                                      {{ session.checkin_opens_minutes }} minutes before start
-                                                  </span>
-                                              </div>
-                                              <div class="d-flex justify-content-between">
-                                                  <span>Closes:</span>
-                                                  <span class="font-weight-bold">
-                                                      {{ session.checkin_closes_minutes }} minutes after start
-                                                  </span>
-                                              </div>
-                                              
-                                              <!-- Self Check-in Status -->
-                                              <div class="mt-3 pt-3 border-top">
-                                                  <div class="d-flex justify-content-between align-items-center">
-                                                      <span>Self Check-in:</span>
-                                                      <span class="badge badge-{% if session.allow_self_checkin %}success{% else %}danger{% endif %}">
-                                                          {% if session.allow_self_checkin %}Enabled{% else %}Disabled{% endif %}
-                                                      </span>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </div>
-                                  
-                                  <!-- Right Column - QR Code and Check-in Info -->
-                                  <div class="col-md-6">
-                                      <div class="p-4">
-                                          <!-- QR Code Section (Center of Attention) -->
-                                            <div class="text-center mb-4">
-                                                <div class="qr-code-container p-3 bg-white rounded-lg shadow-sm" style="max-width: 320px; margin: 0 auto;">
-                                                    {% if session.qr_code %}
-                                                        {# For old sessions without stored files #}
-                                                        <img src="{{ url_for('views.generate_qr', qr_code=session.qr_code) }}"
-                                                            alt="QR Code for {{ session.name }}"
-                                                            class="img-fluid border p-2"
-                                                            style="width: 100%; height: auto;"
-                                                            onerror="this.style.display='none'; document.getElementById('qr-fallback').style.display='block'">
-                                                        
-                                                        <div id="qr-fallback" style="display: none;" class="alert alert-warning">
-                                                            Failed to generate QR code. Manual code: <strong>{{ session.qr_code }}</strong>
-                                                        </div>
-                                                        
-                                                        <p class="mt-2 text-muted">
-                                                            <i class="fas fa-info-circle me-2"></i>
-                                                            Scan this code to check in attendees
-                                                        </p>
-                                                    {% else %}
-                                                        <div class="alert alert-warning p-2">
-                                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                                            QR code not generated for this session
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                      </div>
-                                  </div>
-                              </div>
-                              
-                              <!-- Session Description -->
-                              <div class="row mt-2">
-                                  <div class="col-md-12">
-                                      <div class="p-3">
-                                          <label for="sessionDescription"><b>Description:</b></label>
-                                          <div class="description-box p-3" style="background: #f8f9fa; border-radius: 8px; min-height: 80px;">
-                                              {{ session.description or 'No description provided' }}
-                                          </div>
-                                      </div>
-                                  </div>
-                              </div>
-                              
-                              <!-- Action Buttons -->
-                              <div class="row mt-4">
-                                  <div class="col-md-12 text-center">
-                                      {% if session.qr_code %}
-                                      <a href="{{ url_for('static', filename='qrcodes/qr-' + session.name|replace(' ', '-')|lower + '-' + session.id|string + '-' + session.qr_code + '.png') }}" 
-                                        download="session-{{ session.name|replace(' ', '-')|lower }}-{{ session.id }}-qr.png"
-                                        class="btn btn-primary mt-2">
-                                        <i class="fas fa-download me-2"></i> Download QR Code
-                                      </a>
-                                      {% endif %}
-                                      <button class="btn btn-outline-secondary" onclick="window.print()">
-                                          <i class="fas fa-print"></i> Print Details
-                                      </button>
-                                      <button class="btn btn-success ml-2" id="startScanBtn">
-                                          <i class="fas fa-qrcode"></i> Scan Another Code
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-    
-            <!-- ============================================================== -->
-            <!-- End Page Content -->
-            <!-- ============================================================== -->
-        </div>
-        <!-- ============================================================== -->
-        <!-- End Container fluid  -->
-        <!-- ============================================================== -->
-    
-        <!-- ============================================================== -->
-        <!-- Footer -->
-        <!-- ============================================================== -->
-        <footer class="footer text-center">
-            All Rights Reserved by &copy; Sleektech. Designed and Developed by
-            <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a>
-        </footer>
-        <!-- ============================================================== -->
-        <!-- End Footer -->
-        <!-- ============================================================== -->
-    </div>
-    
-      <!-- ============================================================== -->
-      <!-- End Page wrapper  -->
-      <!-- ============================================================== -->
-    </div>
-    <!-- JavaScript for QR Code Download -->
-<script>
-document.getElementById('downloadQrCodeBtn').addEventListener('click', function() {
-    const qrCodeImg = document.querySelector('.qr-code-container img');
-    if (qrCodeImg) {
-        const link = document.createElement('a');
-        link.href = qrCodeImg.src;
-        link.download = 'session-qr-code-{{ session.id }}.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-});
+    </main>
 
-
-// Check if QR file exists on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const qrPath = "{{ url_for('static', filename='qrcodes/qr-' + session.name|replace(' ', '-')|lower + '-' + session.id|string + '-' + session.qr_code + '.png') }}";
+    <!-- Required Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    fetch(qrPath)
-        .then(response => {
-            if (!response.ok) {
-                // Show save button if file doesn't exist
-                document.getElementById('saveQrBtn').style.display = 'inline-block';
-                document.getElementById('downloadQrBtn').style.display = 'none';
-            }
-        })
-        .catch(() => {
-            document.getElementById('saveQrBtn').style.display = 'inline-block';
-            document.getElementById('downloadQrBtn').style.display = 'none';
-        });
-});
-
-// Function to save QR code
-function saveQrCode(sessionId) {
-    const btn = document.getElementById('saveQrBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating...';
+    <!-- Your existing scripts -->
+    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
     
-    fetch(`/save-qr/${sessionId}`)
-        .then(response => {
-            if (response.ok) {
-                // Reload page after successful generation
-                window.location.reload();
-            } else {
-                alert('Failed to generate QR code');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
-        });
-}
-
-</script>
-<script>
-
-// Auto-dismiss flash messages after 5 seconds
-$(document).ready(function(){
-    setTimeout(function(){
-        $('.alert').fadeOut('slow', function(){
-            $(this).remove();
-        });
-    }, 5000);
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     
-    // Manual dismiss
-    $('.alert .close').on('click', function(){
-        $(this).parent().fadeOut('slow', function(){
-            $(this).remove();
+    <!-- Custom JavaScript -->
+    <script>
+    $(document).ready(function() {
+        // Auto-dismiss flash messages after 5 seconds
+        setTimeout(function() {
+            $('.alert-modern').fadeOut('slow', function() {
+                $(this).remove();
+            });
+        }, 5000);
+        
+        // Manual dismiss
+        $('.alert-modern .btn-close').on('click', function() {
+            $(this).closest('.alert-modern').fadeOut('slow', function() {
+                $(this).remove();
+            });
         });
     });
-});
-</script>
-</script>
-    <!-- ============================================================== -->
-    <!-- End Wrapper -->
-    <!-- ============================================================== -->
-    <!-- ============================================================== -->
-    <!-- All Jquery -->
-    <!-- ============================================================== -->
-    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>-->
-    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
 
-    <script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>
-    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
-    
-    <!--<script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>-->
-    <!-- <script src="../assets/libs/jquery/dist/jquery.min.js"></script> -->
-    <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
-    <!--<script src="../dist/js/jquery.ui.touch-punch-improved.js"></script> -->
-    <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
-    <!--<script src="../dist/js/jquery-ui.min.js"></script> -->
-    <!-- Bootstrap tether Core JavaScript -->
-    <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
-    <!--<script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script> -->
-    <!-- slimscrollbar scrollbar JavaScript -->
-    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
-    <!--<script src="../assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>-->
-    <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
-    <!--<script src="../assets/extra-libs/sparkline/sparkline.js"></script> -->
-    <!--Wave Effects -->
-    <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
-    <!--<script src="../dist/js/waves.js"></script>-->
-    <!--Menu sidebar -->
-    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
-    <!--<script src="../dist/js/sidebarmenu.js"></script>-->
-    <!--Custom JavaScript -->
-    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
-    <!--<script src="../dist/js/custom.min.js"></script>-->
-    <!-- this page js -->
-    <script src="{{url_for('static',filename='lib/moment/min/moment.min.js')}}"></script>
-    <!--<script src="../assets/libs/moment/min/moment.min.js"></script>-->
-    <script src="{{url_for('static',filename='lib/fullcalendar/dist/fullcalendar.min.js')}}"></script>
-    <!--<script src="../assets/libs/fullcalendar/dist/fullcalendar.min.js"></script>-->
-    <script src="{{url_for('static',filename='javascript/pages/calendar/cal-init.js')}}"></script>
+    // QR Code Download
+    document.getElementById('downloadQrCodeBtn')?.addEventListener('click', function() {
+        const qrImg = document.getElementById('qrCodeImg');
+        if (qrImg) {
+            try {
+                const sessionName = "{{ session.name|replace(' ', '_') }}";
+                const filename = `session_${sessionName}_qrcode.png`;
+                
+                const link = document.createElement('a');
+                link.href = qrImg.src;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('QR Code downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Download failed:', error);
+                showToast('Failed to download QR code. Please try again.', 'error');
+            }
+        }
+    });
 
-    <!--<script src="../dist/js/pages/calendar/cal-init.js"></script>-->
-    
-</script>
-<script>
-  document.getElementById('downloadQrCodeBtn')?.addEventListener('click', () => {
-      const qrImg = document.querySelector('.form-group img');
-      if (qrImg) {
-          try {
-              // Get user's first name and last name from the form inputs
-              const firstName = document.querySelector('input[name="firstname"]').value;
-              const lastName = document.querySelector('input[name="lastname"]').value;
-              
-              // Create filename (sanitize to remove special characters)
-              const sanitize = (str) => str.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-              const filename = `${sanitize(firstName)}_${sanitize(lastName)}_qrcode.png`;
-              
-              const link = document.createElement('a');
-              link.href = qrImg.src;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-          } catch (error) {
-              console.error('Download failed:', error);
-              alert('Failed to download QR code. Please try again.');
-          }
-      }
-  });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-  </body>
+    // Check if QR file exists on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrPath = "{{ url_for('static', filename='qrcodes/qr-' + session.name|replace(' ', '-')|lower + '-' + session.id|string + '-' + session.qr_code + '.png') if session.qr_code else '' }}";
+        
+        if (qrPath) {
+            fetch(qrPath)
+                .then(response => {
+                    if (!response.ok) {
+                        // Show save button if file doesn't exist
+                        document.getElementById('saveQrBtn')?.style.display = 'inline-block';
+                        document.getElementById('downloadQrCodeBtn')?.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('saveQrBtn')?.style.display = 'inline-block';
+                    document.getElementById('downloadQrCodeBtn')?.style.display = 'none';
+                });
+        }
+    });
+
+    // Function to save QR code
+    function saveQrCode(sessionId) {
+        const btn = document.getElementById('saveQrBtn');
+        if (!btn) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating...';
+        
+        fetch(`/save-qr/${sessionId}`)
+            .then(response => {
+                if (response.ok) {
+                    showToast('QR Code generated successfully!', 'success');
+                    // Reload page after successful generation
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showToast('Failed to generate QR code', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> Try Again';
+            });
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast-modern" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background: white; border-radius: 12px; padding: 1rem 1.5rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2); border-left: 4px solid ${type === 'success' ? '#10b981' : '#ef4444'}; min-width: 300px; animation: slideIn 0.3s ease;">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-success' : 'fa-exclamation-circle text-danger'} me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close btn-sm" onclick="document.getElementById('${toastId}').remove()"></button>
+                </div>
+            </div>
+        `;
+        
+        $('body').append(toastHtml);
+        
+        setTimeout(() => {
+            $(`#${toastId}`).fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+
+    // Add animation style
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    </script>
+</body>
 </html>

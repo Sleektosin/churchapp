@@ -1,309 +1,776 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="keywords"
-      content="wrappixel, admin dashboard, html css dashboard, web dashboard, bootstrap 5 admin, bootstrap 5, css3 dashboard, bootstrap 5 dashboard, Matrix lite admin bootstrap 5 dashboard, frontend, responsive bootstrap 5 admin template, Matrix admin lite design, Matrix admin lite dashboard bootstrap 5 dashboard template"
-    />
-    <meta
-      name="description"
-      content="Matrix Admin Lite Free Version is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
-    />
-    <meta name="robots" content="noindex,nofollow" />
-    <title>Sleek</title>
-    <!-- Favicon icon -->
-       <link
-      type="text/css"
-      rel="stylesheet"
-      href="{{url_for('static',filename='styles/style.min.css')}}"
-    />
-     <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
-    />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="static/uploads/chemonics_fav.png"
-    />
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>User Details | Church Management System</title>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    
     <!-- Custom CSS -->
-    <link
-      href="static/lib/fullcalendar/dist/fullcalendar.min.css"
-      rel="stylesheet"
-    />
-   <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">-->
- <!--
-      <link
-      type="text/css"
-      rel="stylesheet"
-      href="{{url_for('static',filename='lib/bootstrap/dist/css/bootstrap.min.css')}}"
-    />-->
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-dark: #0d9488;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --info: #3b82f6;
+            --info-dark: #2563eb;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
 
- 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-  </head>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <body>
-    <!-- ============================================================== -->
-    <!-- Preloader - style you can find in spinners.css -->
-    <!-- ============================================================== -->
-    <div class="preloader">
-      <div class="lds-ripple">
-        <div class="lds-pos"></div>
-        <div class="lds-pos"></div>
-      </div>
-    </div>
-    <!-- ============================================================== -->
-    <!-- Main wrapper - style you can find in pages.scss -->
-    <!-- ============================================================== -->
-    <div
-      id="main-wrapper"
-      data-layout="vertical"
-      data-navbarbg="skin5"
-      data-sidebartype="full"
-      data-sidebar-position="absolute"
-      data-header-position="absolute"
-      data-boxed-layout="full"
-    >
-      <!-- ============================================================== -->
-      <!-- Topbar header - style you can find in pages.scss -->
-      <!-- ============================================================== -->
-      {% include "include/header.html" %}
-      <!-- ============================================================== -->
-      <!-- End Topbar header -->
-      <!-- ============================================================== -->
-      <!-- ============================================================== -->
-      <!-- Left Sidebar - style you can find in sidebar.scss  -->
-      <!-- ============================================================== -->
-      {% include "include/leftnavbar.html" %}
-      <!-- ============================================================== -->
-      <!-- End Left Sidebar - style you can find in sidebar.scss  -->
-      <!-- ============================================================== -->
-      <!-- ============================================================== -->
-      <!-- Page wrapper  -->
-      <!-- ============================================================== -->
-      <div class="page-wrapper">
-        <!-- ============================================================== -->
-        <!-- Breadcrumb and right sidebar toggle -->
-        <!-- ============================================================== -->
-        <div class="page-breadcrumb">
-            <div class="row">
-                <div class="col-12 d-flex no-block align-items-center">
-                    <div class="ms-auto text-end">
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <!-- <li class="breadcrumb-item"><a href="#">Home</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">
-                                  Library
-                                </li>-->
-                            </ol>
-                        </nav>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        /* Main Content Area - Matching admin pages */
+        .content-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 1400px;
+            padding: 30px 30px 30px 30px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1800px) {
+            .content-container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .content-container {
+                max-width: 98%;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .content-area {
+                margin-left: 0;
+            }
+            .content-container {
+                padding: 100px 20px 20px;
+                max-width: 100%;
+            }
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: white;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem 2rem;
+            border: none;
+        }
+
+        .card-header-modern h3 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .card-header-modern p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* User Header */
+        .user-header {
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            padding: 2rem;
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 35px -10px rgba(79, 70, 229, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .user-avatar {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .user-info h1 {
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .user-info p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.25rem 0 0 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-info p i {
+            font-size: 1rem;
+        }
+
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -10px rgba(79, 70, 229, 0.2);
+            border-color: var(--primary-light);
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-label i {
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--dark);
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .info-value:last-child {
+            border-bottom: none;
+        }
+
+        /* QR Code Container */
+        .qr-section {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.2);
+            border: 2px solid #f1f5f9;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .qr-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--dark);
+        }
+
+        .qr-title i {
+            color: var(--primary);
+            font-size: 1.4rem;
+        }
+
+        .qr-wrapper {
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            padding: 2rem;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border: 2px dashed #e2e8f0;
+            flex: 1;
+        }
+
+        .qr-wrapper img {
+            max-width: 200px;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        .qr-instruction {
+            text-align: center;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Button Styling */
+        .btn-modern {
+            padding: 0.75rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
+        }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+            color: white;
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, var(--success), var(--success-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--success);
+        }
+
+        .btn-success-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--success);
+            color: white;
+        }
+
+        .btn-outline-modern {
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            color: var(--gray);
+        }
+
+        .btn-outline-modern:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8fafc;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 0.25rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .user-info {
+                text-align: center;
+            }
+            
+            .user-info p {
+                justify-content: center;
+            }
+        }
+
+        /* Preloader (hidden) */
+        .preloader {
+            display: none;
+        }
+
+        /* Footer */
+        .modern-footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+
+        .modern-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .modern-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Toast Notifications */
+        .toast-modern {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast-modern.success { border-left-color: var(--success); }
+        .toast-modern.error { border-left-color: var(--danger); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Header and Sidebar -->
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="content-container">
+            <!-- User Header -->
+            <div class="user-header">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-info">
+                    <h1>{{ user.first_name }} {{ user.last_name }}</h1>
+                    <p>
+                        <i class="fas fa-envelope"></i>
+                        {{ user.email }}
+                    </p>
+                    <p>
+                        <i class="fas fa-user-tag"></i>
+                        @{{ user.username }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="row g-4">
+                <!-- Left Column - User Information -->
+                <div class="col-lg-6">
+                    <div class="modern-card">
+                        <div class="card-header-modern">
+                            <h3><i class="fas fa-user-circle me-2"></i>Personal Information</h3>
+                            <p>User details and account information</p>
+                        </div>
+                        <div class="p-4">
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-label">
+                                        <i class="fas fa-user"></i>
+                                        <span>Username</span>
+                                    </div>
+                                    <div class="info-value">@{{ user.username }}</div>
+                                    
+                                    <div class="info-label mt-3">
+                                        <i class="fas fa-signature"></i>
+                                        <span>Full Name</span>
+                                    </div>
+                                    <div class="info-value">{{ user.first_name }} {{ user.last_name }}</div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">
+                                        <i class="fas fa-envelope"></i>
+                                        <span>Email Address</span>
+                                    </div>
+                                    <div class="info-value">{{ user.email }}</div>
+                                    
+                                    <div class="info-label mt-3">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Member Since</span>
+                                    </div>
+                                    <div class="info-value">
+                                        {{ user.date_joined.strftime('%B %d, %Y') if user.date_joined else 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- User Stats -->
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ user.attendance_count or 0 }}</div>
+                                    <div class="stat-label">Sessions Attended</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ user.first_timer_count or 0 }}</div>
+                                    <div class="stat-label">First Timer</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">
+                                        {% if user.is_first_timer %}Yes{% else %}No{% endif %}
+                                    </div>
+                                    <div class="stat-label">First Timer Status</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - QR Code -->
+                <div class="col-lg-6">
+                    <div class="qr-section">
+                        <div class="qr-title">
+                            <i class="fas fa-qrcode"></i>
+                            <span>User QR Code</span>
+                        </div>
+                        
+                        <div class="qr-wrapper">
+                            {% if qr_code_data %}
+                            <img src="{% if not qr_code_data.startswith('data:image') %}data:image/png;base64,{% endif %}{{ qr_code_data }}" 
+                                 alt="QR Code for {{ user.username }}" 
+                                 id="qrCodeImg"
+                                 class="img-fluid"/>
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-qrcode fa-3x mb-3"></i>
+                                <p>QR Code not available</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="qr-instruction">
+                            <i class="fas fa-info-circle text-primary"></i>
+                            <span>Scan this code for quick check-in</span>
+                        </div>
+
+                        {% if qr_code_data %}
+                        <div class="text-center">
+                            <button class="btn-modern btn-primary-modern w-100" id="downloadQrCodeBtn">
+                                <i class="fas fa-download me-2"></i>Download QR Code
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- ============================================================== -->
-        <!-- End Breadcrumb and right sidebar toggle -->
-        <!-- ============================================================== -->
-    
-        <!-- ============================================================== -->
-        <!-- Container fluid  -->
-        <!-- ============================================================== -->
-        <div class="container-fluid">
-            <!-- ============================================================== -->
-            <!-- Start Page Content -->
-            <!-- ============================================================== -->
-            <div class="row">
-                <div class="col-md-12">
-                    <!-- Card -->
-                    <div class="card">
-                        <div class="card-body">
-                          <h3 class="mb-4"><b>User Details</b></h3>
-                            <!-- User Details Section -->
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="p-4">  
-                                        <div class="form-group mb-3">
-                                            <label for="username"><b>User Name:</b></label>
-                                            <input type="text" class="form-control" readonly value="{{user.username}}" name="username" required>
-                                        </div>
-    
-                                        <div class="form-group mb-3">
-                                            <label for="lastname"><b>Last Name:</b></label>
-                                            <input type="text" class="form-control" readonly value="{{user.last_name}}" name="lastname" required>
-                                        </div>
-    
-                                        <!-- QR Code Section -->
-                                        <div class="form-group text-center mb-4">
-                                          {% if qr_code_data %}
-                                          <img src="{% if not qr_code_data.startswith('data:image') %}data:image/png;base64,{% endif %}{{ qr_code_data }}" 
-                                                   alt="QR Code" 
-                                                   class="img-fluid" 
-                                                   style="max-width: 150px; width: 100%;"/>
-                                          {% else %}
-                                              <p class="text-danger">QR Code not available</p>
-                                          {% endif %}
-                                      </div>
-                                      <!-- Only show button if QR exists -->
-                                      {% if qr_code_data %}
-                                      <div class="text-center">
-                                          <button class="btn btn-primary" id="downloadQrCodeBtn">
-                                              Download QR Code
-                                          </button>
-                                      </div>
-                                      {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                  <div class="p-4">
-                                      <div class="form-group mb-3">
-                                          <label for="firstname"><b>First Name:</b></label>
-                                          <input type="text" class="form-control" readonly value="{{user.first_name}}" name="firstname" required>
-                                      </div>
-  
-                                      <div class="form-group mb-3">
-                                          <label for="email"><b>Email:</b></label>
-                                          <input type="email" class="form-control" readonly value="{{user.email}}" name="email" required>
-                                      </div>
-                                  </div>
-                              </div>
-    
-                                <!-- Assigned Users Section -->
-                                <!-- <div class="col-md-6">
-                                    <div class="p-4">
-                                        <h4 class="mb-3"><b>Assigned Users</b></h4>
-    
-                                        <ul class="list-group mb-4">
-                                            <li class="list-group-item d-flex align-items-center">
-                                                <div class="form-check me-3">
-                                                    <input type="checkbox" class="form-check-input" id="customCheck" />
-                                                </div>
-                                                <div class="ms-auto">
-                                                    <ul class="list-style-none d-flex mb-0">
-                                                        <li class="assignee me-3">
-                                                            <img class="rounded-circle" width="40" src="../assets/images/users/2.jpg" alt="user" data-toggle="tooltip" title="Jessica" />
-                                                        </li>
-                                                        <!-- Additional assigned users can be added here -->
-                                                    </ul>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div> -->
+
+            <!-- Additional Information Section (Optional) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header-modern">
+                            <h3><i class="fas fa-history me-2"></i>Recent Activity</h3>
+                            <p>Last 5 sessions attended</p>
+                        </div>
+                        <div class="p-4">
+                            <div class="table-responsive">
+                                <table class="table table-modern">
+                                    <thead>
+                                        <tr>
+                                            <th>Session Name</th>
+                                            <th>Date</th>
+                                            <th>Location</th>
+                                            <th>Check-in Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if recent_sessions %}
+                                            {% for session in recent_sessions %}
+                                            <tr>
+                                                <td><strong>{{ session.name }}</strong></td>
+                                                <td>{{ session.date.strftime('%Y-%m-%d') if session.date else 'N/A' }}</td>
+                                                <td>{{ session.location or 'N/A' }}</td>
+                                                <td>{{ session.checkin_time.strftime('%H:%M') if session.checkin_time else 'N/A' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">No recent activity</td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-    
-            <!-- ============================================================== -->
-            <!-- End Page Content -->
-            <!-- ============================================================== -->
-        </div>
-        <!-- ============================================================== -->
-        <!-- End Container fluid  -->
-        <!-- ============================================================== -->
-    
-        <!-- ============================================================== -->
-        <!-- Footer -->
-        <!-- ============================================================== -->
-        <footer class="footer text-center">
-            All Rights Reserved by &copy; Sleektech. Designed and Developed by
-            <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a>
-        </footer>
-        <!-- ============================================================== -->
-        <!-- End Footer -->
-        <!-- ============================================================== -->
-    </div>
-    
-      <!-- ============================================================== -->
-      <!-- End Page wrapper  -->
-      <!-- ============================================================== -->
-    </div>
-    <!-- ============================================================== -->
-    <!-- End Wrapper -->
-    <!-- ============================================================== -->
-    <!-- ============================================================== -->
-    <!-- All Jquery -->
-    <!-- ============================================================== -->
-    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>-->
-    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
 
+            <!-- Footer -->
+            <footer class="modern-footer">
+                All Rights Reserved by &copy; Sleektech. Designed and Developed by
+                <a href="http://sleektechsystems.com.ng/" target="_blank">SleekTech</a>
+            </footer>
+        </div>
+    </main>
+
+    <!-- Required Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Your existing scripts -->
     <script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>
     <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
-    
-    <!--<script src="{{ url_for('static',filename='lib/jquery/dist/jquery.min.js') }}"></script>-->
-    <!-- <script src="../assets/libs/jquery/dist/jquery.min.js"></script> -->
     <script src="{{url_for('static',filename='javascript/jquery.ui.touch-punch-improved.js')}}"></script>
-    <!--<script src="../dist/js/jquery.ui.touch-punch-improved.js"></script> -->
     <script src="{{url_for('static',filename='javascript/jquery-ui.min.js')}}"></script>
-    <!--<script src="../dist/js/jquery-ui.min.js"></script> -->
-    <!-- Bootstrap tether Core JavaScript -->
     <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
-    <!--<script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script> -->
-    <!-- slimscrollbar scrollbar JavaScript -->
     <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
-    <!--<script src="../assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js"></script>-->
     <script src="{{url_for('static',filename='extra-libs/sparkline/sparkline.js')}}"></script>
-    <!--<script src="../assets/extra-libs/sparkline/sparkline.js"></script> -->
-    <!--Wave Effects -->
     <script src="{{url_for('static',filename='javascript/waves.js')}}"></script>
-    <!--<script src="../dist/js/waves.js"></script>-->
-    <!--Menu sidebar -->
     <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
-    <!--<script src="../dist/js/sidebarmenu.js"></script>-->
-    <!--Custom JavaScript -->
     <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
-    <!--<script src="../dist/js/custom.min.js"></script>-->
-    <!-- this page js -->
+    
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="{{url_for('static',filename='lib/moment/min/moment.min.js')}}"></script>
-    <!--<script src="../assets/libs/moment/min/moment.min.js"></script>-->
     <script src="{{url_for('static',filename='lib/fullcalendar/dist/fullcalendar.min.js')}}"></script>
-    <!--<script src="../assets/libs/fullcalendar/dist/fullcalendar.min.js"></script>-->
     <script src="{{url_for('static',filename='javascript/pages/calendar/cal-init.js')}}"></script>
 
-    <!--<script src="../dist/js/pages/calendar/cal-init.js"></script>-->
-    
-</script>
-<script>
-  document.getElementById('downloadQrCodeBtn')?.addEventListener('click', () => {
-      const qrImg = document.querySelector('.form-group img');
-      if (qrImg) {
-          try {
-              // Get user's first name and last name from the form inputs
-              const firstName = document.querySelector('input[name="firstname"]').value;
-              const lastName = document.querySelector('input[name="lastname"]').value;
-              
-              // Create filename (sanitize to remove special characters)
-              const sanitize = (str) => str.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-              const filename = `${sanitize(firstName)}_${sanitize(lastName)}_qrcode.png`;
-              
-              const link = document.createElement('a');
-              link.href = qrImg.src;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-          } catch (error) {
-              console.error('Download failed:', error);
-              alert('Failed to download QR code. Please try again.');
-          }
-      }
-  });
-  </script>
-  </body>
+    <!-- Custom JavaScript - PRESERVED AND ENHANCED -->
+    <script>
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast-modern ${type}">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-success' : 'fa-exclamation-circle text-danger'} me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close btn-sm" onclick="document.getElementById('${toastId}').remove()"></button>
+                </div>
+            </div>
+        `;
+        
+        $('body').append(toastHtml);
+        
+        setTimeout(() => {
+            $(`#${toastId}`).fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+
+    // QR Code Download - PRESERVED FROM ORIGINAL
+    document.getElementById('downloadQrCodeBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Try multiple selectors to find the QR image
+        const qrImg = document.getElementById('qrCodeImg') || 
+                     document.querySelector('.qr-wrapper img') || 
+                     document.querySelector('.form-group img');
+        
+        if (qrImg) {
+            try {
+                // Get user's first name and last name from the template variables
+                const firstName = "{{ user.first_name|default('') }}";
+                const lastName = "{{ user.last_name|default('') }}";
+                
+                // Create filename (sanitize to remove special characters)
+                const sanitize = (str) => str.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const filename = firstName || lastName ? 
+                    `${sanitize(firstName)}_${sanitize(lastName)}_qrcode.png` : 
+                    `user_qrcode.png`;
+                
+                console.log("Attempting to download QR code from:", qrImg.src);
+                
+                // Method 1: Using fetch to get the image as blob
+                fetch(qrImg.src)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        // Create blob URL
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // Clean up
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(blobUrl);
+                        
+                        showToast('QR Code downloaded successfully!', 'success');
+                    })
+                    .catch(error => {
+                        console.error('Fetch download failed:', error);
+                        // Fallback to direct download
+                        fallbackDownload(qrImg.src, filename);
+                    });
+                    
+            } catch (error) {
+                console.error('Download preparation failed:', error);
+                showToast('Failed to download QR code. Please try again.', 'error');
+            }
+        } else {
+            console.error('QR code image not found');
+            showToast('QR code image not found.', 'error');
+        }
+    });
+
+    // Fallback download method
+    function fallbackDownload(src, filename) {
+        const link = document.createElement('a');
+        link.href = src;
+        link.download = filename;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('QR Code download initiated!', 'success');
+    }
+
+    // Alternative method if the above doesn't work
+    function downloadQRCodeDirect() {
+        const qrImg = document.getElementById('qrCodeImg') || 
+                     document.querySelector('.qr-wrapper img');
+        
+        if (qrImg && qrImg.src) {
+            const firstName = "{{ user.first_name|default('') }}";
+            const lastName = "{{ user.last_name|default('') }}";
+            
+            const sanitize = (str) => str.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const filename = firstName || lastName ? 
+                `${sanitize(firstName)}_${sanitize(lastName)}_qrcode.png` : 
+                `user_qrcode.png`;
+            
+            // Create a canvas to capture the image
+            const canvas = document.createElement('canvas');
+            canvas.width = qrImg.naturalWidth || 300;
+            canvas.height = qrImg.naturalHeight || 300;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(qrImg, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to blob and download
+            canvas.toBlob(function(blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+                showToast('QR Code downloaded successfully!', 'success');
+            }, 'image/png');
+        }
+    }
+
+    // Auto-dismiss flash messages
+    $(document).ready(function() {
+        setTimeout(function() {
+            $('.alert-modern').fadeOut('slow', function() {
+                $(this).remove();
+            });
+        }, 5000);
+        
+        $('.alert-modern .btn-close').on('click', function() {
+            $(this).closest('.alert-modern').fadeOut('slow', function() {
+                $(this).remove();
+            });
+        });
+    });
+
+    console.log("User details page loaded");
+    </script>
+</body>
 </html>

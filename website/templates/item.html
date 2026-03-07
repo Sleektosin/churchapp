@@ -1,140 +1,675 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assets Management</title>
-    <link type="text/css" rel="stylesheet" href="{{url_for('static',filename='styles/style.min.css')}}" />
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" />
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css"/>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css"/>
-    <!-- DataTables JS -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
-    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
-    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
-
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Assets Management | Admin</title>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS with Bootstrap 5 -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css"/>
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <style>
-        /* Responsive table styling */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
         }
-        
-        /* Make sure the table takes full width */
-        #itemTable {
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+        }
+
+        /* Main Content Area - Centered */
+        .content-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Container for content - centered with max width */
+        .content-container {
+            width: 100%;
+            max-width: 1600px;
+            padding: 30px 30px 30px 30px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1800px) {
+            .content-container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .content-container {
+                max-width: 98%;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .content-area {
+                margin-left: 0;
+            }
+            .content-container {
+                padding: 100px 20px 20px;
+                max-width: 100%;
+            }
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: white;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem 2rem;
+            border: none;
+        }
+
+        .card-header-modern h4 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .card-header-modern p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* Alert Styling */
+        .alert-modern {
+            border-radius: 16px;
+            border: none;
+            padding: 1rem 1.5rem;
+            background: white;
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success-modern {
+            border-left-color: var(--success);
+        }
+
+        .alert-success-modern i {
+            color: var(--success);
+        }
+
+        /* Button Styling */
+        .btn-modern {
+            padding: 0.75rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-modern:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
+        }
+
+        .btn-primary-modern:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, var(--success), #0d9488);
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--success);
+        }
+
+        .btn-success-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--success);
+        }
+
+        /* Table Styling */
+        .table-modern {
             width: 100% !important;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin: 0;
         }
-        
-        /* Add some padding to cells for better mobile display */
-        #itemTable td, #itemTable th {
+
+        .table-modern thead th {
+            background-color: #f8fafc;
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            border: none;
             white-space: nowrap;
-            padding: 8px 12px;
         }
-        
-        /* Style for the responsive expansion button */
-        .dt-control {
+
+        .table-modern tbody tr {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .table-modern tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15);
+        }
+
+        .table-modern td {
+            padding: 1.2rem 1rem;
+            vertical-align: middle;
+            border: none;
+            white-space: nowrap;
+        }
+
+        /* Amount column styling */
+        .amount-column {
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        /* Badge Styling */
+        .badge-modern {
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.3px;
+            display: inline-block;
+        }
+
+        .badge-primary { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+        .badge-info { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+        .badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--secondary); }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--secondary);
+            border: 1px solid #e2e8f0;
             cursor: pointer;
         }
-        
-        /* Style for the child row in responsive mode */
-        .item-details {
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
         }
-        
-        /* Action buttons styling */
-        .action-buttons .btn {
-            margin: 2px;
-            padding: 3px 6px;
-            font-size: 12px;
+
+        .action-btn-warning:hover { background: var(--warning); color: white; border-color: var(--warning); }
+        .action-btn-info:hover { background: var(--info); color: white; border-color: var(--info); }
+        .action-btn-primary:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .action-btn-danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Modal Styling */
+        .modal-modern .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3);
         }
-        
-        /* Format amount column */
-        .amount-column {
-            text-align: right;
+
+        .modal-modern .modal-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 1.5rem;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .modal-modern .modal-header .modal-title {
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .modal-modern .modal-header .btn-close {
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+            opacity: 1;
+        }
+
+        .modal-modern .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-modern .modal-footer {
+            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem;
+        }
+
+        /* Form Styling */
+        .form-group-modern {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label-modern {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            display: block;
+        }
+
+        .form-control-modern, .form-select-modern {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control-modern:focus, .form-select-modern:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        /* DataTables Customization */
+        .dataTables_wrapper {
+            width: 100%;
+            padding: 0;
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            margin: 0 3px;
+        }
+
+        .dataTables_paginate .paginate_button.current {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .page-header .breadcrumb {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+
+        .page-header .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .page-header .breadcrumb-item.active {
+            color: var(--secondary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .table-modern td {
+                white-space: normal;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="main-wrapper" data-layout="vertical" data-navbarbg="skin5" data-sidebartype="full" 
-         data-sidebar-position="absolute" data-header-position="absolute" data-boxed-layout="full">
-        {% include "include/header.html" %}
-        {% include "include/leftnavbar.html" %}
-        <div class="page-wrapper">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-12">
-                        <!-- Card -->
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="jumbotron p-3">
-                                            {% with Messages = get_flashed_messages() %}
-                                                {% if Messages %}
-                                                    {% for message in Messages %}
-                                                        <div class="alert alert-success alert-dismissable" role="alert">
-                                                            <button type="button" class="close" data-dismiss="alert" aria-lable="close">
-                                                                <span aria-hidden="true">x</span>
-                                                            </button>
-                                                            {{message}}
-                                                        </div>
-                                                    {% endfor %}
-                                                {% endif %}
-                                            {% endwith %}
-                                            
-                                            <button type="submit" class="btn btn-success" data-toggle="modal" data-target="#addItemModal">
-                                                <i class="fas fa-plus"></i> Add Item
-                                            </button>
-                                            <hr>
-                                            
-                                            <div class="table-responsive">
-                                                <table id="itemTable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>#</th>
-                                                            <th>Name</th>
-                                                            <th>Description</th>
-                                                            <th>Manufacturer</th>
-                                                            <th>Model</th>
-                                                            <th>Custodian Unit</th>
-                                                            <th>Date of Purchase</th>
-                                                            <th>Quantity</th>
-                                                            <th class="amount-column">Amount</th>
-                                                            <th>Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <!-- Items will be dynamically added here -->
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- Include header and sidebar -->
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+
+    <!-- Main Content Area - Centered -->
+    <main class="content-area">
+        <div class="content-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-boxes me-3" style="color: var(--primary);"></i>Assets Management</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Assets</li>
+                        </ol>
+                    </nav>
+                </div>
+                <button type="button" class="btn btn-modern btn-primary-modern" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus me-2"></i>Add New Item
+                </button>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with Messages = get_flashed_messages() %}
+                {% if Messages %}
+                    {% for message in Messages %}
+                        <div class="alert-modern alert-success-modern mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-3 fa-lg"></i>
+                                <div class="flex-grow-1">{{ message }}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Main Card -->
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h4><i class="fas fa-cubes me-2"></i>Assets Inventory</h4>
+                    <p>Manage and track all church assets and equipment</p>
+                </div>
+                <div class="p-4">
+                    <div class="table-responsive">
+                        <table id="itemTable" class="table table-modern" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Manufacturer</th>
+                                    <th>Model</th>
+                                    <th>Custodian Unit</th>
+                                    <th>Purchase Date</th>
+                                    <th>Qty</th>
+                                    <th class="amount-column">Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Items will be dynamically added here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-        {% include "include/footer.html" %}
+    </main>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade modal-modern" id="addItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Asset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{url_for('views.additem')}}" id="addItemForm" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemName">Item Name *</label>
+                                    <input type="text" class="form-control-modern" id="addItemName" name="addItemName" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemManufacturer">Manufacturer *</label>
+                                    <input type="text" class="form-control-modern" id="addItemManufacturer" name="addItemManufacturer" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemDescription">Description *</label>
+                                    <input type="text" class="form-control-modern" id="addItemDescription" name="addItemDescription" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemModel">Model *</label>
+                                    <input type="text" class="form-control-modern" id="addItemModel" name="addItemModel" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemcustodianunit">Custodian Unit *</label>
+                                    <input type="text" class="form-control-modern" id="addItemcustodianunit" name="addItemcustodianunit" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemDateofpurchase">Date of Purchase *</label>
+                                    <input type="date" class="form-control-modern" id="addItemDateofpurchase" name="addItemDateofpurchase" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="addItemamount">Amount (₦) *</label>
+                                    <input type="number" step="0.01" class="form-control-modern" id="addItemamount" name="addItemamount" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="addItemForm" class="btn btn-modern btn-primary-modern">
+                        <i class="fas fa-save me-2"></i>Add Item
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Edit Item Modal -->
+    <div class="modal fade modal-modern" id="editItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Asset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editItem">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemName">Item Name *</label>
+                                    <input type="text" class="form-control-modern" id="editItemName" name="editItemName" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemManufacturer">Manufacturer *</label>
+                                    <input type="text" class="form-control-modern" id="editItemManufacturer" name="editItemManufacturer" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemDescription">Description *</label>
+                                    <input type="text" class="form-control-modern" id="editItemDescription" name="editItemDescription" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemModel">Model *</label>
+                                    <input type="text" class="form-control-modern" id="editItemModel" name="editItemModel" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemcustodianunit">Custodian Unit *</label>
+                                    <input type="text" class="form-control-modern" id="editItemcustodianunit" name="editItemcustodianunit" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemDateofpurchase">Date of Purchase *</label>
+                                    <input type="date" class="form-control-modern" id="editItemDateofpurchase" name="editItemDateofpurchase" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editItemamount">Amount (₦) *</label>
+                                    <input type="number" step="0.01" class="form-control-modern" id="editItemamount" name="editItemamount" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editQuantity">Quantity *</label>
+                                    <input type="number" class="form-control-modern" id="editQuantity" name="editQuantity" required>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="editItemId" name="item_id">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-modern btn-primary-modern" onclick="submitEditItemForm()">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -169,7 +704,7 @@
                     type: "POST",
                     "beforeSend": function(xhr) {
                         xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
-                        }
+                    }
                 },
                 columns: [
                     { data: "Id" },
@@ -184,30 +719,41 @@
                         data: "amount",
                         className: "amount-column",
                         render: function(data, type, row) {
-                            return data ? parseFloat(data).toLocaleString() : '0';
+                            if (data) {
+                                const amount = parseFloat(data);
+                                return '₦' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            }
+                            return '₦0.00';
                         }
                     },
                     {
                         data: null,
                         render: function (data, type, row) {
-                            return (
-                                '<div class="action-buttons">' +
-                                '<button id="edit-button-' + data.Id + '" class="btn btn-warning btn-xs edit-button" onclick="editRow(' +
-                                "'" + data.Id + "'" + 
-                                ',' + "'" + data.name + "'" +
-                                ',' + "'" + data.description + "'" +
-                                ',' + "'" + data.manufacturer + "'" +
-                                ',' + "'" + data.model + "'" +
-                                ',' + "'" + data.custodian_unit + "'" +
-                                ',' + "'" + data.date_of_purchase + "'" +
-                                ',' + "'" + data.amount + "'" +
-                                ',' + "'" + data.quantity + "'" +                               
-                                ')"><i class="fas fa-edit"></i></button>' +
-                                '<a href="/item/' + data.Id + '" class="btn btn-info btn-xs add-button"><i class="fas fa-wrench"></i></a>' +
-                                '<button class="btn btn-danger btn-xs delete-button" onclick="deleteRow(' + data.Id +
-                                ')"><i class="fas fa-trash-alt"></i></button>' +
-                                '</div>'
-                            );
+                            return `
+                                <div class="action-buttons">
+                                    <button id="edit-button-${data.Id}" 
+                                        class="action-btn action-btn-warning edit-button" 
+                                        onclick="editRow(
+                                            '${data.Id}', 
+                                            '${data.name ? data.name.replace(/'/g, "\\'") : ''}', 
+                                            '${data.description ? data.description.replace(/'/g, "\\'") : ''}', 
+                                            '${data.manufacturer ? data.manufacturer.replace(/'/g, "\\'") : ''}', 
+                                            '${data.model ? data.model.replace(/'/g, "\\'") : ''}', 
+                                            '${data.custodian_unit ? data.custodian_unit.replace(/'/g, "\\'") : ''}', 
+                                            '${data.date_of_purchase || ''}', 
+                                            '${data.amount || ''}', 
+                                            '${data.quantity || ''}'
+                                        )">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="/item/${data.Id}" class="action-btn action-btn-info">
+                                        <i class="fas fa-wrench"></i>
+                                    </a>
+                                    <button class="action-btn action-btn-danger delete-button" onclick="deleteRow(${data.Id})">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            `;
                         },
                         orderable: false,
                         searchable: false
@@ -218,17 +764,16 @@
                     { responsivePriority: 2, targets: -1 }, // Action column
                     { responsivePriority: 3, targets: 2 },  // Description
                     { responsivePriority: 4, targets: 3 },  // Manufacturer
-                    { responsivePriority: 5, targets: 4 },   // Model
+                    { responsivePriority: 5, targets: 4 },  // Model
                     { responsivePriority: 6, targets: 5 },  // Custodian Unit
-                    { responsivePriority: 7, targets: 6 },   // Date of Purchase
-                    { responsivePriority: 8, targets: 7 },  // Amount
-                    { responsivePriority: 9, targets: 0 }    // ID
+                    { responsivePriority: 7, targets: 6 },  // Date of Purchase
+                    { responsivePriority: 8, targets: 8 },  // Amount
+                    { responsivePriority: 9, targets: 7 },  // Quantity
+                    { responsivePriority: 10, targets: 0 }  // ID
                 ]
             });
         });
-    </script>
 
-    <script>
         // Function to handle the delete action
         function deleteRow(Id) {
             const confirmation = confirm("Do you want to delete this Item?");
@@ -237,7 +782,8 @@
                 fetch(url, {
                     method: "POST",
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
                     }
                 }).then(response => response.json())
                 .then(data => {
@@ -253,9 +799,7 @@
                 });
             }
         }
-    </script>
 
-    <script>
         // Function to open the edit modal and populate fields
         function editRow(id, name, description, manufacturer, model, custodian_unit, date_of_purchase, amount, quantity) {
             $('#editItemId').val(id);
@@ -278,6 +822,9 @@
                 url: '/update_item_data',
                 type: 'POST',
                 data: formData,
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                },
                 success: function(response) {
                     $('#editItemModal').modal('hide');
                     $('#itemTable').DataTable().ajax.reload();
@@ -288,111 +835,5 @@
             });
         }
     </script>
-
-    <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="addItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addItemModalLabel">Add Item</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form action="{{url_for('views.additem')}}" id="addActivityForm" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <div class="form-group">
-                            <label for="addItemName">Item Name:</label>
-                            <input type="text" class="form-control" id="addItemName" name="addItemName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemDescription">Description:</label>
-                            <input class="form-control" id="addItemDescription" name="addItemDescription" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemManufacturer">Manufacturer:</label>
-                            <input class="form-control" id="addItemManufacturer" name="addItemManufacturer" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemModel">Model:</label>
-                            <input class="form-control" id="addItemModel" name="addItemModel" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemcustodianunit">Custodian Unit:</label>
-                            <input class="form-control" id="addItemcustodianunit" name="addItemcustodianunit" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemDateofpurchase">Date of Purchase:</label>
-                            <input type="date" class="form-control" id="addItemDateofpurchase" name="addItemDateofpurchase" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="addItemamount">Amount:</label>
-                            <input type="text" class="form-control" id="addItemamount" name="addItemamount" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Item</button>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Item Modal -->
-    <div class="modal fade" id="editItemModal" tabindex="-1" role="dialog" aria-labelledby="editItemModal" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editItemModal">Edit Item</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="editItem" method="POST">
-                        <div class="form-group">
-                            <label for="editItemName">Item Name:</label>
-                            <input type="text" class="form-control" id="editItemName" name="editItemName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemDescription">Description:</label>
-                            <input class="form-control" id="editItemDescription" name="editItemDescription" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemManufacturer">Manufacturer:</label>
-                            <input class="form-control" id="editItemManufacturer" name="editItemManufacturer" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemModel">Model:</label>
-                            <input class="form-control" id="editItemModel" name="editItemModel" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemcustodianunit">Custodian Unit:</label>
-                            <input class="form-control" id="editItemcustodianunit" name="editItemcustodianunit" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemDateofpurchase">Date of Purchase:</label>
-                            <input type="date" class="form-control" id="editItemDateofpurchase" name="editItemDateofpurchase" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editItemamount">Amount:</label>
-                            <input type="text" class="form-control" id="editItemamount" name="editItemamount" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editQuantity">Quantity:</label>
-                            <input type="text" class="form-control" id="editQuantity" name="editQuantity" required>
-                        </div>
-                        <input type="hidden" id="editItemId" name="item_id">
-                        <button type="button" class="btn btn-primary" onclick="submitEditItemForm()">Save Changes</button>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

@@ -3,59 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Analytics Dashboard | Church Management System</title>
     
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Your existing styles -->
-    <link type="text/css" rel="stylesheet" href="{{url_for('static',filename='styles/style.min.css')}}" />
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- DataTables -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css"/>
-        
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"/>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Custom Analytics Styles -->
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --warning-gradient: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
-            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --inventory-gradient: linear-gradient(135deg, #9f7aea 0%, #553c9a 100%);
-            --maintenance-gradient: linear-gradient(135deg, #ed64a6 0%, #97266d 100%);
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-dark: #0d9488;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --info: #3b82f6;
+            --info-dark: #2563eb;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --dark: #1e293b;
+            --light: #f8fafc;
         }
-        
-        .dashboard-header {
-            background: var(--primary-gradient);
-            padding: 1.5rem 0;
-            margin-bottom: 1.5rem;
-            border-radius: 0 0 20px 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        .stat-card {
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        /* Main Content Area - Matching admin pages */
+        .content-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 1600px;
+            padding: 30px 30px 30px 30px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1800px) {
+            .content-container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .content-container {
+                max-width: 98%;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .content-area {
+                margin-left: 0;
+            }
+            .content-container {
+                padding: 100px 20px 20px;
+                max-width: 100%;
+            }
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: white;
+            border-radius: 24px;
             border: none;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem 2rem;
+            border: none;
+        }
+
+        .card-header-modern h4 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .card-header-modern p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* Dashboard Header */
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            padding: 2rem 2rem;
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 35px -10px rgba(79, 70, 229, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-header h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.25rem 0 0 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            font-weight: 600;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Filter Card */
+        .filter-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-title i {
+            color: var(--primary);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.6rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        .input-group-text {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px 0 0 12px;
+            background: #f8fafc;
+        }
+
+        .btn-modern {
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
+        }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+            color: white;
+        }
+
+        .btn-outline-modern {
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            color: var(--secondary);
+        }
+
+        .btn-outline-modern:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .btn-xs {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .filter-tag {
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tag:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .filter-tag i {
+            color: var(--primary);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
             overflow: hidden;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 35px -15px rgba(79, 70, 229, 0.2);
         }
-        
-        .stat-card::before {
+
+        .kpi-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -63,482 +317,657 @@
             right: 0;
             height: 4px;
         }
-        
-        .stat-card-primary::before { background: #667eea; }
-        .stat-card-success::before { background: #11998e; }
-        .stat-card-warning::before { background: #f7971e; }
-        .stat-card-info::before { background: #4facfe; }
-        .stat-card-danger::before { background: #f56565; }
-        .stat-card-inventory::before { background: #9f7aea; }
-        .stat-card-maintenance::before { background: #ed64a6; }
-        
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            height: 100%;
+
+        .kpi-card.primary::before { background: var(--primary); }
+        .kpi-card.success::before { background: var(--success); }
+        .kpi-card.warning::before { background: var(--warning); }
+        .kpi-card.info::before { background: var(--info); }
+        .kpi-card.purple::before { background: var(--purple); }
+        .kpi-card.pink::before { background: var(--pink); }
+
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
         }
-        
+
+        .kpi-icon.primary { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+        .kpi-icon.success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .kpi-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .kpi-icon.info { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+        .kpi-icon.purple { background: rgba(139, 92, 246, 0.1); color: var(--purple); }
+        .kpi-icon.pink { background: rgba(236, 72, 153, 0.1); color: var(--pink); }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .kpi-label {
+            color: var(--secondary);
+            margin: 0.25rem 0 0;
+            font-size: 0.85rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            color: var(--success);
+        }
+
+        /* Tabs */
+        .analytics-tabs {
+            border-bottom: none;
+            margin-bottom: 2rem;
+            gap: 0.5rem;
+        }
+
         .analytics-tabs .nav-link {
             border: none;
-            color: #6c757d;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
-        
+
+        .analytics-tabs .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        .analytics-tabs .nav-link:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
         .analytics-tabs .nav-link.active {
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
-            background: transparent;
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
         }
-        
-        .maintenance-status {
-            padding: 4px 12px;
+
+        /* Chart Containers */
+        .chart-container {
+            background: white;
             border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
         }
-        
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .chart-header h5 {
+            font-weight: 700;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .chart-body {
+            flex: 1;
+            position: relative;
+            min-height: 250px;
+        }
+
+        .chart-body canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Tables */
+        .table-responsive {
+            border-radius: 16px;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .analytics-table thead th {
+            background: #f8fafc;
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .analytics-table tbody tr {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .analytics-table tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.1);
+        }
+
+        .analytics-table td {
+            padding: 1rem;
+            vertical-align: middle;
+            border: none;
+        }
+
+        /* Badges */
+        .badge-modern {
+            padding: 0.4rem 0.8rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.3px;
+            display: inline-block;
+        }
+
+        .badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-info { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+        .badge-purple { background: rgba(139, 92, 246, 0.1); color: var(--purple); }
+
+        /* Progress Bar */
+        .progress-modern {
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            overflow: hidden;
+            width: 100px;
+        }
+
+        .progress-bar-modern {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Maintenance Timeline */
+        .maintenance-timeline {
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 1rem 1rem 1rem 2rem;
+            margin-bottom: 1rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid;
+        }
+
+        .timeline-item.recent { border-left-color: var(--success); }
+        .timeline-item.upcoming { border-left-color: var(--warning); }
+        .timeline-item.overdue { border-left-color: var(--danger); }
+
+        .timeline-item h6 {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-item p {
+            color: var(--secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-item small {
+            color: #94a3b8;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
         .status-good { background: #d1fae5; color: #065f46; }
         .status-warning { background: #fef3c7; color: #92400e; }
         .status-critical { background: #fee2e2; color: #991b1b; }
-        
-        .inventory-table th {
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .maintenance-timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-        
-        .maintenance-timeline::before {
-            content: '';
-            position: absolute;
-            left: 15px;
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
             top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e5e7eb;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
-        
-        .timeline-item {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -23px;
-            top: 5px;
-            width: 12px;
-            height: 12px;
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
         }
-        
-        .timeline-item.recent::before { box-shadow: 0 0 0 2px #10b981; }
-        .timeline-item.upcoming::before { box-shadow: 0 0 0 2px #f59e0b; }
-        .timeline-item.overdue::before { box-shadow: 0 0 0 2px #ef4444; }
-        
-        .item-category-badge {
-            padding: 2px 8px;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast-modern {
+            background: white;
             border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
+            padding: 1rem 1.5rem;
+            margin-bottom: 10px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
         }
-        
-        .category-equipment { background: #dbeafe; color: #1e40af; }
-        .category-furniture { background: #f3e8ff; color: #7c3aed; }
-        .category-electronics { background: #f0f9ff; color: #0369a1; }
-        .category-other { background: #f3f4f6; color: #6b7280; }
-        
+
+        .toast-modern.success { border-left-color: var(--success); }
+        .toast-modern.error { border-left-color: var(--danger); }
+        .toast-modern.warning { border-left-color: var(--warning); }
+        .toast-modern.info { border-left-color: var(--info); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
-            .stat-card {
-                margin-bottom: 1rem;
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-actions {
+                width: 100%;
+            }
+            
+            .header-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div id="main-wrapper" data-layout="vertical" data-navbarbg="skin5" data-sidebartype="full" data-sidebar-position="absolute" data-header-position="absolute" data-boxed-layout="full">
-        
-        {% include "include/header.html" %}
-        {% include "include/leftnavbar.html" %}
-        
-        <div class="page-wrapper">
+    <!-- Include Header and Sidebar -->
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p class="text-muted">Loading analytics data...</p>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="content-container">
             <!-- Dashboard Header -->
             <div class="dashboard-header">
-                <div class="container-fluid">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h1 class="text-white mb-1">
-                                <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
-                            </h1>
-                            <p class="text-white-50 mb-0">
-                                Comprehensive insights for church management
-                            </p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-light quick-action-btn me-2" onclick="exportDashboard()">
-                                    <i class="fas fa-download me-1"></i>Export
-                                </button>
-                                <button class="btn btn-light quick-action-btn" onclick="refreshDashboard()" id="refreshBtn">
-                                    <i class="fas fa-sync-alt me-1"></i>Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <h1>
+                        <i class="fas fa-chart-pie me-2"></i>Analytics Dashboard
+                    </h1>
+                    <p>Comprehensive insights for church management</p>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="exportDashboard()">
+                        <i class="fas fa-download"></i>
+                        <span class="d-none d-md-inline">Export</span>
+                    </button>
+                    <button class="header-btn" onclick="refreshDashboard()" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="d-none d-md-inline">Refresh</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="container-fluid">
-                
-                <!-- Central Filter Section -->
-                <!-- Replace the entire filter section with this corrected version -->
-                <!-- Replace the entire filter section (lines 135-185) with this: -->
-                <div class="row mb-4">
-    <div class="col-12">
-        <div class="card stat-card">
-            <div class="card-body">
-                <h5 class="mb-3">
-                    <i class="fas fa-sliders-h me-2"></i>Dashboard Filters
-                </h5>
+            <!-- Filter Section -->
+            <div class="filter-card">
+                <div class="filter-title">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Date Range Filter</span>
+                </div>
                 
                 <form id="analyticsFilterForm">
-                    <div class="row g-2 align-items-end">
-                        <!-- Start Date -->
+                    <div class="row g-3 align-items-end">
                         <div class="col-md-4 col-lg-3">
-                            <label class="form-label fw-semibold small mb-1">Start Date</label>
-                            <div class="input-group input-group-sm">
+                            <label class="form-label">Start Date</label>
+                            <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                 <input type="date" class="form-control" id="start_date">
                             </div>
                         </div>
                         
-                        <!-- End Date -->
                         <div class="col-md-4 col-lg-3">
-                            <label class="form-label fw-semibold small mb-1">End Date</label>
-                            <div class="input-group input-group-sm">
+                            <label class="form-label">End Date</label>
+                            <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                 <input type="date" class="form-control" id="end_date">
                             </div>
                         </div>
                         
-                        <!-- Quick Actions - Now fits on same line -->
                         <div class="col-md-4 col-lg-3">
-                            <div class="d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-primary btn-sm flex-fill" onclick="applyFilters()">
-                                    <i class="fas fa-play me-1"></i>Apply
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-modern btn-primary-modern flex-fill" onclick="applyFilters()">
+                                    <i class="fas fa-play"></i> Apply
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
-                                    <i class="fas fa-undo me-1"></i>Reset
+                                <button type="button" class="btn btn-modern btn-outline-modern flex-fill" onclick="resetFilters()">
+                                    <i class="fas fa-undo"></i> Reset
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- Optional: Add quick date presets in remaining space -->
-                        <div class="col-md-12 col-lg-3 mt-2">
-                            <div class="d-flex flex-wrap gap-1">
-                                <small class="text-muted me-2">Quick ranges:</small>
-                                <button type="button" class="btn btn-outline-primary btn-xs" onclick="setDateRange('today')">
-                                    Today
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-xs" onclick="setDateRange('month')">
-                                    Month
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-xs" onclick="setDateRange('year')">
-                                    Year
-                                </button>
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="filter-tag" onclick="setQuickDateRange('today')">
+                                    <i class="fas fa-calendar-day"></i> Today
+                                </span>
+                                <span class="filter-tag" onclick="setQuickDateRange('week')">
+                                    <i class="fas fa-calendar-week"></i> This Week
+                                </span>
+                                <span class="filter-tag" onclick="setQuickDateRange('month')">
+                                    <i class="fas fa-calendar-alt"></i> This Month
+                                </span>
+                                <span class="filter-tag" onclick="setQuickDateRange('quarter')">
+                                    <i class="fas fa-calendar-check"></i> This Quarter
+                                </span>
+                                <span class="filter-tag" onclick="setQuickDateRange('year')">
+                                    <i class="fas fa-calendar"></i> This Year
+                                </span>
+                                <span class="filter-tag" onclick="setQuickDateRange('last30')">
+                                    <i class="fas fa-history"></i> Last 30 Days
+                                </span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Active Filters Display -->
-                    <div class="row mt-3" id="activeFiltersContainer" style="display: none;">
-                        <div class="col-12">
+                        
+                        <!-- Active Filters Display -->
+                        <div class="col-12" id="activeFiltersContainer" style="display: none;">
+                            <hr class="my-2">
                             <small class="text-muted">Active Filters:</small>
-                            <div class="d-flex flex-wrap gap-2 mt-1" id="filterTags"></div>
+                            <div class="d-flex flex-wrap gap-2 mt-2" id="filterTags"></div>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-</div>
 
-                <!-- Analytics Tabs -->
-                <ul class="nav nav-tabs analytics-tabs mb-4" id="analyticsTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
-                            <i class="fas fa-home me-1"></i> Overview
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button">
-                            <i class="fas fa-users me-1"></i> Members
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
-                            <i class="fas fa-calendar-check me-1"></i> Attendance
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button">
-                            <i class="fas fa-boxes me-1"></i> Inventory
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button">
-                            <i class="fas fa-tools me-1"></i> Maintenance
-                        </button>
-                    </li>
-                </ul>
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card primary">
+                    <div class="kpi-icon primary">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="kpi-value" id="totalMembers">0</h3>
+                    <p class="kpi-label">Total Members</p>
+                    <div class="kpi-trend" id="memberGrowth">
+                        <i class="fas fa-arrow-up"></i> 0 this month
+                    </div>
+                </div>
+                
+                <div class="kpi-card success">
+                    <div class="kpi-icon success">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="kpi-value" id="avgAttendance">0%</h3>
+                    <p class="kpi-label">Avg. Attendance</p>
+                    <div class="kpi-trend" id="attendanceTrend">
+                        <i class="fas fa-minus"></i> 0% change
+                    </div>
+                </div>
+                
+                <div class="kpi-card warning">
+                    <div class="kpi-icon warning">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3 class="kpi-value" id="firstTimers">0</h3>
+                    <p class="kpi-label">First Timers</p>
+                    <div class="kpi-trend" id="firstTimerRate">
+                        0% of total
+                    </div>
+                </div>
+                
+                <div class="kpi-card purple">
+                    <div class="kpi-icon purple">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <h3 class="kpi-value" id="totalItems">0</h3>
+                    <p class="kpi-label">Total Items</p>
+                    <div class="kpi-trend" id="inventoryValue">
+                        ₦0 value
+                    </div>
+                </div>
+                
+                <div class="kpi-card pink">
+                    <div class="kpi-icon pink">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3 class="kpi-value" id="pendingMaintenance">0</h3>
+                    <p class="kpi-label">Pending Maintenance</p>
+                    <div class="kpi-trend" id="maintenanceCost">
+                        ₦0 cost
+                    </div>
+                </div>
+                
+                <div class="kpi-card info">
+                    <div class="kpi-icon info">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3 class="kpi-value" id="activeSessions">0</h3>
+                    <p class="kpi-label">Active Sessions</p>
+                    <div class="kpi-trend" id="sessionTrend">
+                        0 upcoming
+                    </div>
+                </div>
+            </div>
 
-                <div class="tab-content" id="analyticsTabContent">
-                    
-                    <!-- Overview Tab -->
-                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
-                        <!-- KPI Cards Row -->
-                        <div class="row mb-4">
-                            <!-- Member KPIs -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-primary">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Total Members</h6>
-                                                <h3 class="mb-0" id="totalMembers">{{ user_count }}</h3>
-                                                <small class="text-muted" id="memberGrowth">+0 this month</small>
-                                            </div>
-                                            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                                                <i class="fas fa-users"></i>
-                                            </div>
-                                        </div>
+            <!-- Analytics Tabs -->
+            <ul class="nav nav-tabs analytics-tabs" id="analyticsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                        <i class="fas fa-home"></i> Overview
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button">
+                        <i class="fas fa-users"></i> Members
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
+                        <i class="fas fa-calendar-check"></i> Attendance
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button">
+                        <i class="fas fa-boxes"></i> Inventory
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button">
+                        <i class="fas fa-tools"></i> Maintenance
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="analyticsTabContent">
+                <!-- Overview Tab -->
+                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    <!-- Charts Row 1 -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-8">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-line me-2 text-primary"></i>Attendance Trend</h5>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary active" onclick="changeChartPeriod('week', this)">Week</button>
+                                        <button class="btn btn-outline-primary" onclick="changeChartPeriod('month', this)">Month</button>
+                                        <button class="btn btn-outline-primary" onclick="changeChartPeriod('year', this)">Year</button>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Attendance KPI -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-success">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Avg Attendance</h6>
-                                                <h3 class="mb-0" id="avgAttendance">0%</h3>
-                                                <small class="text-muted" id="attendanceTrend">0% change</small>
-                                            </div>
-                                            <div class="stat-icon bg-success bg-opacity-10 text-success">
-                                                <i class="fas fa-calendar-check"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- First Timers KPI -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-warning">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">First Timers</h6>
-                                                <h3 class="mb-0" id="firstTimers">0</h3>
-                                                <small class="text-muted" id="firstTimerRate">0% of total</small>
-                                            </div>
-                                            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                                                <i class="fas fa-user-plus"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Inventory KPI -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-inventory">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Total Items</h6>
-                                                <h3 class="mb-0" id="totalItems">0</h3>
-                                                <small class="text-muted" id="inventoryValue">$0 value</small>
-                                            </div>
-                                            <div class="stat-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
-                                                <i class="fas fa-box"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Maintenance KPI -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-maintenance">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Pending Maintenance</h6>
-                                                <h3 class="mb-0" id="pendingMaintenance">0</h3>
-                                                <small class="text-muted" id="maintenanceCost">$0 cost</small>
-                                            </div>
-                                            <div class="stat-icon" style="background: rgba(237, 100, 166, 0.1); color: #ed64a6;">
-                                                <i class="fas fa-tools"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Session KPI -->
-                            <div class="col-xl-2 col-md-4 col-sm-6">
-                                <div class="card stat-card stat-card-info">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Active Sessions</h6>
-                                                <h3 class="mb-0" id="activeSessions">{{ session_count }}</h3>
-                                                <small class="text-muted" id="sessionTrend">0 upcoming</small>
-                                            </div>
-                                            <div class="stat-icon bg-info bg-opacity-10 text-info">
-                                                <i class="fas fa-calendar-alt"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="chart-body">
+                                    <canvas id="attendanceTrendChart"></canvas>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Charts Row 1 -->
-                        <div class="row mb-4">
-                            <!-- Attendance Trend -->
-                            <div class="col-xl-8">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Attendance Trend</h5>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary active" onclick="changeChartPeriod('week', this)">Week</button>
-                                            <button class="btn btn-outline-primary" onclick="changeChartPeriod('month', this)">Month</button>
-                                            <button class="btn btn-outline-primary" onclick="changeChartPeriod('year', this)">Year</button>
-                                        </div>
-                                    </div>
-                                    <canvas id="attendanceTrendChart" height="250"></canvas>
+                        
+                        <div class="col-xl-4">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-pie me-2 text-primary"></i>Member Demographics</h5>
                                 </div>
-                            </div>
-                            
-                            <!-- Gender Distribution -->
-                            <div class="col-xl-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Member Demographics</h5>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <canvas id="genderChart" height="180"></canvas>
-                                        </div>
-                                        <div class="col-6">
-                                            <canvas id="ageDistributionChart" height="180"></canvas>
-                                        </div>
+                                <div class="row g-4">
+                                    <div class="col-6">
+                                        <canvas id="genderChart"></canvas>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Row 2 -->
-                        <div class="row">
-                            <!-- Inventory Status -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Inventory Status</h5>
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6">
-                                            <canvas id="inventoryStatusChart" height="200"></canvas>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="list-group list-group-flush">
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                                        <span>Good Condition</span>
-                                                    </div>
-                                                    <span class="badge bg-success rounded-pill" id="goodItems">0</span>
-                                                </div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                                                        <span>Needs Attention</span>
-                                                    </div>
-                                                    <span class="badge bg-warning rounded-pill" id="attentionItems">0</span>
-                                                </div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-times-circle text-danger me-2"></i>
-                                                        <span>Requires Maintenance</span>
-                                                    </div>
-                                                    <span class="badge bg-danger rounded-pill" id="maintenanceItems">0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Maintenance Timeline -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Upcoming Maintenance</h5>
-                                        <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
-                                    </div>
-                                    <div class="maintenance-timeline" id="maintenanceTimeline">
-                                        <!-- Dynamic content -->
+                                    <div class="col-6">
+                                        <canvas id="ageDistributionChart"></canvas>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Members Tab -->
-                    <div class="tab-pane fade" id="members" role="tabpanel">
-                        <div class="row mb-4">
-                            <!-- Member Growth Chart -->
-                            <div class="col-xl-8">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Member Growth</h5>
-                                    <canvas id="memberGrowthChart" height="300"></canvas>
+                    <!-- Charts Row 2 -->
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-boxes me-2 text-primary"></i>Inventory Status</h5>
                                 </div>
-                            </div>
-                            
-                            <!-- Member Categories -->
-                            <div class="col-xl-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Member Categories</h5>
-                                    <canvas id="memberCategoriesChart" height="300"></canvas>
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <canvas id="inventoryStatusChart"></canvas>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="list-group list-group-flush">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-check-circle text-success me-2"></i>Good Condition</span>
+                                                <span class="badge-modern badge-success" id="goodItems">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-exclamation-triangle text-warning me-2"></i>Needs Attention</span>
+                                                <span class="badge-modern badge-warning" id="attentionItems">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-times-circle text-danger me-2"></i>Requires Maintenance</span>
+                                                <span class="badge-modern badge-danger" id="maintenanceItems">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Member Tables -->
-                        <div class="row">
-                            <!-- Recent First Timers -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Recent First Timers</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreFirstTimers()">
-                                            View More
-                                        </button>
-                                    </div>
+                        <div class="col-xl-6">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-clock me-2 text-primary"></i>Upcoming Maintenance</h5>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                                </div>
+                                <div class="maintenance-timeline" id="maintenanceTimeline">
+                                    <!-- Dynamic content -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Members Tab -->
+                <div class="tab-pane fade" id="members" role="tabpanel">
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-8">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-line me-2 text-primary"></i>Member Growth</h5>
+                                </div>
+                                <div class="chart-body">
+                                    <canvas id="memberGrowthChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-4">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-pie me-2 text-primary"></i>Member Categories</h5>
+                                </div>
+                                <div class="chart-body">
+                                    <canvas id="memberCategoriesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-user-plus me-2"></i>Recent First Timers</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
-                                        <table class="table analytics-table" id="firstTimersTable">
-                                            <thead class="table-light">
+                                        <table class="table analytics-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Name</th>
                                                     <th>Joined</th>
@@ -546,120 +975,101 @@
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="firstTimersTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="firstTimersTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Top Members by Attendance -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Most Active Members</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreActiveMembers()">
-                                            View More
-                                        </button>
-                                    </div>
+                        </div>
+                        
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-star me-2"></i>Most Active Members</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
-                                        <table class="table analytics-table" id="activeMembersTable">
-                                            <thead class="table-light">
+                                        <table class="table analytics-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Name</th>
                                                     <th>Sessions</th>
                                                     <th>Last Active</th>
-                                                    <th>Attendance Rate</th>
+                                                    <th>Engagement</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="activeMembersTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="activeMembersTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Attendance Tab -->
-                    <div class="tab-pane fade" id="attendance" role="tabpanel">
-                        <div class="row mb-4">
-                            <!-- Session Performance -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Top Sessions by Attendance</h5>
-                                        <select class="form-select form-select-sm w-auto" onchange="updateSessionPerformance(this.value)">
-                                            <option value="month">This Month</option>
-                                            <option value="quarter">This Quarter</option>
-                                            <option value="year">This Year</option>
-                                        </select>
-                                    </div>
-                                    <canvas id="sessionPerformanceChart" height="250"></canvas>
+                <!-- Attendance Tab -->
+                <div class="tab-pane fade" id="attendance" role="tabpanel">
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-6">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-bar me-2 text-primary"></i>Top Sessions by Attendance</h5>
+                                    <select class="form-select form-select-sm w-auto" onchange="updateSessionPerformance(this.value)">
+                                        <option value="month">This Month</option>
+                                        <option value="quarter">This Quarter</option>
+                                        <option value="year">This Year</option>
+                                    </select>
+                                </div>
+                                <div class="chart-body">
+                                    <canvas id="sessionPerformanceChart"></canvas>
                                 </div>
                             </div>
-                            
-                            <!-- Check-in Methods -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Check-in Methods Distribution</h5>
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6">
-                                            <canvas id="checkinMethodsChart" height="200"></canvas>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="list-group list-group-flush">
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-qrcode text-primary me-2"></i>
-                                                        <span>QR Code Scan</span>
-                                                    </div>
-                                                    <span class="badge bg-primary rounded-pill" id="qrCount">0</span>
-                                                </div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-user-shield text-success me-2"></i>
-                                                        <span>Admin Added</span>
-                                                    </div>
-                                                    <span class="badge bg-success rounded-pill" id="adminCount">0</span>
-                                                </div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-edit text-warning me-2"></i>
-                                                        <span>Manual Entry</span>
-                                                    </div>
-                                                    <span class="badge bg-warning rounded-pill" id="manualCount">0</span>
-                                                </div>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                                    <div>
-                                                        <i class="fas fa-user-check text-info me-2"></i>
-                                                        <span>Self Check-in</span>
-                                                    </div>
-                                                    <span class="badge bg-info rounded-pill" id="selfCount">0</span>
-                                                </div>
+                        </div>
+                        
+                        <div class="col-xl-6">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-qrcode me-2 text-primary"></i>Check-in Methods</h5>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <canvas id="checkinMethodsChart"></canvas>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="list-group list-group-flush">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-qrcode text-primary me-2"></i>QR Code</span>
+                                                <span class="badge-modern badge-info" id="qrCount">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-user-shield text-success me-2"></i>Admin Added</span>
+                                                <span class="badge-modern badge-success" id="adminCount">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-edit text-warning me-2"></i>Manual Entry</span>
+                                                <span class="badge-modern badge-warning" id="manualCount">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><i class="fas fa-user-check text-info me-2"></i>Self Check-in</span>
+                                                <span class="badge-modern badge-info" id="selfCount">0</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Attendance Tables -->
-                        <div class="row">
-                            <!-- Session Summary -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Recent Sessions</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreSessions()">
-                                            View More
-                                        </button>
-                                    </div>
+                    </div>
+                    
+                    <div class="row g-4">
+                        <div class="col-xl-12">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-calendar-alt me-2"></i>Recent Sessions</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
-                                        <table class="table analytics-table" id="sessionsTable">
-                                            <thead class="table-light">
+                                        <table class="table analytics-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Date</th>
                                                     <th>Session</th>
@@ -667,61 +1077,51 @@
                                                     <th>Capacity</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="sessionsTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="sessionsTableBody"></tbody>
                                         </table>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Attendance Heatmap -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Weekly Attendance Pattern</h5>
-                                    <div class="attendance-heatmap mb-3" id="attendanceHeatmap"></div>
-                                    <div class="text-center">
-                                        <small class="text-muted">Darker colors indicate higher attendance</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Inventory Tab -->
-                    <div class="tab-pane fade" id="inventory" role="tabpanel">
-                        <div class="row mb-4">
-                            <!-- Inventory Value Over Time -->
-                            <div class="col-xl-8">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Inventory Value Over Time</h5>
-                                    <canvas id="inventoryValueChart" height="250"></canvas>
+                <!-- Inventory Tab -->
+                <div class="tab-pane fade" id="inventory" role="tabpanel">
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-8">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-line me-2 text-primary"></i>Inventory Value Over Time</h5>
                                 </div>
-                            </div>
-                            
-                            <!-- Inventory by Category -->
-                            <div class="col-xl-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Inventory by Category</h5>
-                                    <canvas id="inventoryCategoryChart" height="250"></canvas>
+                                <div class="chart-body">
+                                    <canvas id="inventoryValueChart"></canvas>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Inventory Tables -->
-                        <div class="row">
-                            <!-- High Value Items -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">High Value Items</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreHighValueItems()">
-                                            View More
-                                        </button>
-                                    </div>
+                        <div class="col-xl-4">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-pie me-2 text-primary"></i>By Category</h5>
+                                </div>
+                                <div class="chart-body">
+                                    <canvas id="inventoryCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-gem me-2"></i>High Value Items</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
-                                        <table class="table analytics-table inventory-table">
-                                            <thead class="table-light">
+                                        <table class="table analytics-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Item</th>
                                                     <th>Category</th>
@@ -729,26 +1129,22 @@
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="highValueItemsTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="highValueItemsTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Items Needing Attention -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Items Needing Attention</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreAttentionItems()">
-                                            View More
-                                        </button>
-                                    </div>
+                        </div>
+                        
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-exclamation-triangle me-2"></i>Items Needing Attention</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
-                                        <table class="table analytics-table inventory-table">
-                                            <thead class="table-light">
+                                        <table class="table analytics-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Item</th>
                                                     <th>Last Maintenance</th>
@@ -756,50 +1152,51 @@
                                                     <th>Priority</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="attentionItemsTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="attentionItemsTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Maintenance Tab -->
-                    <div class="tab-pane fade" id="maintenance" role="tabpanel">
-                        <div class="row mb-4">
-                            <!-- Maintenance Cost Over Time -->
-                            <div class="col-xl-8">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Maintenance Cost Over Time</h5>
-                                    <canvas id="maintenanceCostChart" height="250"></canvas>
+                <!-- Maintenance Tab -->
+                <div class="tab-pane fade" id="maintenance" role="tabpanel">
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-8">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-line me-2 text-primary"></i>Maintenance Cost Over Time</h5>
                                 </div>
-                            </div>
-                            
-                            <!-- Maintenance Status -->
-                            <div class="col-xl-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">Maintenance Status</h5>
-                                    <canvas id="maintenanceStatusChart" height="250"></canvas>
+                                <div class="chart-body">
+                                    <canvas id="maintenanceCostChart"></canvas>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Maintenance Tables -->
-                        <div class="row">
-                            <!-- Recent Maintenance -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Recent Maintenance Activities</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadMoreMaintenance()">
-                                            View More
-                                        </button>
-                                    </div>
+                        <div class="col-xl-4">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h5><i class="fas fa-chart-pie me-2 text-primary"></i>Maintenance Status</h5>
+                                </div>
+                                <div class="chart-body">
+                                    <canvas id="maintenanceStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-history me-2"></i>Recent Maintenance</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
                                         <table class="table analytics-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th>Item</th>
                                                     <th>Maintenance Date</th>
@@ -807,26 +1204,22 @@
                                                     <th>Vendor</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="recentMaintenanceTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="recentMaintenanceTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Upcoming Maintenance -->
-                            <div class="col-xl-6">
-                                <div class="chart-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0">Upcoming Maintenance Schedule</h5>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="loadUpcomingMaintenance()">
-                                            View All
-                                        </button>
-                                    </div>
+                        </div>
+                        
+                        <div class="col-xl-6">
+                            <div class="modern-card">
+                                <div class="card-header-modern">
+                                    <h4><i class="fas fa-calendar-alt me-2"></i>Upcoming Maintenance</h4>
+                                </div>
+                                <div class="p-4">
                                     <div class="table-responsive">
                                         <table class="table analytics-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th>Item</th>
                                                     <th>Next Due</th>
@@ -834,9 +1227,7 @@
                                                     <th>Priority</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="upcomingMaintenanceTableBody">
-                                                <!-- Dynamic content -->
-                                            </tbody>
+                                            <tbody id="upcomingMaintenanceTableBody"></tbody>
                                         </table>
                                     </div>
                                 </div>
@@ -846,15 +1237,15 @@
                 </div>
             </div>
         </div>
-        
-        {% include "include/footer.html" %}
-    </div>
+    </main>
+
+    {% include "include/footer.html" %}
 
     <!-- Required Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     
     <!-- Your existing scripts -->
@@ -862,1241 +1253,953 @@
     <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
 
-    <!-- Analytics Dashboard JavaScript -->
-<script>
-// ============================================
-// ANALYTICS DASHBOARD - PROPER RESPONSIVE CHARTS
-// ============================================
+    <!-- Analytics Dashboard JavaScript - COMPLETE VERSION -->
+    <script>
+    // ============================================
+    // ANALYTICS DASHBOARD - COMPLETE FUNCTIONALITY
+    // ============================================
 
-// Global variables
-let charts = {};
-let currentFilters = {};
-let hasLoaded = false; // Track initial load
-let isLoading = false; // Prevent multiple clicks
+    // Global variables
+    let charts = {};
+    let currentFilters = {};
+    let hasLoaded = false;
+    let isLoading = false;
 
-// Load data when page loads - ONE TIME
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Analytics Dashboard - Initial Load");
-    
-    // Set default dates (last 30 days)
-    setDefaultDates();
-    
-    // Load data once
-    if (!hasLoaded) {
+    // Load data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Analytics Dashboard - Initial Load");
+        
+        // Set default dates (last 30 days)
+        setDefaultDates();
+        
+        // Load data once
+        if (!hasLoaded) {
+            loadDashboardData();
+        }
+        
+        // Setup manual controls
+        setupManualControls();
+        
+        // Setup chart resize handling
+        setupChartResize();
+    });
+
+    // ============ DATE FUNCTIONS ============
+    function setDefaultDates() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        const startInput = document.getElementById('start_date');
+        const endInput = document.getElementById('end_date');
+        
+        if (startInput) startInput.value = formatDate(thirtyDaysAgo);
+        if (endInput) endInput.value = formatDate(today);
+    }
+
+    function setQuickDateRange(rangeType) {
+        const today = new Date();
+        const format = (date) => date.toISOString().split('T')[0];
+        
+        let startDate = new Date(today);
+        
+        switch(rangeType) {
+            case 'today':
+                startDate = today;
+                break;
+            case 'week':
+                startDate.setDate(today.getDate() - 7);
+                break;
+            case 'month':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                break;
+            case 'quarter':
+                const quarter = Math.floor(today.getMonth() / 3);
+                startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                break;
+            case 'year':
+                startDate = new Date(today.getFullYear(), 0, 1);
+                break;
+            case 'last30':
+                startDate.setDate(today.getDate() - 30);
+                break;
+        }
+        
+        document.getElementById('start_date').value = format(startDate);
+        document.getElementById('end_date').value = format(today);
+        
+        // Load data
         loadDashboardData();
     }
-    
-    // Setup manual controls only
-    setupManualControls();
-    
-    // Setup chart resize handling
-    setupChartResize();
-});
 
-// ============ SIMPLE DATE FUNCTIONS ============
-function setDefaultDates() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    
-    const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-    
-    const startInput = document.getElementById('start_date');
-    const endInput = document.getElementById('end_date');
-    
-    if (startInput) startInput.value = formatDate(thirtyDaysAgo);
-    if (endInput) endInput.value = formatDate(today);
-}
-
-// ============ MANUAL CONTROLS SETUP ============
-function setupManualControls() {
-    // Apply button - manual reload only
-    const applyBtn = document.querySelector('button[onclick*="applyFilters"]');
-    if (applyBtn) {
-        applyBtn.onclick = function(e) {
-            e.preventDefault();
-            if (!isLoading) {
-                loadDashboardData();
-            }
-        };
-    }
-    
-    // Reset button - reset dates and reload
-    const resetBtn = document.querySelector('button[onclick*="resetFilters"]');
-    if (resetBtn) {
-        resetBtn.onclick = function(e) {
-            e.preventDefault();
-            setDefaultDates();
-            if (!isLoading) {
-                loadDashboardData();
-            }
-        };
-    }
-    
-    // Refresh button
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.onclick = function() {
-            if (!isLoading) {
-                loadDashboardData();
-            }
-        };
-    }
-    
-    // Quick date buttons
-    document.querySelectorAll('[onclick*="setDateRange"]').forEach(btn => {
-        const match = btn.getAttribute('onclick').match(/'([^']+)'/);
-        if (match) {
-            const rangeType = match[1];
-            btn.onclick = function() {
-                setQuickDateRange(rangeType);
+    // ============ MANUAL CONTROLS SETUP ============
+    function setupManualControls() {
+        const applyBtn = document.querySelector('button[onclick*="applyFilters"]');
+        if (applyBtn) {
+            applyBtn.onclick = function(e) {
+                e.preventDefault();
+                if (!isLoading) loadDashboardData();
             };
         }
-    });
-    
-    // Chart period buttons
-    document.querySelectorAll('[onclick*="changeChartPeriod"]').forEach(btn => {
-        const match = btn.getAttribute('onclick').match(/changeChartPeriod\('([^']+)'/);
-        if (match) {
-            const period = match[1];
-            btn.onclick = function() {
-                changeChartPeriod(period, this);
+        
+        const resetBtn = document.querySelector('button[onclick*="resetFilters"]');
+        if (resetBtn) {
+            resetBtn.onclick = function(e) {
+                e.preventDefault();
+                setDefaultDates();
+                if (!isLoading) loadDashboardData();
             };
         }
-    });
-}
-
-// ============ CHART RESIZE HANDLING ============
-function setupChartResize() {
-    // Handle window resize for charts
-    let resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-            console.log("Window resized, updating charts");
-            resizeAllCharts();
-        }, 250);
-    });
-}
-
-function resizeAllCharts() {
-    Object.values(charts).forEach(chart => {
-        if (chart && typeof chart.resize === 'function') {
-            chart.resize();
+        
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.onclick = function() {
+                if (!isLoading) loadDashboardData();
+            };
         }
-    });
-}
-
-// ============ SINGLE DATA LOAD FUNCTION ============
-async function loadDashboardData() {
-    if (isLoading) {
-        console.log("Already loading, please wait");
-        return;
+        
+        // Quick date buttons
+        document.querySelectorAll('[onclick*="setQuickDateRange"]').forEach(btn => {
+            const match = btn.getAttribute('onclick').match(/'([^']+)'/);
+            if (match) {
+                const rangeType = match[1];
+                btn.onclick = function() {
+                    setQuickDateRange(rangeType);
+                };
+            }
+        });
+        
+        // Chart period buttons
+        document.querySelectorAll('[onclick*="changeChartPeriod"]').forEach(btn => {
+            const match = btn.getAttribute('onclick').match(/changeChartPeriod\('([^']+)'/);
+            if (match) {
+                const period = match[1];
+                btn.onclick = function() {
+                    changeChartPeriod(period, this);
+                };
+            }
+        });
     }
-    
-    console.log("Loading dashboard data...");
-    isLoading = true;
-    showLoading(true);
-    
-    try {
-        // Get current dates
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
+
+    function setupChartResize() {
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                resizeAllCharts();
+            }, 250);
+        });
+    }
+
+    function resizeAllCharts() {
+        Object.values(charts).forEach(chart => {
+            if (chart && typeof chart.resize === 'function') {
+                chart.resize();
+            }
+        });
+    }
+
+    // ============ DATA LOADING ============
+    async function loadDashboardData() {
+        if (isLoading) return;
         
-        // Update current filters for display
-        currentFilters = { start_date: startDate, end_date: endDate };
-        updateActiveFiltersDisplay();
+        console.log("Loading dashboard data...");
+        isLoading = true;
+        showLoading(true);
         
-        // Build API URL
-        const params = new URLSearchParams();
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
+        try {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            
+            currentFilters = { start_date: startDate, end_date: endDate };
+            updateActiveFiltersDisplay();
+            
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            
+            const url = `/api/analytics/dashboard${params.toString() ? '?' + params.toString() : ''}`;
+            
+            console.log("Fetching from:", url);
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log("Data loaded successfully");
+                updateAllChartsAndData(data);
+                hasLoaded = true;
+            } else {
+                throw new Error(data.error || 'Server error');
+            }
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showToast('Error loading data: ' + error.message, 'error');
+        } finally {
+            isLoading = false;
+            showLoading(false);
+        }
+    }
+
+    function updateAllChartsAndData(data) {
+        // Update KPI cards
+        if (data.kpis) {
+            updateKPICards(data.kpis);
+        }
         
-        const url = `/api/analytics/dashboard${params.toString() ? '?' + params.toString() : ''}`;
+        // Update charts
+        if (data.charts && data.charts.overview) {
+            updateAllCharts(data.charts.overview);
+        }
         
-        console.log("Fetching from:", url);
-        
-        // Fetch data
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            console.log("Data loaded successfully");
-            updateAllChartsAndData(data);
-            hasLoaded = true;
+        // Update tables
+        if (data.tables.overview) {
+            console.log("Tables data structure:", data.tables.overview);
+            updateAllTables(data.tables.overview);
         } else {
-            throw new Error(data.error || 'Server error');
+            console.warn("No tables data in response");
+            showEmptyTables();
         }
         
-    } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Error: ' + error.message);
-    } finally {
-        isLoading = false;
-        showLoading(false);
+        // Trigger resize after all charts are loaded
+        setTimeout(resizeAllCharts, 100);
     }
-}
 
-// ============ UPDATE ALL VISUALIZATIONS ============
-function updateAllChartsAndData(data) {
-    // Update KPI cards
-    if (data.kpis) {
-        updateKPICards(data.kpis);
-    }
-    
-    // Update charts
-    if (data.charts && data.charts.overview) {
-        updateAllCharts(data.charts.overview);
-    }
-    
-    // Update tables
-    if (data.tables && data.tables.overview) {
-        updateAllTables(data.tables.overview);
-    }
-    
-    // Trigger resize after all charts are loaded
-    setTimeout(resizeAllCharts, 100);
-}
-
-function updateKPICards(kpis) {
-    const update = (id, value, suffix = '') => {
-        const el = document.getElementById(id);
-        if (el && value !== undefined) {
-            el.textContent = typeof value === 'number' ? value.toLocaleString() + suffix : value;
+    // ============ KPI CARDS ============
+    function updateKPICards(kpis) {
+        const update = (id, value, suffix = '') => {
+            const el = document.getElementById(id);
+            if (el && value !== undefined) {
+                el.textContent = typeof value === 'number' ? value.toLocaleString() + suffix : value;
+            }
+        };
+        
+        update('totalMembers', kpis.total_users);
+        update('avgAttendance', kpis.avg_attendance ? kpis.avg_attendance + '%' : '0%');
+        update('firstTimers', kpis.first_timers);
+        update('totalItems', kpis.total_items);
+        update('pendingMaintenance', kpis.pending_maintenance);
+        update('activeSessions', kpis.total_sessions);
+        
+        // Update trend texts
+        if (document.getElementById('memberGrowth')) {
+            document.getElementById('memberGrowth').innerHTML = `<i class="fas fa-arrow-up"></i> ${kpis.new_members_this_month || 0} this month`;
         }
-    };
-    
-    update('totalMembers', kpis.total_users);
-    update('avgAttendance', kpis.avg_attendance, '%');
-    update('firstTimers', kpis.first_timers);
-    update('totalItems', kpis.total_items);
-    update('pendingMaintenance', kpis.pending_maintenance);
-}
-
-function updateAllCharts(chartData) {
-    console.log("Updating charts...");
-    
-    // ATTENDANCE TREND CHART
-    if (chartData.attendance_trend) {
-        console.log("Loading attendance trend chart");
-        renderAttendanceTrendChart(chartData.attendance_trend);
-    } else {
-        console.log("No attendance trend data available");
-        showEmptyChart('attendanceTrendChart', 'No attendance data for selected period');
+        if (document.getElementById('inventoryValue')) {
+            document.getElementById('inventoryValue').innerHTML = `₦${(kpis.total_inventory_value || 0).toLocaleString()} value`;
+        }
     }
 
-    // SESSION PERFORMANCE CHART
-    if (chartData.session_performance) {
-        console.log("Loading session performance chart");
-        renderSessionPerformanceChart(chartData.session_performance);
-    } else {
-        console.log("No session performance data available");
-        showEmptyChart('sessionPerformanceChart', 'No session data');
-    }
-
-    // MEMBER GROWTH CHART - Add this!
-    if (chartData.member_growth) {
-        console.log("Loading member growth chart");
-        renderMemberGrowthChart(chartData.member_growth);
-    } else {
-        console.log("No member growth data available");
-        showEmptyChart('memberGrowthChart', 'No member growth data');
-    }
-    
-   // MEMBER CATEGORIES CHART - Combine gender and status
-    if (chartData.member_categories) {
-        console.log("Loading member categories chart");
+    // ============ CHART RENDERING ============
+    function updateAllCharts(chartData) {
+        console.log("Updating charts...");
         
-        // Combine both datasets into one
-        let combinedLabels = [];
-        let combinedValues = [];
-        let combinedColors = [];
-        
-        // Add gender data
-        if (chartData.member_categories.by_gender) {
-            combinedLabels = combinedLabels.concat(chartData.member_categories.by_gender.labels);
-            combinedValues = combinedValues.concat(chartData.member_categories.by_gender.values);
-            combinedColors = combinedColors.concat(chartData.member_categories.by_gender.colors || ['#3b82f6', '#ec4899', '#8b5cf6']);
+        // Attendance Trend Chart
+        if (chartData.attendance_trend) {
+            renderAttendanceTrendChart(chartData.attendance_trend);
+        } else {
+            showEmptyChart('attendanceTrendChart', 'No attendance data');
+        }
+
+        // Session Performance Chart
+        if (chartData.session_performance) {
+            renderSessionPerformanceChart(chartData.session_performance);
+        } else {
+            showEmptyChart('sessionPerformanceChart', 'No session data');
+        }
+
+        // Member Growth Chart
+        if (chartData.member_growth) {
+            renderMemberGrowthChart(chartData.member_growth);
+        } else {
+            showEmptyChart('memberGrowthChart', 'No member growth data');
         }
         
-        // Add status data
-        if (chartData.member_categories.by_status) {
-            combinedLabels = combinedLabels.concat(chartData.member_categories.by_status.labels);
-            combinedValues = combinedValues.concat(chartData.member_categories.by_status.values);
-            combinedColors = combinedColors.concat(chartData.member_categories.by_status.colors || ['#f59e0b', '#10b981']);
+        // Member Categories Chart
+        if (chartData.member_categories) {
+            renderDonutChart('memberCategoriesChart', chartData.member_categories, ['#8b5cf6', '#f59e0b', '#10b981', '#ef4444']);
+        } else {
+            showEmptyChart('memberCategoriesChart', 'No category data');
         }
         
-        // Render combined chart
-        renderDonutChart('memberCategoriesChart', {
-            labels: combinedLabels,
-            values: combinedValues
-        }, combinedColors);
+        // Gender Distribution Chart
+        if (chartData.gender_distribution) {
+            renderDonutChart('genderChart', chartData.gender_distribution, ['#4f46e5', '#ec4899', '#94a3b8']);
+        } else {
+            showEmptyChart('genderChart', 'No gender data');
+        }
         
-    } else {
-        console.log("No member categories data available");
-        showEmptyChart('memberCategoriesChart', 'No category data');
-    }
-    
-    // Gender Distribution Chart
-    if (chartData.gender_distribution) {
-        console.log("Loading gender distribution chart");
-        renderDonutChart('genderChart', chartData.gender_distribution, ['#667eea', '#f56565', '#f6ad55']);
-    } else {
-        console.log("No gender distribution data");
-        showEmptyChart('genderChart', 'No gender data');
-    }
-    
-    // Age Distribution Chart
-    if (chartData.age_distribution) {
-        console.log("Loading age distribution chart");
-        renderBarChart('ageDistributionChart', chartData.age_distribution, '#4facfe');
-    } else {
-        console.log("No age distribution data");
-        showEmptyChart('ageDistributionChart', 'No age data');
-    }
-    
-    // Inventory Status Chart
-    if (chartData.inventory_status) {
-        console.log("Loading inventory status chart");
-        renderPieChart('inventoryStatusChart', chartData.inventory_status, ['#10b981', '#f59e0b', '#ef4444']);
+        // Age Distribution Chart
+        if (chartData.age_distribution) {
+            renderBarChart('ageDistributionChart', chartData.age_distribution, '#3b82f6');
+        } else {
+            showEmptyChart('ageDistributionChart', 'No age data');
+        }
         
-        // Update inventory counts
-        const counts = chartData.inventory_status.values || [];
-        const goodEl = document.getElementById('goodItems');
-        const attentionEl = document.getElementById('attentionItems');
-        const maintenanceEl = document.getElementById('maintenanceItems');
+        // Inventory Status Chart
+        if (chartData.inventory_status) {
+            renderPieChart('inventoryStatusChart', chartData.inventory_status, ['#10b981', '#f59e0b', '#ef4444']);
+            
+            const counts = chartData.inventory_status.values || [];
+            document.getElementById('goodItems') && (document.getElementById('goodItems').textContent = counts[0] || 0);
+            document.getElementById('attentionItems') && (document.getElementById('attentionItems').textContent = counts[1] || 0);
+            document.getElementById('maintenanceItems') && (document.getElementById('maintenanceItems').textContent = counts[2] || 0);
+        } else {
+            showEmptyChart('inventoryStatusChart', 'No inventory data');
+        }
         
-        if (goodEl) goodEl.textContent = counts[0] || 0;
-        if (attentionEl) attentionEl.textContent = counts[1] || 0;
-        if (maintenanceEl) maintenanceEl.textContent = counts[2] || 0;
-    } else {
-        console.log("No inventory status data");
-        showEmptyChart('inventoryStatusChart', 'No inventory data');
+        // Maintenance Timeline
+        if (chartData.maintenance_timeline) {
+            renderMaintenanceTimeline(chartData.maintenance_timeline);
+        } else {
+            const timelineContainer = document.getElementById('maintenanceTimeline');
+            if (timelineContainer) {
+                timelineContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-tools fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No upcoming maintenance scheduled</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Check-in Methods Chart
+        if (chartData.checkin_methods) {
+            renderPieChart('checkinMethodsChart', chartData.checkin_methods, ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']);
+            
+            const checkinCounts = chartData.checkin_methods.values || [];
+            document.getElementById('qrCount') && (document.getElementById('qrCount').textContent = checkinCounts[0] || 0);
+            document.getElementById('adminCount') && (document.getElementById('adminCount').textContent = checkinCounts[1] || 0);
+            document.getElementById('manualCount') && (document.getElementById('manualCount').textContent = checkinCounts[2] || 0);
+            document.getElementById('selfCount') && (document.getElementById('selfCount').textContent = checkinCounts[3] || 0);
+        }
     }
-    
-    // MAINTENANCE TIMELINE
-    if (chartData.maintenance_timeline) {
-        console.log("Loading maintenance timeline");
-        renderMaintenanceTimeline(chartData.maintenance_timeline);
-    } else {
-        console.log("No maintenance timeline data found");
-        const timelineContainer = document.getElementById('maintenanceTimeline');
-        if (timelineContainer) {
-            timelineContainer.innerHTML = `
+
+    function renderAttendanceTrendChart(data) {
+        const canvas = document.getElementById('attendanceTrendChart');
+        if (!canvas) return;
+        
+        if (charts.attendanceTrend) charts.attendanceTrend.destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts.attendanceTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Attendance',
+                        data: data.values || [],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering attendance trend chart:', error);
+        }
+    }
+
+    function renderSessionPerformanceChart(data) {
+        const canvas = document.getElementById('sessionPerformanceChart');
+        if (!canvas) return;
+        
+        if (charts.sessionPerformance) charts.sessionPerformance.destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts.sessionPerformance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Attendance',
+                        data: data.values || [],
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering session performance chart:', error);
+        }
+    }
+
+    function renderMemberGrowthChart(data) {
+        const canvas = document.getElementById('memberGrowthChart');
+        if (!canvas) return;
+        
+        if (charts.memberGrowth) charts.memberGrowth.destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts.memberGrowth = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [
+                        {
+                            label: 'New Members',
+                            data: data.values || [],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Total Members',
+                            data: data.cumulative || [],
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering member growth chart:', error);
+        }
+    }
+
+    function renderDonutChart(canvasId, data, colors) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        if (charts[canvasId]) charts[canvasId].destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts[canvasId] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '65%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } catch (error) {
+            console.error(`Error rendering ${canvasId}:`, error);
+        }
+    }
+
+    function renderBarChart(canvasId, data, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        if (charts[canvasId]) charts[canvasId].destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: color,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        } catch (error) {
+            console.error(`Error rendering ${canvasId}:`, error);
+        }
+    }
+
+    function renderPieChart(canvasId, data, colors) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        if (charts[canvasId]) charts[canvasId].destroy();
+        
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            charts[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } catch (error) {
+            console.error(`Error rendering ${canvasId}:`, error);
+        }
+    }
+
+    function showEmptyChart(canvasId, message) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        if (charts[canvasId]) charts[canvasId].destroy();
+        
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+    }
+
+    function renderMaintenanceTimeline(data) {
+        const container = document.getElementById('maintenanceTimeline');
+        if (!container) return;
+        
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-tools fa-2x text-muted mb-3"></i>
                     <p class="text-muted">No upcoming maintenance scheduled</p>
                 </div>
             `;
-        }
-    }
-}
-
-// ============ CHART RENDERING FUNCTIONS ============
-// Add this function to render the member growth chart
-function renderMemberGrowthChart(data) {
-    const canvas = document.getElementById('memberGrowthChart');
-    if (!canvas) {
-        console.log("Member growth canvas not found");
-        return;
-    }
-    
-    // Destroy existing chart
-    if (charts.memberGrowth) {
-        charts.memberGrowth.destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        const labels = data.labels || [];
-        const values = data.values || [];
-        const cumulative = data.cumulative || [];
-        
-        if (labels.length === 0) {
-            showEmptyChart('memberGrowthChart', 'No member growth data');
             return;
         }
         
-        console.log("Rendering member growth chart with", labels.length, "data points");
-        
-        // Create responsive line chart with two datasets
-        charts.memberGrowth = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'New Members',
-                        data: values,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Total Members',
-                        data: cumulative,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.05)',
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.1,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            maxTicksLimit: 12  // Limit labels to avoid crowding
-                        }
-                    },
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'New Members'
-                        },
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Total Members'
-                        },
-                        beginAtZero: true,
-                        grid: {
-                            drawOnChartArea: false  // Don't draw grid lines on this axis
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 6
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== undefined) {
-                                    label += context.parsed.y.toLocaleString();
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                }
+        let html = '';
+        data.slice(0, 3).forEach((item) => {
+            let statusClass = '';
+            let statusText = '';
+            
+            if (item.days_until <= 0) {
+                statusClass = 'overdue';
+                statusText = 'Overdue';
+            } else if (item.days_until <= 7) {
+                statusClass = 'upcoming';
+                statusText = 'Due Soon';
+            } else {
+                statusClass = 'recent';
+                statusText = 'Good';
             }
-        });
-        
-    } catch (error) {
-        console.error('Error rendering member growth chart:', error);
-        showEmptyChart('memberGrowthChart', 'Error loading data');
-    }
-}
-
-// ============ SESSION PERFORMANCE CHART ============
-function renderSessionPerformanceChart(data) {
-    const canvas = document.getElementById('sessionPerformanceChart');
-    if (!canvas) {
-        console.log("Session performance canvas not found");
-        return;
-    }
-    
-    // Destroy existing chart
-    if (charts.sessionPerformance) {
-        charts.sessionPerformance.destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        const labels = data.labels || [];
-        const values = data.values || [];
-        
-        if (labels.length === 0 || values.length === 0) {
-            showEmptyChart('sessionPerformanceChart', 'No session data');
-            return;
-        }
-        
-        console.log("Rendering session performance chart with", labels.length, "sessions");
-        
-        // Create responsive bar chart
-        charts.sessionPerformance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Attendance',
-                    data: values,
-                    backgroundColor: 'rgba(79, 172, 254, 0.8)',
-                    borderColor: '#4facfe',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Attendance: ${context.parsed.y}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Number of Attendees'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error rendering session performance chart:', error);
-        showEmptyChart('sessionPerformanceChart', 'Error loading data');
-    }
-}
-
-
-// Also add function for member categories chart
-function renderMemberCategoriesChart(data) {
-    const canvas = document.getElementById('memberCategoriesChart');
-    if (!canvas) {
-        console.log("Member categories canvas not found");
-        return;
-    }
-    
-    // Destroy existing chart
-    if (charts.memberCategories) {
-        charts.memberCategories.destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        const labels = data.labels || [];
-        const values = data.values || [];
-        
-        if (labels.length === 0) {
-            showEmptyChart('memberCategoriesChart', 'No category data');
-            return;
-        }
-        
-        // Color palette for categories
-        const colors = ['#667eea', '#f56565', '#f6ad55', '#48bb78', '#9f7aea'];
-        
-        charts.memberCategories = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: colors.slice(0, labels.length),
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            boxWidth: 12,
-                            padding: 15
-                        }
-                    }
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error rendering member categories chart:', error);
-        showEmptyChart('memberCategoriesChart', 'Error loading data');
-    }
-}
-
-
-function renderAttendanceTrendChart(data) {
-    const canvas = document.getElementById('attendanceTrendChart');
-    if (!canvas) {
-        console.log("Attendance trend canvas not found");
-        return;
-    }
-    
-    // Destroy existing chart
-    if (charts.attendanceTrend) {
-        charts.attendanceTrend.destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        const labels = data.labels || [];
-        const values = data.values || [];
-        
-        if (labels.length === 0 || values.length === 0) {
-            showEmptyChart('attendanceTrendChart', 'No attendance data');
-            return;
-        }
-        
-        // Create responsive line chart
-        charts.attendanceTrend = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Attendance',
-                    data: values,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 3, // Wider aspect ratio for timeline
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error rendering attendance trend chart:', error);
-        showEmptyChart('attendanceTrendChart', 'Error loading data');
-    }
-}
-
-function renderDonutChart(canvasId, data, colors) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    if (charts[canvasId]) {
-        charts[canvasId].destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        charts[canvasId] = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.labels || [],
-                datasets: [{
-                    data: data.values || [],
-                    backgroundColor: colors,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1, // Square aspect ratio
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error(`Error rendering ${canvasId}:`, error);
-    }
-}
-
-function renderBarChart(canvasId, data, color) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    if (charts[canvasId]) {
-        charts[canvasId].destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        charts[canvasId] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.labels || [],
-                datasets: [{
-                    data: data.values || [],
-                    backgroundColor: color,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.5, // Slightly wider for bars
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error(`Error rendering ${canvasId}:`, error);
-    }
-}
-
-function renderPieChart(canvasId, data, colors) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    if (charts[canvasId]) {
-        charts[canvasId].destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    
-    try {
-        charts[canvasId] = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: data.labels || [],
-                datasets: [{
-                    data: data.values || [],
-                    backgroundColor: colors,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1, // Square aspect ratio
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error(`Error rendering ${canvasId}:`, error);
-    }
-}
-
-function showEmptyChart(canvasId, message) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    // Clear any existing chart
-    if (charts[canvasId]) {
-        charts[canvasId].destroy();
-    }
-    
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw message
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-}
-
-// ============ MAINTENANCE TIMELINE FUNCTION ============
-function renderMaintenanceTimeline(data) {
-    const container = document.getElementById('maintenanceTimeline');
-    if (!container) {
-        console.log("Maintenance timeline container not found");
-        return;
-    }
-    
-    if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-tools fa-2x text-muted mb-3"></i>
-                <p class="text-muted">No upcoming maintenance scheduled</p>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    
-    data.forEach((item) => {
-        let statusClass = '';
-        let statusText = '';
-        
-        if (item.days_until <= 0) {
-            statusClass = 'overdue';
-            statusText = 'Overdue';
-        } else if (item.days_until <= 7) {
-            statusClass = 'upcoming';
-            statusText = 'Due Soon';
-        } else {
-            statusClass = 'recent';
-            statusText = 'Good';
-        }
-        
-        const lastMaintenance = item.last_maintenance ? 
-            new Date(item.last_maintenance).toLocaleDateString() : 'Never';
-        const nextDue = item.next_due ? 
-            new Date(item.next_due).toLocaleDateString() : 'Unknown';
-        
-        html += `
-            <div class="timeline-item ${statusClass} mb-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1 me-3">
-                        <h6 class="mb-1 text-truncate">${item.item_name || 'Unknown Item'}</h6>
-                        <p class="text-muted mb-1 small">${item.description || 'No description'}</p>
-                        <small class="text-muted">Last: ${lastMaintenance}</small>
-                    </div>
-                    <div class="text-end flex-shrink-0">
-                        <div class="maintenance-status ${getMaintenanceStatusClass(item.days_until)} mb-1">
-                            ${getMaintenanceStatusText(item.days_until)}
+            
+            const lastMaintenance = item.last_maintenance ? 
+                new Date(item.last_maintenance).toLocaleDateString() : 'Never';
+            const nextDue = item.next_due ? 
+                new Date(item.next_due).toLocaleDateString() : 'Unknown';
+            
+            html += `
+                <div class="timeline-item ${statusClass}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>${item.item_name || 'Unknown Item'}</h6>
+                            <p>${item.description || 'No description'}</p>
+                            <small>Last: ${lastMaintenance}</small>
                         </div>
-                        <small class="text-muted d-block">Due: ${nextDue}</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-function getMaintenanceStatusClass(daysUntil) {
-    if (daysUntil <= 0) return 'status-critical';
-    if (daysUntil <= 7) return 'status-warning';
-    return 'status-good';
-}
-
-function getMaintenanceStatusText(daysUntil) {
-    if (daysUntil <= 0) return 'Overdue';
-    if (daysUntil <= 7) return 'Due Soon';
-    return 'Good';
-}
-
-// ============ TABLE FUNCTIONS ============
-// ============ SIMPLIFIED TABLE FUNCTIONS ============
-// Replace any existing updateAllTables function with this
-
-function updateAllTables(tableData) {
-    // First Timers Table
-    if (tableData.first_timers) {
-        updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
-            <td>
-                <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
-                <small class="text-muted">${user.email || ''}</small>
-            </td>
-            <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
-            <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
-            <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
-        `);
-    }
-
-   // ACTIVE MEMBERS TABLE - Most active members (Top members by attendance)
-if (tableData.active_members) {
-    console.log('activeMembersTableBody element:', document.getElementById('activeMembersTableBody'));
-    console.log("Loading active members:", tableData.active_members);
-    updateTable('activeMembersTableBody', tableData.active_members, (member) => {
-        // Format last active date - handle different date formats
-        let lastActive = member.last_active || '';
-        if (lastActive && lastActive !== 'Never') {
-            // If it's already formatted like "Feb 06, 2026", use it as is
-            // Otherwise try to format it
-            if (!lastActive.includes(',')) {
-                try {
-                    const date = new Date(lastActive);
-                    if (!isNaN(date.getTime())) {
-                        lastActive = date.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                        });
-                    }
-                } catch (e) {
-                    // Keep original if parsing fails
-                }
-            }
-        }
-        
-        // Get engagement class safely
-        let engagementClass = 'secondary';
-        let engagementText = 'Low';
-        
-        if (member.engagement) {
-            engagementClass = member.engagement.class || 'secondary';
-            engagementText = member.engagement.text || 'Low';
-        } else {
-            // Fallback based on attendance rate
-            const rate = parseFloat(member.attendance_rate) || 0;
-            if (rate >= 50) {
-                engagementClass = 'success';
-                engagementText = 'High';
-            } else if (rate >= 20) {
-                engagementClass = 'warning';
-                engagementText = 'Medium';
-            }
-        }
-        
-        return `
-            <td>
-                <strong>${member.name || ''}</strong><br>
-                <small class="text-muted">${member.email || ''}</small>
-            </td>
-            <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
-            <td>${lastActive || 'Never'}</td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <span class="me-2">${member.attendance_rate || '0%'}</span>
-                    <span class="badge bg-${engagementClass}">${engagementText}</span>
-                </div>
-            </td>
-        `;
-    });
-    } 
-    else {
-    console.log("No active members data available");
-    const tbody = document.getElementById('activeMembersTableBody');
-    if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
-        }
-    }
-    
-    // Sessions Table
-    if (tableData.sessions) {
-        updateTable('sessionsTableBody', tableData.sessions, (session) => {
-            const attendance = session.attendance || 0;
-            const capacity = session.capacity || 1;
-            const occupancy = Math.round((attendance / capacity) * 100);
-            return `
-                <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
-                <td>
-                    <strong>${session.name || ''}</strong><br>
-                    <small class="text-muted">${session.location || 'No location'}</small>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">${attendance}</span>
-                        <div class="progress flex-grow-1" style="height: 6px;">
-                            <div class="progress-bar ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
-                                 style="width: ${occupancy}%"></div>
+                        <div class="text-end">
+                            <span class="status-badge status-${statusText.toLowerCase()}">${statusText}</span><br>
+                            <small>Due: ${nextDue}</small>
                         </div>
                     </div>
-                </td>
-                <td>${capacity}</td>
+                </div>
             `;
         });
+        
+        container.innerHTML = html;
     }
-}
 
-
-// ============ HELPER FUNCTIONS ============
-function getStatusClass(count) {
-    if (count >= 10) return 'bg-success';
-    if (count >= 5) return 'bg-warning';
-    if (count >= 1) return 'bg-info';
-    return 'bg-secondary';
-}
-
-function getStatusText(count) {
-    if (count >= 10) return 'Regular';
-    if (count >= 5) return 'Active';
-    if (count >= 1) return 'New';
-    return 'Inactive';
-}
-
-function showEmptyTables() {
-    const tables = ['activeMembersTableBody', 'firstTimersTableBody', 'sessionsTableBody'];
-    tables.forEach(id => {
-        const tbody = document.getElementById(id);
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>';
-        }
-    });
-}
-
-// ============ UPDATE YOUR MAIN DATA LOADING FUNCTION ============
-// Make sure your loadDashboardData function calls updateAllTables correctly
-
-// Add this to your loadDashboardData function after getting the data:
-// Inside the try block, after const data = await response.json();
-
-/*
-if (data.success) {
-    console.log("Data loaded successfully");
-    
-    // Update KPIs
-    if (data.kpis) updateKPICards(data.kpis);
-    
-    // Update charts
-    if (data.charts && data.charts.overview) {
-        updateAllCharts(data.charts.overview);
-    }
-    
-    // IMPORTANT: Update tables - pass the correct data structure
-    if (data.tables) {
-        console.log("Tables data structure:", data.tables);
-        updateAllTables(data.tables);
-    } else {
-        console.warn("No tables data in response");
-    }
-    
-    hasLoaded = true;
-}
-*/
-function updateTable(tbodyId, data, rowTemplate) {
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody || !Array.isArray(data)) return;
-    
-    tbody.innerHTML = '';
-    data.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = rowTemplate(item);
-        tbody.appendChild(row);
-    });
-}
-
-function getUserStatusClass(count) {
-    if (count >= 3) return 'bg-success';
-    if (count >= 1) return 'bg-warning';
-    return 'bg-secondary';
-}
-
-function getUserStatusText(count) {
-    if (count >= 3) return 'Converted';
-    if (count >= 1) return 'Attending';
-    return 'New';
-}
-
-// ============ HELPER FUNCTIONS ============
-function setQuickDateRange(rangeType) {
-    const today = new Date();
-    const format = (date) => date.toISOString().split('T')[0];
-    
-    let startDate = today;
-    
-    switch(rangeType) {
-        case 'today':
-            startDate = today;
-            break;
-        case 'month':
-            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-            break;
-        case 'year':
-            startDate = new Date(today.getFullYear(), 0, 1);
-            break;
-        case 'last30':
-            startDate = new Date();
-            startDate.setDate(today.getDate() - 30);
-            break;
-    }
-    
-    document.getElementById('start_date').value = format(startDate);
-    document.getElementById('end_date').value = format(today);
-    
-    // Manually load data
-    loadDashboardData();
-}
-
-function changeChartPeriod(period, button) {
-    // Update button states
-    const buttons = button.parentElement.querySelectorAll('.btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    button.classList.add('active');
-    
-    // Store period
-    currentChartPeriod = period;
-    
-    // Reload data
-    loadDashboardData();
-}
-
-function updateActiveFiltersDisplay() {
-    const container = document.getElementById('filterTags');
-    if (!container) return;
-    
-    let html = '';
-    if (currentFilters.start_date) {
-        const date = new Date(currentFilters.start_date).toLocaleDateString();
-        html += `<span class="filter-tag">From: ${date}</span>`;
-    }
-    if (currentFilters.end_date) {
-        const date = new Date(currentFilters.end_date).toLocaleDateString();
-        html += `<span class="filter-tag">To: ${date}</span>`;
-    }
-    
-    container.innerHTML = html;
-    
-    // Show/hide container
-    const displayContainer = document.getElementById('activeFiltersContainer');
-    if (displayContainer) {
-        displayContainer.style.display = html ? 'block' : 'none';
-    }
-}
-
-function showLoading(show) {
-    const btn = document.querySelector('#refreshBtn i');
-    if (btn) {
-        if (show) {
-            btn.classList.add('fa-spin');
+    // ============ TABLE FUNCTIONS ============
+    function updateAllTables(tableData) {
+        console.log("Updating tables with data:", tableData);
+        
+        // First Timers Table
+        if (tableData.first_timers && tableData.first_timers.length > 0) {
+            console.log("Loading first timers:", tableData.first_timers.length);
+            updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
+                <td>
+                    <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
+                    <small class="text-muted">${user.email || ''}</small>
+                </td>
+                <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
+                <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
+                <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
+            `);
         } else {
-            setTimeout(() => btn.classList.remove('fa-spin'), 500);
+            document.getElementById('firstTimersTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No first timers data available</td></tr>';
+        }
+
+        // ACTIVE MEMBERS TABLE
+        if (tableData.active_members && tableData.active_members.length > 0) {
+            console.log("Loading active members:", tableData.active_members.length);
+            updateTable('activeMembersTableBody', tableData.active_members, (member) => {
+                let lastActive = member.last_active || 'Never';
+                
+                let engagementClass = 'secondary';
+                let engagementText = 'Low';
+                const rate = parseFloat(member.attendance_rate) || 0;
+                
+                if (rate >= 50) {
+                    engagementClass = 'success';
+                    engagementText = 'High';
+                } else if (rate >= 20) {
+                    engagementClass = 'warning';
+                    engagementText = 'Medium';
+                }
+                
+                return `
+                    <td>
+                        <strong>${member.name || ''}</strong><br>
+                        <small class="text-muted">${member.email || ''}</small>
+                    </td>
+                    <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
+                    <td>${lastActive}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">${member.attendance_rate || '0%'}</span>
+                            <span class="badge bg-${engagementClass}">${engagementText}</span>
+                        </div>
+                    </td>
+                `;
+            });
+        } else {
+            const tbody = document.getElementById('activeMembersTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
+            }
+        }
+        
+        // Sessions Table
+        if (tableData.sessions && tableData.sessions.length > 0) {
+            console.log("Loading sessions:", tableData.sessions.length);
+            updateTable('sessionsTableBody', tableData.sessions, (session) => {
+                const attendance = session.attendance || 0;
+                const capacity = session.capacity || 1;
+                const occupancy = Math.round((attendance / capacity) * 100);
+                return `
+                    <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
+                    <td>
+                        <strong>${session.name || ''}</strong><br>
+                        <small class="text-muted">${session.location || 'No location'}</small>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">${attendance}</span>
+                            <div class="progress-modern">
+                                <div class="progress-bar-modern ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
+                                     style="width: ${occupancy}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${capacity}</td>
+                `;
+            });
+        } else {
+            const tbody = document.getElementById('sessionsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No sessions data available</td></tr>';
+            }
+        }
+        
+        // High Value Items Table
+        if (tableData.high_value_items && tableData.high_value_items.length > 0) {
+            updateTable('highValueItemsTableBody', tableData.high_value_items, (item) => `
+                <td><strong>${item.name || ''}</strong></td>
+                <td>${item.category || 'N/A'}</td>
+                <td>₦${parseFloat(item.value || 0).toLocaleString()}</td>
+                <td><span class="badge ${getItemStatusClass(item.status)}">${item.status || 'Unknown'}</span></td>
+            `);
+        } else {
+            document.getElementById('highValueItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No high value items data</td></tr>';
+        }
+        
+        // Attention Items Table
+        if (tableData.attention_items && tableData.attention_items.length > 0) {
+            updateTable('attentionItemsTableBody', tableData.attention_items, (item) => `
+                <td><strong>${item.name || ''}</strong></td>
+                <td>${item.last_maintenance ? new Date(item.last_maintenance).toLocaleDateString() : 'Never'}</td>
+                <td><span class="badge ${item.days_since > 90 ? 'bg-danger' : item.days_since > 60 ? 'bg-warning' : 'bg-info'}">${item.days_since || 0}</span></td>
+                <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
+            `);
+        } else {
+            document.getElementById('attentionItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No attention items data</td></tr>';
+        }
+        
+        // Recent Maintenance Table
+        if (tableData.recent_maintenance && tableData.recent_maintenance.length > 0) {
+            updateTable('recentMaintenanceTableBody', tableData.recent_maintenance, (item) => `
+                <td><strong>${item.item_name || ''}</strong></td>
+                <td>${item.maintenance_date ? new Date(item.maintenance_date).toLocaleDateString() : ''}</td>
+                <td>₦${parseFloat(item.cost || 0).toLocaleString()}</td>
+                <td>${item.vendor || 'N/A'}</td>
+            `);
+        } else {
+            document.getElementById('recentMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No recent maintenance data</td></tr>';
+        }
+        
+        // Upcoming Maintenance Table
+        if (tableData.upcoming_maintenance && tableData.upcoming_maintenance.length > 0) {
+            updateTable('upcomingMaintenanceTableBody', tableData.upcoming_maintenance, (item) => {
+                const daysUntil = item.days_until || 0;
+                return `
+                    <td><strong>${item.item_name || ''}</strong></td>
+                    <td>${item.next_due ? new Date(item.next_due).toLocaleDateString() : ''}</td>
+                    <td><span class="badge ${daysUntil <= 0 ? 'bg-danger' : daysUntil <= 7 ? 'bg-warning' : 'bg-success'}">${daysUntil}</span></td>
+                    <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
+                `;
+            });
+        } else {
+            document.getElementById('upcomingMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No upcoming maintenance data</td></tr>';
         }
     }
-}
 
-// Add responsive styles
-const style = document.createElement('style');
-style.textContent = `
-    .filter-tag {
-        display: inline-block;
-        background: #e9ecef;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        margin-right: 8px;
-        margin-bottom: 4px;
+    function updateTable(tbodyId, data, rowTemplate) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody || !Array.isArray(data)) return;
+        
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = rowTemplate(item);
+            tbody.appendChild(row);
+        });
     }
-    .maintenance-status {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        white-space: nowrap;
+
+    function getUserStatusClass(count) {
+        if (count >= 3) return 'badge-success';
+        if (count >= 1) return 'badge-warning';
+        return 'badge-secondary';
     }
-    .status-good { background: #d1fae5; color: #065f46; }
-    .status-warning { background: #fef3c7; color: #92400e; }
-    .status-critical { background: #fee2e2; color: #991b1b; }
-    .timeline-item {
-        padding: 12px;
-        border-left: 3px solid #e5e7eb;
-        background: #f9fafb;
-        border-radius: 0 8px 8px 0;
+
+    function getUserStatusText(count) {
+        if (count >= 3) return 'Converted';
+        if (count >= 1) return 'Attending';
+        return 'New';
     }
-    .timeline-item.overdue { border-left-color: #ef4444; }
-    .timeline-item.upcoming { border-left-color: #f59e0b; }
-    .timeline-item.recent { border-left-color: #10b981; }
-    
-    /* Chart containers */
-    .chart-container {
-        position: relative;
-        min-height: 300px;
+
+    function getItemStatusClass(status) {
+        const statusMap = {
+            'good': 'bg-success',
+            'attention': 'bg-warning',
+            'critical': 'bg-danger',
+            'maintenance': 'bg-info'
+        };
+        return statusMap[status?.toLowerCase()] || 'bg-secondary';
     }
-    
-    /* Ensure charts are responsive */
-    .chart-container canvas {
-        max-width: 100% !important;
-        height: auto !important;
+
+    function getPriorityClass(priority) {
+        const priorityMap = {
+            'high': 'bg-danger',
+            'medium': 'bg-warning',
+            'low': 'bg-info',
+            'critical': 'bg-danger'
+        };
+        return priorityMap[priority?.toLowerCase()] || 'bg-secondary';
     }
-    
-    /* Small screens adjustments */
-    @media (max-width: 768px) {
-        .chart-container {
-            min-height: 250px;
+
+    function showEmptyTables() {
+        const tables = [
+            'firstTimersTableBody', 
+            'activeMembersTableBody', 
+            'sessionsTableBody',
+            'highValueItemsTableBody',
+            'attentionItemsTableBody',
+            'recentMaintenanceTableBody',
+            'upcomingMaintenanceTableBody'
+        ];
+        
+        tables.forEach(id => {
+            const tbody = document.getElementById(id);
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>';
+            }
+        });
+    }
+
+    // ============ UTILITY FUNCTIONS ============
+    function updateActiveFiltersDisplay() {
+        const container = document.getElementById('filterTags');
+        if (!container) return;
+        
+        let html = '';
+        if (currentFilters.start_date) {
+            const date = new Date(currentFilters.start_date).toLocaleDateString();
+            html += `<span class="filter-tag">From: ${date}</span>`;
         }
-        .timeline-item {
-            padding: 8px;
+        if (currentFilters.end_date) {
+            const date = new Date(currentFilters.end_date).toLocaleDateString();
+            html += `<span class="filter-tag">To: ${date}</span>`;
+        }
+        
+        container.innerHTML = html;
+        
+        const displayContainer = document.getElementById('activeFiltersContainer');
+        if (displayContainer) {
+            displayContainer.style.display = html ? 'block' : 'none';
         }
     }
-`;
-document.head.appendChild(style);
 
-console.log("Analytics dashboard loaded - Responsive charts");
+    function showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+    }
 
-</script>
+    function showToast(message, type = 'info') {
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast-modern ${type}" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close btn-sm" onclick="document.getElementById('${toastId}').remove()"></button>
+                </div>
+            </div>
+        `;
+        
+        const container = document.getElementById('toastContainer');
+        if (container) {
+            container.innerHTML = toastHtml;
+            
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) toast.remove();
+            }, 5000);
+        }
+    }
 
+    function changeChartPeriod(period, button) {
+        const buttons = button.parentElement.querySelectorAll('.btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        loadDashboardData();
+    }
+
+    function updateSessionPerformance(value) {
+        console.log('Updating session performance for:', value);
+        loadDashboardData();
+    }
+
+    function exportDashboard() {
+        showToast('Export feature coming soon!', 'info');
+    }
+
+    function refreshDashboard() {
+        loadDashboardData();
+    }
+
+    function applyFilters() {
+        loadDashboardData();
+    }
+
+    function resetFilters() {
+        setDefaultDates();
+        loadDashboardData();
+    }
+
+    function loadMoreFirstTimers() {
+        showToast('Loading more first timers...', 'info');
+    }
+
+    function loadMoreActiveMembers() {
+        showToast('Loading more active members...', 'info');
+    }
+
+    function loadMoreSessions() {
+        showToast('Loading more sessions...', 'info');
+    }
+
+    function loadMoreHighValueItems() {
+        showToast('Loading more high value items...', 'info');
+    }
+
+    function loadMoreAttentionItems() {
+        showToast('Loading more attention items...', 'info');
+    }
+
+    function loadMoreMaintenance() {
+        showToast('Loading more maintenance records...', 'info');
+    }
+
+    function loadUpcomingMaintenance() {
+        showToast('Loading upcoming maintenance...', 'info');
+    }
+
+    console.log("Analytics dashboard loaded - Complete functionality");
+    </script>
 </body>
 </html>

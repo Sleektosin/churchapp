@@ -1,517 +1,838 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Register | RCCG Power House Parish</title>
-    <!-- Bootstrap 4 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
-    <!-- Font Awesome -->
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-      :root {
-        --primary-color: #4a6bff;
-        --primary-dark: #3a5bef;
-        --secondary-color: #f8f9fa;
-        --text-color: #2d3748;
-        --text-light: #718096;
-        --success-color: #38a169;
-        --danger-color: #e53e3e;
-        --border-color: #e2e8f0;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        --transition: all 0.3s ease;
-      }
-      
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Inter', sans-serif;
-      }
-      
-      body {
-        background: linear-gradient(135deg, #f5f7ff 0%, #eef1f9 100%);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      
-      .register-container {
-        max-width: 1200px;
-        width: 100%;
-      }
-      
-      .register-card {
-        background-color: white;
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        overflow: hidden;
-        display: flex;
-      }
-      
-      .register-image-col {
-        flex: 0 0 45%;
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .register-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-      
-      .image-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 30px;
-        color: white;
-      }
-      
-      .image-overlay h3 {
-        font-weight: 600;
-        margin-bottom: 10px;
-        font-size: 1.5rem;
-      }
-      
-      .image-overlay p {
-        opacity: 0.9;
-        font-size: 0.9rem;
-      }
-      
-      .register-form-col {
-        flex: 0 0 55%;
-        padding: 40px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-      
-      .logo {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      
-      .logo h1 {
-        color: var(--primary-color);
-        font-weight: 700;
-        font-size: 1.6rem;
-        margin-bottom: 5px;
-      }
-      
-      .logo p {
-        color: var(--text-light);
-        font-size: 0.9rem;
-      }
-      
-      .register-form h2 {
-        font-weight: 600;
-        color: var(--text-color);
-        margin-bottom: 20px;
-        text-align: center;
-        font-size: 1.5rem;
-      }
-      
-      .form-section-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 12px;
-        padding-bottom: 6px;
-        border-bottom: 2px solid var(--primary-color);
-      }
-      
-      .form-group {
-        margin-bottom: 15px;
-        position: relative;
-      }
-      
-      .form-label {
-        position: absolute;
-        left: 15px;
-        top: 15px;
-        color: var(--text-light);
-        transition: var(--transition);
-        pointer-events: none;
-        font-size: 14px;
-        background: white;
-        padding: 0 5px;
-        z-index: 1;
-      }
-      
-      .form-control {
-        height: 45px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        padding: 18px 15px 5px;
-        font-size: 14px;
-        transition: var(--transition);
-        position: relative;
-        z-index: 2;
-        background: transparent;
-      }
-      
-      select.form-control {
-        padding-top: 0;
-        padding-bottom: 0;
-      }
-      
-      .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.15);
-      }
-      
-      .form-control:focus + .form-label,
-      .form-control:not(:placeholder-shown) + .form-label {
-        top: -8px;
-        font-size: 11px;
-        color: var(--primary-color);
-      }
-      
-      .form-check {
-        margin-bottom: 12px;
-      }
-      
-      .form-check-input {
-        width: 18px;
-        height: 18px;
-        margin-top: 0;
-        margin-right: 8px;
-      }
-      
-      .form-check-input:checked {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-      }
-      
-      .form-check-label {
-        font-size: 14px;
-        color: var(--text-color);
-      }
-      
-      .btn-register {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        height: 45px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 15px;
-        transition: var(--transition);
-        margin-top: 15px;
-        width: 100%;
-      }
-      
-      .btn-register:hover {
-        background-color: var(--primary-dark);
-        transform: translateY(-2px);
-      }
-      
-      .register-links {
-        text-align: center;
-        margin-top: 20px;
-        font-size: 14px;
-      }
-      
-      .register-links a {
-        color: var(--primary-color);
-        text-decoration: none;
-        transition: var(--transition);
-      }
-      
-      .register-links a:hover {
-        color: var(--primary-dark);
-        text-decoration: underline;
-      }
-      
-      .alert {
-        border-radius: 8px;
-        padding: 10px 15px;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-      }
-      
-      .alert i {
-        margin-right: 8px;
-        font-size: 16px;
-      }
-      
-      .alert-danger {
-        background-color: rgba(229, 62, 62, 0.1);
-        color: var(--danger-color);
-        border: none;
-      }
-      
-      .alert-success {
-        background-color: rgba(56, 161, 105, 0.1);
-        color: var(--success-color);
-        border: none;
-      }
-      
-      .form-columns {
-        display: flex;
-        gap: 15px;
-      }
-      
-      .form-column {
-        flex: 1;
-      }
-      
-      /* Responsive adjustments */
-      @media (max-width: 992px) {
-        .register-card {
-          flex-direction: column;
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --primary-soft: #eef2ff;
+            --success: #10b981;
+            --success-dark: #0d9488;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-soft: #fee2e2;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --gray-soft: #f1f5f9;
         }
         
-        .register-image-col {
-          height: 200px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        .register-form-col {
-          padding: 25px;
-        }
-        
-        .form-columns {
-          flex-direction: column;
-          gap: 0;
-        }
-      }
-      
-      @media (max-width: 576px) {
         body {
-          padding: 15px;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
         }
         
-        .register-form-col {
-          padding: 20px;
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 80%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: rotate(45deg);
+            pointer-events: none;
         }
-      }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -50%;
+            left: -20%;
+            width: 80%;
+            height: 80%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: rotate(45deg);
+            pointer-events: none;
+        }
+        
+        .register-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Modern Card */
+        .register-card {
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            min-height: 700px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Left Column - Image Side */
+        .register-image-col {
+            flex: 0 0 45%;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        }
+        
+        .register-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: 0.85;
+            transition: transform 0.5s ease;
+        }
+        
+        .register-card:hover .register-image {
+            transform: scale(1.05);
+        }
+        
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(124, 58, 237, 0.9));
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 40px;
+            color: white;
+        }
+        
+        .image-overlay h3 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            line-height: 1.2;
+        }
+        
+        .image-overlay p {
+            opacity: 0.9;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+        
+        .overlay-features {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 40px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .feature-item i {
+            font-size: 0.9rem;
+        }
+        
+        /* Right Column - Form Side */
+        .register-form-col {
+            flex: 0 0 55%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow-y: auto;
+            max-height: 700px;
+        }
+        
+        /* Custom Scrollbar */
+        .register-form-col::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .register-form-col::-webkit-scrollbar-track {
+            background: var(--gray-soft);
+            border-radius: 10px;
+        }
+        
+        .register-form-col::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 10px;
+        }
+        
+        .register-form-col::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+        
+        /* Logo/Brand */
+        .brand {
+            margin-bottom: 20px;
+        }
+        
+        .brand h2 {
+            color: var(--dark);
+            font-weight: 800;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand h2 i {
+            color: var(--primary);
+            margin-right: 10px;
+        }
+        
+        .brand p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+        
+        .welcome-text {
+            margin-bottom: 20px;
+        }
+        
+        .welcome-text h1 {
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+        }
+        
+        .welcome-text p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+        
+        /* Section Title */
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 20px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-soft);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            font-size: 1.1rem;
+        }
+        
+        /* Form Styling */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+        
+        .form-floating-modern {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .form-floating-modern .form-control,
+        .form-floating-modern .form-select {
+            height: 56px;
+            border-radius: 16px;
+            border: 2px solid var(--gray-light);
+            padding: 20px 15px 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: var(--light);
+            width: 100%;
+        }
+        
+        .form-floating-modern .form-select {
+            padding-top: 20px;
+            padding-bottom: 5px;
+            color: var(--dark);
+        }
+        
+        .form-floating-modern .form-control:focus,
+        .form-floating-modern .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            background: white;
+            outline: none;
+        }
+        
+        .form-floating-modern .form-label {
+            position: absolute;
+            left: 15px;
+            top: 18px;
+            color: var(--gray);
+            transition: all 0.2s ease;
+            pointer-events: none;
+            font-size: 14px;
+            background: transparent;
+            padding: 0 5px;
+            z-index: 5;
+        }
+        
+        .form-floating-modern .form-control:focus ~ .form-label,
+        .form-floating-modern .form-control:not(:placeholder-shown) ~ .form-label,
+        .form-floating-modern .form-select:focus ~ .form-label,
+        .form-floating-modern .form-select:not([value=""]):valid ~ .form-label {
+            top: 5px;
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        /* Custom Checkbox */
+        .checkbox-modern {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background: var(--gray-soft);
+            border-radius: 12px;
+        }
+        
+        .checkbox-modern input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--gray-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-modern input[type="checkbox"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .checkbox-modern label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
+            cursor: pointer;
+        }
+        
+        /* Register Button */
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            height: 56px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-register::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+        }
+        
+        .btn-register:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-register i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+        
+        /* Register Links */
+        .register-links {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid var(--gray-soft);
+        }
+        
+        .register-links a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .register-links a i {
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .register-links a:hover {
+            color: var(--primary-dark);
+        }
+        
+        .register-links a:hover i {
+            transform: translateX(3px);
+        }
+        
+        /* Alert Messages */
+        .alert-modern {
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            border: none;
+            display: flex;
+            align-items: center;
+            background: white;
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+        }
+        
+        .alert-modern.alert-danger {
+            border-left-color: var(--danger);
+            background: var(--danger-soft);
+        }
+        
+        .alert-modern.alert-success {
+            border-left-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .alert-modern i {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .alert-modern.alert-danger i {
+            color: var(--danger);
+        }
+        
+        .alert-modern.alert-success i {
+            color: var(--success);
+        }
+        
+        .alert-modern .btn-close {
+            margin-left: auto;
+            font-size: 0.8rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .register-card {
+                flex-direction: column;
+                max-width: 600px;
+                margin: 0 auto;
+                min-height: auto;
+            }
+            
+            .register-image-col {
+                height: 200px;
+                flex: 0 0 auto;
+            }
+            
+            .register-form-col {
+                flex: 0 0 auto;
+                padding: 30px;
+                max-height: none;
+            }
+            
+            .image-overlay {
+                padding: 30px;
+            }
+            
+            .image-overlay h3 {
+                font-size: 1.5rem;
+            }
+            
+            .overlay-features {
+                gap: 8px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            body {
+                padding: 10px;
+            }
+            
+            .register-form-col {
+                padding: 20px;
+            }
+            
+            .welcome-text h1 {
+                font-size: 1.5rem;
+            }
+            
+            .brand h2 {
+                font-size: 1.4rem;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <div class="register-container">
-      <div class="register-card">
-        <div class="register-image-col">
-          <img
-            src="{{url_for('static',filename = 'uploads/register_2.jpg')}}"
-            alt="RCCG Power House Parish Registration"
-            class="register-image"
-          />
-          <div class="image-overlay">
-            <h3>RCCG Power House Parish</h3>
-            <p>Join our church community today</p>
-          </div>
-        </div>
-        <div class="register-form-col">
-          <div class="logo">
-            <h1><i class="fas fa-church me-2"></i>RCCG Power House Parish</h1>
-            <p>Create your account to get started</p>
-          </div>
-          
-          <h2>Create Your Account</h2>
-          
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
-                  <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }}"></i>
-                  <span>{{ message }}</span>
-                  <button type="button" class="close" data-dismiss="alert">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
+</head>
+<body>
+    <div class="register-wrapper">
+        <div class="register-card">
+            <!-- Left Column - Image Side -->
+            <div class="register-image-col">
+                <img
+                    src="{{url_for('static',filename = 'uploads/register_2.jpg')}}"
+                    alt="RCCG Power House Parish Registration"
+                    class="register-image"
+                />
+                <div class="image-overlay">
+                    <h3>Welcome to RCCG Power House Parish</h3>
+                    <p>Join our growing community of faith</p>
+                    
+                    <div class="overlay-features">
+                        <span class="feature-item">
+                            <i class="fas fa-users"></i>
+                            Community
+                        </span>
+                        <span class="feature-item">
+                            <i class="fas fa-calendar"></i>
+                            Events
+                        </span>
+                        <span class="feature-item">
+                            <i class="fas fa-pray"></i>
+                            Worship
+                        </span>
+                        <span class="feature-item">
+                            <i class="fas fa-hand-holding-heart"></i>
+                            Fellowship
+                        </span>
+                    </div>
                 </div>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-          
-          <form method="post" action="">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <div class="form-columns">
-              <div class="form-column">
-                <div class="form-section-title">Personal Information</div>
-                
-                <div class="form-group">
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    name="username"
-                    id="username"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="text"
-                    placeholder="First Name"
-                    name="firstname"
-                    id="firstname"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    name="lastname"
-                    id="lastname"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="date"
-                    placeholder="Date of Birth"
-                    name="date_of_birth"
-                    id="date_of_birth"
-                    class="form-control"
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <select id="gender" class="form-control" name="gender" required>
-                    <option value="" disabled selected>Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
-                  </select>
-                </div>
-                
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    name="is_first_timer"
-                    id="is_first_timer"
-                    checked
-                  />
-                  <label class="form-check-label" for="is_first_timer">
-                    First time user?
-                  </label>
-                </div>
-              </div>
-              
-              <div class="form-column">
-                <div class="form-section-title">Account Details</div>
-                
-                <div class="form-group">
-                  <input
-                    type="text"
-                    placeholder="Phone Number"
-                    name="phone_no"
-                    id="phone_no"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="text"
-                    placeholder="Home Address"
-                    name="home_address"
-                    id="home_address"
-                    class="form-control"
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    name="password1"
-                    id="password1"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    name="password2"
-                    id="password2"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    name="email"
-                    id="email"
-                    class="form-control"
-                    required
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <input
-                    type="date"
-                    placeholder="Date joined"
-                    name="date_joined"
-                    id="date_joined"
-                    value="{{ current_time }}"
-                    class="form-control"
-                  />
-                </div>
-              </div>
             </div>
             
-            <button type="submit" class="btn btn-register">
-              <i class="fas fa-user-plus me-2"></i>Create Account
-            </button>
-            
-            <div class="register-links">
-              <a href="{{url_for('views.login')}}">Already have an account? Sign in</a>
+            <!-- Right Column - Form Side -->
+            <div class="register-form-col">
+                <div class="brand">
+                    <h2>
+                        <i class="fas fa-church"></i>
+                        RCCG Power House
+                    </h2>
+                    <p>Church Management System</p>
+                </div>
+                
+                <div class="welcome-text">
+                    <h1>Create Account 📝</h1>
+                    <p>Fill in your details to get started</p>
+                </div>
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert-modern alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                                <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }}"></i>
+                                <span>{{ message }}</span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Registration Form -->
+                <form method="post" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-user-circle"></i>
+                        Personal Information
+                    </div>
+                    
+                    <div class="form-grid">
+                        <!-- Left Column -->
+                        <div>
+                            <div class="form-floating-modern">
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    name="username"
+                                    id="username"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-at me-1"></i>Username
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    name="firstname"
+                                    id="firstname"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="firstname" class="form-label">
+                                    <i class="fas fa-signature me-1"></i>First Name
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    name="lastname"
+                                    id="lastname"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="lastname" class="form-label">
+                                    <i class="fas fa-signature me-1"></i>Last Name
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="date"
+                                    placeholder=" "
+                                    name="date_of_birth"
+                                    id="date_of_birth"
+                                    class="form-control"
+                                />
+                                <label for="date_of_birth" class="form-label">
+                                    <i class="fas fa-calendar-alt me-1"></i>Date of Birth
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column -->
+                        <div>
+                            <div class="form-floating-modern">
+                                <select id="gender" class="form-select" name="gender" required>
+                                    <option value="" disabled selected>Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer-not-to-say">Prefer not to say</option>
+                                </select>
+                                <label for="gender" class="form-label">
+                                    <i class="fas fa-venus-mars me-1"></i>Gender
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    name="phone_no"
+                                    id="phone_no"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="phone_no" class="form-label">
+                                    <i class="fas fa-phone me-1"></i>Phone Number
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    name="home_address"
+                                    id="home_address"
+                                    class="form-control"
+                                />
+                                <label for="home_address" class="form-label">
+                                    <i class="fas fa-home me-1"></i>Home Address
+                                </label>
+                            </div>
+                            
+                            <div class="checkbox-modern">
+                                <input
+                                    type="checkbox"
+                                    name="is_first_timer"
+                                    id="is_first_timer"
+                                    checked
+                                />
+                                <label for="is_first_timer">
+                                    <i class="fas fa-star text-warning me-1"></i>
+                                    First time user?
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-lock"></i>
+                        Account Details
+                    </div>
+                    
+                    <div class="form-grid">
+                        <!-- Left Column -->
+                        <div>
+                            <div class="form-floating-modern">
+                                <input
+                                    type="password"
+                                    placeholder=" "
+                                    name="password1"
+                                    id="password1"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="password1" class="form-label">
+                                    <i class="fas fa-key me-1"></i>Password
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="password"
+                                    placeholder=" "
+                                    name="password2"
+                                    id="password2"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="password2" class="form-label">
+                                    <i class="fas fa-key me-1"></i>Confirm Password
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column -->
+                        <div>
+                            <div class="form-floating-modern">
+                                <input
+                                    type="email"
+                                    placeholder=" "
+                                    name="email"
+                                    id="email"
+                                    class="form-control"
+                                    required
+                                />
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email Address
+                                </label>
+                            </div>
+                            
+                            <div class="form-floating-modern">
+                                <input
+                                    type="date"
+                                    placeholder=" "
+                                    name="date_joined"
+                                    id="date_joined"
+                                    class="form-control"
+                                />
+                                <label for="date_joined" class="form-label">
+                                    <i class="fas fa-calendar-check me-1"></i>Date Joined
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-register">
+                        <i class="fas fa-user-plus"></i>Create Account
+                    </button>
+                    
+                    <div class="register-links">
+                        <a href="{{url_for('views.login')}}">
+                            <i class="fas fa-arrow-right"></i>
+                            Already have an account? Sign in
+                        </a>
+                    </div>
+                </form>
             </div>
-          </form>
         </div>
-      </div>
     </div>
 
-    <!-- jQuery and Bootstrap 4 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap 5 JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
 
     <script>
-      // Set up date inputs to work properly
-      document.addEventListener('DOMContentLoaded', function() {
-        // Set today's date as default for date_joined if not set
-        const dateJoined = document.getElementById('date_joined');
-        if (dateJoined && !dateJoined.value) {
-          const today = new Date();
-          const yyyy = today.getFullYear();
-          const mm = String(today.getMonth() + 1).padStart(2, '0');
-          const dd = String(today.getDate()).padStart(2, '0');
-          dateJoined.value = `${yyyy}-${mm}-${dd}`;
-        }
-      });
+        // PRESERVED FROM ORIGINAL - Set up date inputs to work properly
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default for date_joined if not set
+            const dateJoined = document.getElementById('date_joined');
+            if (dateJoined && !dateJoined.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateJoined.value = `${yyyy}-${mm}-${dd}`;
+            }
+
+            // Auto-dismiss flash messages after 5 seconds
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert-modern');
+                alerts.forEach(function(alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+
+        // Password match validation (optional enhancement)
+        document.querySelector('form')?.addEventListener('submit', function(e) {
+            const password1 = document.getElementById('password1').value;
+            const password2 = document.getElementById('password2').value;
+            
+            if (password1 !== password2) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+            }
+        });
     </script>
-  </body>
+</body>
 </html>

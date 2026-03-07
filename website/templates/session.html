@@ -1,324 +1,918 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Management</title>
-    <link type="text/css" rel="stylesheet" href="{{url_for('static',filename='styles/style.min.css')}}" />
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" />
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css"/>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css"/>
-    <!-- DataTables JS -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
-    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
-    <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
-
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Activity Management | Admin</title>
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS with Bootstrap 5 -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css"/>
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <style>
-        /* Responsive table styling */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
         }
-        
-        /* Make sure the table takes full width */
-        #activityTable {
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+        }
+
+        /* Main Content Area - Centered */
+        .content-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Container for content - centered with max width */
+        .content-container {
+            width: 100%;
+            max-width: 1600px; /* Increased max-width for larger screens */
+            padding: 30px 30px 30px 30px;
+            margin: 0 auto; /* Center the container */
+        }
+
+        @media (max-width: 1800px) {
+            .content-container {
+                max-width: 95%; /* Use percentage on very large screens */
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .content-container {
+                max-width: 98%;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .content-area {
+                margin-left: 0;
+            }
+            .content-container {
+                padding: 100px 20px 20px;
+                max-width: 100%;
+            }
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: white;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem 2rem;
+            border: none;
+        }
+
+        .card-header-modern h4 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .card-header-modern p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* Alert Styling */
+        .alert-modern {
+            border-radius: 16px;
+            border: none;
+            padding: 1rem 1.5rem;
+            background: white;
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success-modern {
+            border-left-color: var(--success);
+        }
+
+        .alert-success-modern i {
+            color: var(--success);
+        }
+
+        /* Button Styling */
+        .btn-modern {
+            padding: 0.75rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-modern:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--primary);
+        }
+
+        .btn-primary-modern:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--primary);
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, var(--success), #0d9488);
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--success);
+        }
+
+        .btn-success-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--success);
+        }
+
+        /* Table Styling */
+        .table-modern {
             width: 100% !important;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin: 0;
         }
-        
-        /* Add some padding to cells for better mobile display */
-        #activityTable td, #activityTable th {
+
+        .table-modern thead th {
+            background-color: #f8fafc;
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            border: none;
             white-space: nowrap;
-            padding: 8px 12px;
         }
-        
-        /* Style for the responsive expansion button */
-        .dt-control {
+
+        .table-modern tbody tr {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .table-modern tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15);
+        }
+
+        .table-modern td {
+            padding: 1.2rem 1rem;
+            vertical-align: middle;
+            border: none;
+            white-space: nowrap;
+        }
+
+        /* Badge Styling */
+        .badge-modern {
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.3px;
+            display: inline-block;
+        }
+
+        .badge-primary { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+        .badge-info { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+        .badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--secondary); }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--secondary);
+            border: 1px solid #e2e8f0;
             cursor: pointer;
         }
-        
-        /* Style for the child row in responsive mode */
-        .activity-details {
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
         }
-        
-        /* Action buttons styling */
-        .action-buttons .btn {
-            margin: 2px;
-            padding: 3px 6px;
-            font-size: 12px;
+
+        .action-btn-warning:hover { background: var(--warning); color: white; border-color: var(--warning); }
+        .action-btn-info:hover { background: var(--info); color: white; border-color: var(--info); }
+        .action-btn-primary:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .action-btn-danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Modal Styling */
+        .modal-modern .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-modern .modal-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 1.5rem;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .modal-modern .modal-header .modal-title {
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .modal-modern .modal-header .btn-close {
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+            opacity: 1;
+        }
+
+        .modal-modern .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-modern .modal-footer {
+            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem;
+        }
+
+        /* Form Styling */
+        .form-group-modern {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label-modern {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-control-modern, .form-select-modern {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control-modern:focus, .form-select-modern:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Custom Checkbox */
+        .checkbox-modern {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .checkbox-modern input[type="checkbox"] {
+            width: 1.3rem;
+            height: 1.3rem;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-modern input[type="checkbox"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* DataTables Customization */
+        .dataTables_wrapper {
+            width: 100%;
+            padding: 0;
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            margin: 0 3px;
+        }
+
+        .dataTables_paginate .paginate_button.current {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .page-header .breadcrumb {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+
+        .page-header .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .page-header .breadcrumb-item.active {
+            color: var(--secondary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .table-modern td {
+                white-space: normal;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="main-wrapper" data-layout="vertical" data-navbarbg="skin5" data-sidebartype="full" 
-         data-sidebar-position="absolute" data-header-position="absolute" data-boxed-layout="full">
-        {% include "include/header.html" %}
-        {% include "include/leftnavbar.html" %}
-        <div class="page-wrapper">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-12">
-                        <!-- Card -->
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="jumbotron p-3">
-                                            <div style="display: none;" class="alert alert-success alert-dismissable" role="alert">
-                                                <button type="button" class="close" data-dismiss="alert" aria-lable="close">
-                                                    <span aria-hidden="true">X</span>
-                                                </button>
-                                                <div id="message-box" style="color: rgb(4, 126, 10); font-weight: bold;"></div>
-                                            </div>
-                                            
-                                            {% with Messages = get_flashed_messages() %}
-                                                {% if Messages %}
-                                                    {% for message in Messages %}
-                                                        <div id="message-box" class="alert alert-success alert-dismissable" role="alert">
-                                                            <button type="button" class="close" data-dismiss="alert" aria-lable="close">
-                                                                <span aria-hidden="true">x</span>
-                                                            </button>
-                                                            {{message}}
-                                                        </div>
-                                                    {% endfor %}
-                                                {% endif %}
-                                            {% endwith %}
-                                            
-                                            <button type="submit" class="btn btn-success" data-toggle="modal" data-target="#addActivityModal">
-                                                <i class="fas fa-plus"></i> Add Activity
-                                            </button>
-                                            <hr>
-                                            
-                                          <div class="table-responsive">
-                                                <table id="activityTable" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>#</th>
-                                                            <th>Session Name</th>
-                                                            <th>Description</th>
-                                                            <th>Date</th>
-                                                            <th>Start Time</th>
-                                                            <th>End Time</th>
-                                                            <th>Location</th>
-                                                            <th>Status</th>
-                                                            <th>Attendance</th>
-                                                            <th>Capacity</th>
-                                                            <th>Remaining</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <!-- Activities will be dynamically added here -->
-                                                    </tbody>
-                                                </table>
-                                            </div>
+    <!-- Include your header and sidebar -->
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
 
-<script>
-    $(document).ready(function() {
-        // Initialize DataTable with responsive extension
-        $('#activityTable').DataTable({
-            processing: true,
-            responsive: {
-                details: {
-                    display: $.fn.dataTable.Responsive.display.modal({
-                        header: function(row) {
-                            var data = row.data();
-                            return 'Details for ' + data.name;
-                        }
-                    }),
-                    renderer: $.fn.dataTable.Responsive.renderer.tableAll({
-                        tableClass: 'table'
-                    })
-                }
-            },
-            pageLength: 10,
-            paging: true,
-            lengthMenu: [
-                [5, 10, 15, 20, 25, 50, 60, -1],
-                [5, 10, 15, 20, 25, 50, 60, "All"]
-            ],
-            serverSide: true,
-            order: [[3, 'desc']], // Default sort by date (column index 3)
-            sort: true,
-            searching: true,
-            ajax: {
-                url: "/get_sessions_data",
-                type: "POST",
-                "beforeSend": function(xhr) {
-                    xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
-                }
-            },
-            columns: [
-                { data: "id", visible: false }, // Hide ID column but keep it available
-                { data: "name" },
-                { data: "description" },
-                { 
-                    data: "date",
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: "start_time",
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: "end_time",
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: "location",
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: "status",
-                    render: function(data, type, row) {
-                        // Add badge styling based on status
-                        const statusClass = {
-                            'scheduled': 'badge badge-primary',
-                            'active': 'badge badge-info',
-                            'completed': 'badge badge-success',
-                            'cancelled': 'badge badge-danger'
-                        }[data] || 'badge badge-secondary';
-                        
-                        return `<span class="${statusClass}">${data || 'N/A'}</span>`;
-                    }
-                },
-                { 
-                    data: "attendance_count",
-                    render: function(data, type, row) {
-                        return data !== undefined ? data : '0';
-                    }
-                },
-                { 
-                    data: "capacity",
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: "remaining",
-                    render: function(data, type, row) {
-                        if (data === 'Unlimited') return data;
-                        return data !== undefined ? data : 'N/A';
-                    }
-                },
-                {
-                    data: "actions",
-                    render: function(data, type, row) {
-                        // Extract max capacity from the formatted string "8/2500"
-                        const capacityParts = row.capacity.split('/');
-                        const maxCapacity = capacityParts.length > 1 ? capacityParts[1] : capacityParts[0];
+    <!-- Main Content Area - Centered -->
+    <main class="content-area">
+        <div class="content-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Activity Management</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Activities</li>
+                        </ol>
+                    </nav>
+                </div>
+                <button type="button" class="btn btn-modern btn-primary-modern" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                    <i class="fas fa-plus me-2"></i>Add Activity
+                </button>
+            </div>
 
-                        return `
-                            <div class="action-buttons">
-                                <button id="edit-button-${row.id}" 
-                                    class="btn btn-warning btn-xs edit-button" 
-                                    data-id="${row.id}"
-                                    data-name="${row.name}"
-                                    data-description="${row.description}"
-                                    data-date="${row.date}"
-                                    data-start-time="${row.start_time}"
-                                    data-end-time="${row.end_time}"
-                                    data-location="${row.location}"
-                                    data-status="${row.status}"
-                                    data-max-capacity="${maxCapacity}"
-                                    data-attendance-count="${row.attendance_count}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-info btn-xs view-attendees-btn" 
-                                    data-id="${row.id}">
-                                    <i class="fas fa-users"></i>
-                                </button>
-                                <button class="btn btn-primary btn-xs view-details-btn" 
-                                    data-id="${row.id}">
-                                    <i class="fas fa-clock"></i>
-                                </button>
-                                <button class="btn btn-danger btn-xs delete-button" 
-                                    data-id="${row.id}">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
+            <!-- Flash Messages -->
+            <div class="alert-modern alert-success-modern" style="display: none;" id="flash-message-container">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-3 fa-lg"></i>
+                    <div id="message-box" class="flex-grow-1"></div>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.style.display='none'"></button>
+                </div>
+            </div>
+
+            {% with Messages = get_flashed_messages() %}
+                {% if Messages %}
+                    {% for message in Messages %}
+                        <div class="alert-modern alert-success-modern mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-3 fa-lg"></i>
+                                <div class="flex-grow-1">{{ message }}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
-                        `;
-                    },
-                    orderable: false,
-                    searchable: false
-                }
-            ],
-            columnDefs: [
-                { responsivePriority: 1, targets: 1 }, // Session Name
-                { responsivePriority: 2, targets: -1 }, // Action column
-                { responsivePriority: 3, targets: 3 },  // Date
-                { responsivePriority: 4, targets: 7 },  // Status
-                { responsivePriority: 5, targets: 8 },  // Attendance Count
-                { responsivePriority: 6, targets: 9 },  // Capacity
-                { responsivePriority: 7, targets: 2 },  // Description
-                { responsivePriority: 8, targets: 4 },  // Start Time
-                { responsivePriority: 9, targets: 5 },  // End Time
-                { responsivePriority: 10, targets: 6 },  // Location
-                { responsivePriority: 11, targets: 10 }  // Remaining
-            ]
-        });
-        fetchStatusOptions();
-        // Event delegation for dynamically created buttons
-        $('#activityTable').on('click', '.edit-button', function() {
-            const id = $(this).data('id');
-            const name = $(this).data('name');
-            const description = $(this).data('description');
-            const date = $(this).data('date');
-            const startTime = $(this).data('start-time');
-            const endTime = $(this).data('end-time');
-            const location = $(this).data('location');
-            const status = $(this).data('status');
-            const maxCapacity = $(this).data('max-capacity'); 
-            const attendanceCount = $(this).data('attendance-count');
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
+            <!-- Main Card -->
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h4><i class="fas fa-calendar-alt me-2"></i>Sessions Overview</h4>
+                    <p>Manage and monitor all church activities and sessions</p>
+                </div>
+                <div class="p-4">
+                    <div class="table-responsive">
+                        <table id="activityTable" class="table table-modern" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Session Name</th>
+                                    <th>Description</th>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Attendance</th>
+                                    <th>Capacity</th>
+                                    <th>Remaining</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Activities will be dynamically added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-            // Call your edit function with all the data
-            editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity);
-        });
+    <!-- Add Activity Modal -->
+    <div class="modal fade modal-modern" id="addActivityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Activity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{url_for('views.addsession')}}" id="addActivityForm" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="activityName">Session Name *</label>
+                                    <input type="text" class="form-control-modern" id="activityName" name="activityname" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="status">Status *</label>
+                                    <select class="form-select-modern" id="status" name="status" required>
+                                        <option value="" disabled selected>Select Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="activityDescription">Description</label>
+                                    <textarea class="form-control-modern" id="activityDescription" name="activitydescription" rows="3"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="activityDate">Date *</label>
+                                    <input type="date" class="form-control-modern" id="activityDate" name="activitydate" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="starttime">Start Time</label>
+                                    <input type="time" class="form-control-modern" id="starttime" name="starttime">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="endtime">End Time</label>
+                                    <input type="time" class="form-control-modern" id="endtime" name="endtime">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="location">Location</label>
+                                    <input type="text" class="form-control-modern" id="location" name="location">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="maxcapacity">Maximum Capacity</label>
+                                    <input type="number" class="form-control-modern" id="maxcapacity" name="maxcapacity" min="1" placeholder="Leave empty for unlimited">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="checkinopens">Check-in Opens (minutes before)</label>
+                                    <input type="number" class="form-control-modern" id="checkinopens" name="checkinopens" value="30" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="checkincloses">Check-in Closes (minutes after)</label>
+                                    <input type="number" class="form-control-modern" id="checkincloses" name="checkincloses" value="15" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="checkbox-modern">
+                                    <input type="checkbox" id="allowselfcheckin" name="allowselfcheckin" checked>
+                                    <span class="fw-500">Allow self check-in</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="addActivityForm" class="btn btn-modern btn-primary-modern">
+                        <i class="fas fa-save me-2"></i>Add Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        $('#activityTable').on('click', '.view-attendees-btn', function() {
-            const sessionId = $(this).data('id');
-            window.location.href = `/activity/${sessionId}`;
-        });
+    <!-- Edit Activity Modal -->
+    <div class="modal fade modal-modern" id="editActivityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Activity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editSession">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editactivityName">Activity Name *</label>
+                                    <input type="text" class="form-control-modern" id="editactivityName" name="editactivityName" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editstatus">Status *</label>
+                                    <select class="form-select-modern" id="editstatus" name="editstatus" required>
+                                        <option value="" disabled selected>Select Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editactivityDescription">Description *</label>
+                                    <textarea class="form-control-modern" id="editactivityDescription" name="editactivityDescription" rows="3" required></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editactivitydate">Date *</label>
+                                    <input type="date" class="form-control-modern" id="editactivitydate" name="editactivitydate" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editstartTime">Start Time *</label>
+                                    <input type="time" class="form-control-modern" id="editstartTime" name="editstartTime" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editendTime">End Time *</label>
+                                    <input type="time" class="form-control-modern" id="editendTime" name="editendTime" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editlocation">Location</label>
+                                    <input type="text" class="form-control-modern" id="editlocation" name="editlocation">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern" for="editmaxCapacity">Max Capacity</label>
+                                    <input type="number" class="form-control-modern" id="editmaxCapacity" name="editmaxCapacity" min="0" placeholder="0 for unlimited">
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="editactivitySessionId" name="session_id">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-modern btn-primary-modern" onclick="submitEditSessionForm()">
+                        <i class="fas fa-save me-2"></i>Update Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        $('#activityTable').on('click', '.view-details-btn', function() {
-            const sessionId = $(this).data('id');
-            window.location.href = `/sessiondetails/${sessionId}`;
-        });
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
 
-        $('#activityTable').on('click', '.delete-button', function() {
-            const sessionId = $(this).data('id');
-            deleteRow(sessionId);
-        });
-    });
-</script>
-
+    <!-- Your existing JavaScript (preserved exactly as is) -->
     <script>
-        // Function to handle the delete action
+        $(document).ready(function() {
+            // Initialize DataTable with responsive extension
+            $('#activityTable').DataTable({
+                processing: true,
+                responsive: {
+                    details: {
+                        display: $.fn.dataTable.Responsive.display.modal({
+                            header: function(row) {
+                                var data = row.data();
+                                return 'Details for ' + data.name;
+                            }
+                        }),
+                        renderer: $.fn.dataTable.Responsive.renderer.tableAll({
+                            tableClass: 'table'
+                        })
+                    }
+                },
+                pageLength: 10,
+                paging: true,
+                lengthMenu: [
+                    [5, 10, 15, 20, 25, 50, 60, -1],
+                    [5, 10, 15, 20, 25, 50, 60, "All"]
+                ],
+                serverSide: true,
+                order: [[3, 'desc']],
+                sort: true,
+                searching: true,
+                ajax: {
+                    url: "/get_sessions_data",
+                    type: "POST",
+                    "beforeSend": function(xhr) {
+                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                    }
+                },
+                columns: [
+                    { data: "id", visible: false },
+                    { data: "name" },
+                    { data: "description" },
+                    { 
+                        data: "date",
+                        render: function(data, type, row) {
+                            return data ? data : 'N/A';
+                        }
+                    },
+                    { 
+                        data: "start_time",
+                        render: function(data, type, row) {
+                            return data ? data : 'N/A';
+                        }
+                    },
+                    { 
+                        data: "end_time",
+                        render: function(data, type, row) {
+                            return data ? data : 'N/A';
+                        }
+                    },
+                    { 
+                        data: "location",
+                        render: function(data, type, row) {
+                            return data ? data : 'N/A';
+                        }
+                    },
+                    { 
+                        data: "status",
+                        render: function(data, type, row) {
+                            const statusClass = {
+                                'scheduled': 'badge-modern badge-primary',
+                                'active': 'badge-modern badge-info',
+                                'completed': 'badge-modern badge-success',
+                                'cancelled': 'badge-modern badge-danger'
+                            }[data] || 'badge-modern badge-secondary';
+                            
+                            return `<span class="${statusClass}">${data || 'N/A'}</span>`;
+                        }
+                    },
+                    { 
+                        data: "attendance_count",
+                        render: function(data, type, row) {
+                            return data !== undefined ? data : '0';
+                        }
+                    },
+                    { 
+                        data: "capacity",
+                        render: function(data, type, row) {
+                            return data ? data : 'N/A';
+                        }
+                    },
+                    { 
+                        data: "remaining",
+                        render: function(data, type, row) {
+                            if (data === 'Unlimited') return data;
+                            return data !== undefined ? data : 'N/A';
+                        }
+                    },
+                    {
+                        data: "actions",
+                        render: function(data, type, row) {
+                            const capacityParts = row.capacity ? row.capacity.split('/') : ['0', '0'];
+                            const maxCapacity = capacityParts.length > 1 ? capacityParts[1] : capacityParts[0];
+
+                            return `
+                                <div class="action-buttons">
+                                    <button id="edit-button-${row.id}" 
+                                        class="action-btn action-btn-warning edit-button" 
+                                        data-id="${row.id}"
+                                        data-name="${row.name || ''}"
+                                        data-description="${row.description || ''}"
+                                        data-date="${row.date || ''}"
+                                        data-start-time="${row.start_time || ''}"
+                                        data-end-time="${row.end_time || ''}"
+                                        data-location="${row.location || ''}"
+                                        data-status="${row.status || ''}"
+                                        data-max-capacity="${maxCapacity}"
+                                        data-attendance-count="${row.attendance_count || 0}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn action-btn-info view-attendees-btn" 
+                                        data-id="${row.id}">
+                                        <i class="fas fa-users"></i>
+                                    </button>
+                                    <button class="action-btn action-btn-primary view-details-btn" 
+                                        data-id="${row.id}">
+                                        <i class="fas fa-clock"></i>
+                                    </button>
+                                    <button class="action-btn action-btn-danger delete-button" 
+                                        data-id="${row.id}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            `;
+                        },
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                columnDefs: [
+                    { responsivePriority: 1, targets: 1 },
+                    { responsivePriority: 2, targets: -1 },
+                    { responsivePriority: 3, targets: 3 },
+                    { responsivePriority: 4, targets: 7 },
+                    { responsivePriority: 5, targets: 8 },
+                    { responsivePriority: 6, targets: 9 },
+                    { responsivePriority: 7, targets: 2 },
+                    { responsivePriority: 8, targets: 4 },
+                    { responsivePriority: 9, targets: 5 },
+                    { responsivePriority: 10, targets: 6 },
+                    { responsivePriority: 11, targets: 10 }
+                ]
+            });
+            
+            fetchStatusOptions();
+
+            $('#activityTable').on('click', '.edit-button', function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const description = $(this).data('description');
+                const date = $(this).data('date');
+                const startTime = $(this).data('start-time');
+                const endTime = $(this).data('end-time');
+                const location = $(this).data('location');
+                const status = $(this).data('status');
+                const maxCapacity = $(this).data('max-capacity'); 
+                const attendanceCount = $(this).data('attendance-count');
+
+                editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity);
+            });
+
+            $('#activityTable').on('click', '.view-attendees-btn', function() {
+                const sessionId = $(this).data('id');
+                window.location.href = `/activity/${sessionId}`;
+            });
+
+            $('#activityTable').on('click', '.view-details-btn', function() {
+                const sessionId = $(this).data('id');
+                window.location.href = `/sessiondetails/${sessionId}`;
+            });
+
+            $('#activityTable').on('click', '.delete-button', function() {
+                const sessionId = $(this).data('id');
+                deleteRow(sessionId);
+            });
+        });
+
         function deleteRow(Id) {
             const confirmation = confirm("Do you want to delete this session?");
             const url = "/sessiondelete/" + Id;
@@ -342,10 +936,7 @@
                 });
             }
         }
-    </script>
 
-    <script>
-        // Function to open the edit modal and populate fields
         function editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity) 
         {
             $('#editactivitySessionId').val(id);
@@ -357,255 +948,96 @@
             $('#editlocation').val(location);
             $('#editmaxCapacity').val(maxCapacity);
             
-            // Call the function to populate status dropdown and set current value
-            fetchStatusOptionsForEdit(id);  // Pass the session ID
+            fetchStatusOptionsForEdit(id);
             
             $('#editActivityModal').modal('show');
         }
 
-        // Function to submit the edited data
-function submitEditSessionForm() {
-    // Get all form data including status
-    const formData = {
-        session_id: $('#editactivitySessionId').val(),
-        editactivityName: $('#editactivityName').val(),
-        editactivityDescription: $('#editactivityDescription').val(),
-        editactivitydate: $('#editactivitydate').val(),
-        editstartTime: $('#editstartTime').val(),
-        editendTime: $('#editendTime').val(),
-        editlocation: $('#editlocation').val(),
-        editmaxCapacity: parseInt($('#editmaxCapacity').val()) || 0,
-        editstatus: $('#editstatus').val() || 'scheduled' // Default if not set
-    };
+        function submitEditSessionForm() {
+            const formData = {
+                session_id: $('#editactivitySessionId').val(),
+                editactivityName: $('#editactivityName').val(),
+                editactivityDescription: $('#editactivityDescription').val(),
+                editactivitydate: $('#editactivitydate').val(),
+                editstartTime: $('#editstartTime').val(),
+                editendTime: $('#editendTime').val(),
+                editlocation: $('#editlocation').val(),
+                editmaxCapacity: parseInt($('#editmaxCapacity').val()) || 0,
+                editstatus: $('#editstatus').val() || 'scheduled'
+            };
 
-    $.ajax({
-        url: '/update_session_data',
-        type: 'POST',
-        data: formData,
-        headers: {
-            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            // Handle success
-            $('#editActivityModal').modal('hide');
-            $('#activityTable').DataTable().ajax.reload(null, false);
-        },
-        error: function(error) {
-            console.error('Error:', error);
-        }
-    });
-}
-
-// Function to fetch session status options and set current status
-function fetchStatusOptionsForEdit(sessionId) {
-    $.ajax({
-        url: '/get_session_status_options',
-        type: 'GET',
-        data: { session_id: sessionId },
-        success: function(response) {
-            const statusDropdown = $('#editstatus');
-            statusDropdown.empty();
-            
-            // Add options
-            response.status_options.forEach(option => {
-                statusDropdown.append(new Option(option.label, option.value));
+            $.ajax({
+                url: '/update_session_data',
+                type: 'POST',
+                data: formData,
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#editActivityModal').modal('hide');
+                    $('#activityTable').DataTable().ajax.reload(null, false);
+                },
+                error: function(error) {
+                    console.error('Error:', error);
+                }
             });
-            
-            // Set current value if available
-            if (response.current_status) {
-                statusDropdown.val(response.current_status.value).trigger('change');
-            }
-        },
-        error: function() {
-            // Fallback options
-            $('#editstatus').html(`
-                <option value="scheduled">Scheduled</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-            `);
         }
-    });
-}
 
-
-
-
-// Function to fetch status options for new sessions
-function fetchStatusOptions() {
-    $.ajax({
-        url: '/get_session_status_options', // Same endpoint as edit form
-        type: 'GET',
-        success: function(response) {
-            var statusDropdown = $('#status');
-            statusDropdown.empty();
-            
-            // Add default option
-            statusDropdown.append('<option value="" disabled selected>Select Status</option>');
-            
-            // Add all status options
-            $.each(response.status_options, function(index, status) {
-                statusDropdown.append('<option value="' + status.value + '">' + status.label + '</option>');
+        function fetchStatusOptionsForEdit(sessionId) {
+            $.ajax({
+                url: '/get_session_status_options',
+                type: 'GET',
+                data: { session_id: sessionId },
+                success: function(response) {
+                    const statusDropdown = $('#editstatus');
+                    statusDropdown.empty();
+                    
+                    response.status_options.forEach(option => {
+                        statusDropdown.append(new Option(option.label, option.value));
+                    });
+                    
+                    if (response.current_status) {
+                        statusDropdown.val(response.current_status.value).trigger('change');
+                    }
+                },
+                error: function() {
+                    $('#editstatus').html(`
+                        <option value="scheduled">Scheduled</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    `);
+                }
             });
-            
-            // Optionally set a default value (e.g., 'scheduled')
-            statusDropdown.val('scheduled');
-        },
-        error: function(error) {
-            console.log('Error fetching status options:', error);
-            // Fallback to static options if API fails
-            statusDropdown.html(`
-                <option value="scheduled" selected>Scheduled</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-            `);
         }
-    });
-}
+
+        function fetchStatusOptions() {
+            $.ajax({
+                url: '/get_session_status_options',
+                type: 'GET',
+                success: function(response) {
+                    var statusDropdown = $('#status');
+                    statusDropdown.empty();
+                    
+                    statusDropdown.append('<option value="" disabled selected>Select Status</option>');
+                    
+                    $.each(response.status_options, function(index, status) {
+                        statusDropdown.append('<option value="' + status.value + '">' + status.label + '</option>');
+                    });
+                    
+                    statusDropdown.val('scheduled');
+                },
+                error: function(error) {
+                    console.log('Error fetching status options:', error);
+                    $('#status').html(`
+                        <option value="scheduled" selected>Scheduled</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    `);
+                }
+            });
+        }
     </script>
-
-    <!-- Add activity Modal -->
-    <div class="modal fade" id="addActivityModal" tabindex="-1" role="dialog" aria-labelledby="addActivityModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addActivityModalLabel">Add Activity</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-               <div class="modal-body">
-                    <form action="{{url_for('views.addsession')}}" id="addActivityForm" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <div class="form-group">
-                            <label for="activityname">Session Name:</label>
-                            <input type="text" class="form-control" id="activityName" name="activityname" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="activitydescription">Description:</label>
-                            <textarea class="form-control" id="activityDescription" name="activitydescription"></textarea>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="activitydate">Date:</label>
-                                <input type="date" class="form-control" id="activityDate" name="activitydate" required>
-                            </div>
-                            <div class="form-group col-md-3">
-                                <label for="starttime">Start Time:</label>
-                                <input type="time" class="form-control" id="starttime" name="starttime">
-                            </div>
-                            <div class="form-group col-md-3">
-                                <label for="endtime">End Time:</label>
-                                <input type="time" class="form-control" id="endtime" name="endtime">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="location">Location:</label>
-                            <input type="text" class="form-control" id="location" name="location">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="maxcapacity">Maximum Capacity (optional):</label>
-                            <input type="number" class="form-control" id="maxcapacity" name="maxcapacity" min="1">
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="checkinopens">Check-in Opens (minutes before):</label>
-                                <input type="number" class="form-control" id="checkinopens" name="checkinopens" value="30" min="0">
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label for="checkincloses">Check-in Closes (minutes after):</label>
-                                <input type="number" class="form-control" id="checkincloses" name="checkincloses" value="15" min="0">
-                            </div>
-                        </div>
-                        
-                        <!-- Improved checkbox styling -->
-                        <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input" id="allowselfcheckin" name="allowselfcheckin" checked>
-                                <label class="custom-control-label" for="allowselfcheckin">Allow self check-in</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="status">Status:</label>
-                            <select class="form-control" id="status" name="status" required>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">Add Session</button>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit activity Modal -->
-   <div class="modal fade" id="editActivityModal" tabindex="-1" role="dialog" aria-labelledby="editActivityModal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editActivityModal">Edit Activity</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="editSession" method="POST">
-                    <div class="form-group">
-                        <label for="editactivityName">Activity Name:</label>
-                        <input type="text" class="form-control" id="editactivityName" name="editactivityName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editactivityDescription">Description:</label>
-                        <textarea class="form-control" id="editactivityDescription" name="editactivityDescription" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="editactivitydate">Date:</label>
-                        <input type="date" class="form-control" id="editactivitydate" name="editactivitydate" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="editstartTime">Start Time:</label>
-                            <input type="time" class="form-control" id="editstartTime" name="editstartTime" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="editendTime">End Time:</label>
-                            <input type="time" class="form-control" id="editendTime" name="editendTime" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="editlocation">Location:</label>
-                        <input type="text" class="form-control" id="editlocation" name="editlocation">
-                    </div>
-                    <div class="form-group">
-                        <label for="editmaxCapacity">Max Capacity:</label>
-                        <input type="number" class="form-control" id="editmaxCapacity" name="editmaxCapacity" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="editstatus">Status:</label>
-                        <select class="form-control" id="editstatus" name="editstatus" required>
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <input type="hidden" id="editactivitySessionId" name="session_id">
-                    <button type="button" class="btn btn-primary" onclick="submitEditSessionForm()">Update Session</button>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 </body>
 </html>
