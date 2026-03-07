@@ -1,3 +1,165 @@
+<style>
+    /* Mobile responsive styles for header */
+    @media (max-width: 768px) {
+        .navbar {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        
+        .navbar-brand span {
+            font-size: 0.9rem !important;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Adjust notifications badge position on mobile */
+        .position-absolute.top-1.start-100 {
+            transform: translate(-50%, -50%) !important;
+        }
+        
+        /* Make profile section more compact on mobile */
+        .navbar-nav .dropdown-menu {
+            position: absolute !important;
+            width: 280px;
+            right: 0 !important;
+            left: auto !important;
+        }
+
+        /* Hide the header nav collapse on mobile - we'll use sidebar instead */
+        #headerNav {
+            display: none !important;
+        }
+
+        /* Show sidebar toggle button prominently on mobile */
+        #sidebarCollapse {
+            display: block !important;
+            margin-left: auto;
+            margin-right: 0.5rem;
+        }
+    }
+
+    /* Desktop styles */
+    @media (min-width: 769px) {
+        #sidebarCollapse {
+            display: block;
+        }
+        
+        /* Keep header nav visible on desktop */
+        #headerNav {
+            display: flex !important;
+            flex-basis: auto;
+        }
+    }
+
+    /* Additional mobile optimization for very small screens */
+    @media (max-width: 480px) {
+        .navbar-brand span {
+            max-width: 120px;
+            font-size: 0.8rem !important;
+        }
+        
+        .d-none.d-md-block {
+            display: none !important;
+        }
+        
+        .navbar-nav .dropdown-menu {
+            width: 260px;
+        }
+    }
+
+    /* Overlay for mobile when sidebar is open */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1035;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Fix for Bootstrap dropdown in DataTables */
+    .dataTables_length .form-select-sm,
+    .dataTables_length .custom-select-sm {
+        width: auto !important;
+        min-width: 60px !important;
+        display: inline-block !important;
+    }
+
+    .dataTables_length {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Adjust header layout for mobile */
+    @media (max-width: 768px) {
+        .navbar .container-fluid {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Move the sidebar toggle to the right side of header */
+        .navbar-nav.me-auto {
+            margin-left: auto !important;
+            margin-right: 0 !important;
+            flex-direction: row;
+        }
+
+        .navbar-nav.me-auto .nav-item {
+            margin-left: 0;
+        }
+
+        /* Hide the search input completely on mobile */
+        .input-group {
+            display: none !important;
+        }
+
+        /* Adjust profile section for mobile */
+        .navbar-nav.align-items-center {
+            flex-direction: row;
+            margin-left: 0;
+        }
+
+        .navbar-nav.align-items-center .nav-item.dropdown {
+            margin-right: 0.25rem;
+        }
+
+        /* Make profile image smaller on mobile */
+        .rounded-circle {
+            width: 30px !important;
+            height: 30px !important;
+        }
+
+        /* Hide username text on mobile to save space */
+        .d-none.d-lg-block {
+            display: none !important;
+        }
+
+        /* Adjust profile dropdown button padding */
+        .nav-link.d-flex {
+            padding: 0.25rem 0.5rem !important;
+        }
+    }
+</style>
+
 <header class="sticky-top shadow-sm" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05);">
     <nav class="navbar navbar-expand-lg navbar-light px-4 py-2">
         <div class="container-fluid px-0">
@@ -8,18 +170,63 @@
                 <span class="fw-bold tracking-tight text-slate-800" style="font-size: 1.1rem; letter-spacing: -0.5px;">SleekTech Solution</span>
             </a>
 
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#headerNav">
-                <i class="fas fa-bars"></i>
-            </button>
+            <!-- Mobile: Only show sidebar toggle and profile -->
+            <div class="d-flex align-items-center d-lg-none">
+                <!-- Sidebar toggle button (visible on mobile) -->
+                <a class="nav-link text-slate-500 hover:text-blue-600 px-2" href="javascript:void(0)" id="sidebarCollapse">
+                    <i class="fa-solid fa-bars-staggered fs-5"></i>
+                </a>
+                
+                <!-- Notifications (mobile) -->
+                <div class="dropdown me-1">
+                    <a class="nav-link position-relative text-slate-600" href="#" id="notifDropdownMobile" data-bs-toggle="dropdown">
+                        <i class="fa-regular fa-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            3
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4">
+                        <li><h6 class="dropdown-header">Notifications</h6></li>
+                        <li><a class="dropdown-item rounded-3 py-2" href="#"><small>Event starting today</small></a></li>
+                        <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><small>View all</small></a></li>
+                    </ul>
+                </div>
 
-            <div class="collapse navbar-collapse" id="headerNav">
+                <!-- Profile (mobile) -->
+                <div class="dropdown">
+                    <a class="nav-link d-flex align-items-center p-0" href="#" id="profileDropdownMobile" data-bs-toggle="dropdown">
+                        <img src="{{ url_for('static', filename='uploads/users/1.jpg') }}" class="rounded-circle border border-2 border-white shadow-sm" width="32" height="32" alt="user">
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4 mt-2">
+                        <li>
+                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="{{ url_for('views.userdetails', id=current_user.id) if current_user.is_authenticated else '#' }}">
+                                <i class="fa-regular fa-circle-user me-2 text-muted"></i> My Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="#">
+                                <i class="fa-solid fa-gear me-2 text-muted"></i> Settings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider opacity-50"></li>
+                        <li>
+                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2 text-danger" href="{{ url_for('views.logout') }}">
+                                <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Desktop: Full header navigation -->
+            <div class="collapse navbar-collapse d-none d-lg-flex" id="headerNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link text-slate-500 hover:text-blue-600 px-3" href="javascript:void(0)" id="sidebarCollapse">
+                        <a class="nav-link text-slate-500 hover:text-blue-600 px-3" href="javascript:void(0)" id="sidebarCollapseDesktop">
                             <i class="fa-solid fa-bars-staggered"></i>
                         </a>
                     </li>
-                    <li class="nav-item d-none d-md-block ms-2">
+                    <li class="nav-item ms-2">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
                             <input type="text" class="form-control border-0 bg-light" placeholder="Global search..." style="width: 250px;">
@@ -35,7 +242,7 @@
                                 3
                             </span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4 animated slideIn">
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4">
                             <li><h6 class="dropdown-header">Notifications</h6></li>
                             <li><a class="dropdown-item rounded-3 py-2" href="#"><small>Event starting today</small></a></li>
                             <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><small>View all</small></a></li>
@@ -45,7 +252,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link d-flex align-items-center gap-2 p-1 pe-3 rounded-pill hover:bg-light" href="#" id="profileDropdown" data-bs-toggle="dropdown">
                             <img src="{{ url_for('static', filename='uploads/users/1.jpg') }}" class="rounded-circle border border-2 border-white shadow-sm" width="35" height="35" alt="user">
-                            <div class="d-none d-lg-block">
+                            <div>
                                 <p class="mb-0 fw-semibold text-slate-800" style="font-size: 0.85rem;">{{ current_user.username if current_user.is_authenticated else 'Guest User' }}</p>
                             </div>
                         </a>
@@ -74,10 +281,56 @@
     </nav>
 </header>
 
+<!-- Add overlay for mobile sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <script>
-{% if current_user.is_authenticated %}
-window.addEventListener('beforeunload', function() {
-    navigator.sendBeacon("{{ url_for('views.silent_logout') }}");
+// Mobile sidebar toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCollapseDesktop = document.getElementById('sidebarCollapseDesktop');
+    const sidebar = document.getElementById('mainSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    function toggleSidebar() {
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('show');
+        
+        // Prevent body scrolling when sidebar is open on mobile
+        if (sidebar.classList.contains('show')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+    
+    if (sidebarCollapse) {
+        sidebarCollapse.addEventListener('click', toggleSidebar);
+    }
+    
+    if (sidebarCollapseDesktop) {
+        sidebarCollapseDesktop.addEventListener('click', toggleSidebar);
+    }
+    
+    if (overlay) {
+        // Close sidebar when clicking overlay
+        overlay.addEventListener('click', toggleSidebar);
+    }
+    
+    // Close sidebar on window resize if above mobile breakpoint
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768 && sidebar && overlay) {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+    });
+    
+    {% if current_user.is_authenticated %}
+    // Your existing silent logout code
+    window.addEventListener('beforeunload', function() {
+        navigator.sendBeacon("{{ url_for('views.silent_logout') }}");
+    });
+    {% endif %}
 });
-{% endif %}
 </script>

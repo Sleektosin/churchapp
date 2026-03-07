@@ -2,7 +2,7 @@
     :root {
         --sidebar-width: 260px;
         --sidebar-bg: #ffffff;
-        --active-blue: #3b82f6; /* Modern Blue */
+        --active-blue: #3b82f6;
         --text-muted: #64748b;
         --text-dark: #1e293b;
     }
@@ -55,20 +55,17 @@
         color: var(--active-blue);
     }
 
-    /* Active State styling */
     .sidebar-link.active {
         background: rgba(59, 130, 246, 0.1);
         color: var(--active-blue) !important;
         font-weight: 600;
     }
 
-    /* Parent item styling when children are active */
     .sidebar-item.parent-active > .sidebar-link {
         color: var(--text-dark);
         background: #f8fafc;
     }
 
-    /* Dropdown / Sub-menu styling */
     .first-level {
         padding-left: 1.5rem;
         list-style: none;
@@ -79,7 +76,6 @@
         padding: 0.6rem 1rem;
     }
 
-    /* Standardize logout link */
     .logout-link {
         margin-top: auto;
         color: #ef4444 !important;
@@ -87,9 +83,36 @@
     .logout-link:hover {
         background: #fef2f2 !important;
     }
+
+    /* Mobile Responsive Styles - Only apply on smaller screens */
+    @media (max-width: 768px) {
+        .left-sidebar {
+            transform: translateX(-100%);
+            box-shadow: none;
+            transition: transform 0.3s ease;
+            z-index: 1040;
+        }
+
+        .left-sidebar.show {
+            transform: translateX(0);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        /* Add padding to prevent content from being hidden behind header on mobile */
+        .sidebar-nav {
+            padding-top: 70px; /* Account for fixed header */
+        }
+    }
+
+    /* Ensure content doesn't get hidden behind header */
+    @media (min-width: 769px) {
+        .sidebar-nav {
+            padding-top: 1rem;
+        }
+    }
 </style>
 
-<aside class="left-sidebar">
+<aside class="left-sidebar" id="mainSidebar">
     <div class="scroll-sidebar">
         <nav class="sidebar-nav">
             <ul id="sidebarnav" class="p-0" style="list-style: none;">
