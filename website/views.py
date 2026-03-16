@@ -2263,7 +2263,6 @@ def get_product_maintenance(product_id):
 
 
 
-
 @views.route('/userdetails/<id>')
 @csrf.exempt
 @login_required
@@ -2272,6 +2271,12 @@ def userdetails(id):
     if not user:
         flash("User not found")
         return redirect(url_for('home'))
+    
+    # Get attendance statistics
+    attendance_stats = get_user_attendance_stats(id)
+    
+    # Get recent sessions attended by the user
+    recent_sessions = get_recent_user_sessions(id, limit=5)
     
     qr_code_data = None
     
@@ -2308,9 +2313,97 @@ def userdetails(id):
             flash("Unable to display QR code: " + str(e), "warning")
             qr_code_data = None
     
+    # Enhance user object with computed statistics
+    # You can either add these as attributes to the user object
+    user.attendance_count = attendance_stats['total_attendance']
+    user.first_timer_count = attendance_stats['first_timer_count']
+    user.is_first_timer = attendance_stats['is_first_timer']
+    
     return render_template("userdetail.html", 
-                        user=user, 
-                        qr_code_data=qr_code_data,userdetails=True)
+                         user=user, 
+                         recent_sessions=recent_sessions,
+                         qr_code_data=qr_code_data,
+                         userdetails=True)
+
+def get_user_attendance_stats(user_id):
+    """Calculate attendance statistics for a user"""
+    
+    # Get all attendances for this user
+    attendances = Attendance.query.filter_by(user_id=user_id).all()
+    
+    # Count total attendances
+    total_attendance = len(attendances)
+    
+    # Count how many times the user was marked as first timer
+    # Check if 'is_first_timer' field exists in Attendance model
+    first_timer_attendances = 0
+    if hasattr(Attendance, 'is_first_timer'):
+        first_timer_attendances = Attendance.query.filter_by(
+            user_id=user_id, 
+            is_first_timer=True
+        ).count()
+    
+    # Determine if user is currently a first timer
+    # You can adjust this logic based on your business rules
+    # Common rules: attendance <= 3 OR joined within last 30 days
+    is_first_timer = total_attendance <= 3
+    
+    return {
+        'total_attendance': total_attendance,
+        'first_timer_count': first_timer_attendances,
+        'is_first_timer': is_first_timer
+    }
+
+def get_recent_user_sessions(user_id, limit=5):
+    """Get recent sessions attended by the user"""
+    
+    # Query using SQLAlchemy to join Attendance with Session
+    recent_sessions = db.session.query(
+        Session.name,
+        Session.date.label('session_date'),
+        Session.location,
+        Attendance.check_in_time
+    ).join(
+        Attendance, Attendance.session_id == Session.id
+    ).filter(
+        Attendance.user_id == user_id
+    ).order_by(
+        Attendance.check_in_time.desc()
+    ).limit(limit).all()
+    
+    # Format the results
+    formatted_sessions = []
+    for session in recent_sessions:
+        formatted_sessions.append({
+            'name': session.name,
+            'date': session.session_date,
+            'location': session.location,
+            'checkin_time': session.check_in_time
+        })
+    
+    return formatted_sessions
+
+# Optional: Add a helper function for optimized stats using aggregation
+def get_user_stats_optimized(user_id):
+    """Get user stats using database aggregation for better performance"""
+    
+    # Get aggregated stats
+    stats = db.session.query(
+        func.count(Attendance.id).label('total_attendance'),
+        func.sum(case([(Attendance.is_first_timer == True, 1)], else_=0)).label('first_timer_count')
+    ).filter(Attendance.user_id == user_id).first()
+    
+    total_attendance = stats.total_attendance or 0
+    first_timer_count = stats.first_timer_count or 0
+    
+    # Determine first timer status
+    is_first_timer = total_attendance <= 3
+    
+    return {
+        'total_attendance': total_attendance,
+        'first_timer_count': first_timer_count,
+        'is_first_timer': is_first_timer
+    }
 
 
 
