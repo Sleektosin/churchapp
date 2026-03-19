@@ -982,10 +982,14 @@
                             </div>
                         </div>
                         
+                        <!-- Active Members Card - Updated with Pagination -->
                         <div class="col-xl-6">
                             <div class="modern-card">
-                                <div class="card-header-modern">
-                                    <h4><i class="fas fa-star me-2"></i>Most Active Members</h4>
+                                <div class="card-header-modern d-flex justify-content-between align-items-center">
+                                    <h4 class="mb-0"><i class="fas fa-star me-2"></i>Most Active Members</h4>
+                                    <div class="d-flex align-items-center">
+                                        <span class="text-white me-2" id="activeMembersShowing">Showing 1-5 of 0</span>
+                                    </div>
                                 </div>
                                 <div class="p-4">
                                     <div class="table-responsive">
@@ -1000,6 +1004,32 @@
                                             </thead>
                                             <tbody id="activeMembersTableBody"></tbody>
                                         </table>
+                                    </div>
+                                    
+                                    <!-- Pagination Controls for Active Members -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3" id="activeMembersPagination" style="display: none !important;">
+                                        <div class="text-muted small" id="activeMembersPageInfo"></div>
+                                        <nav aria-label="Active members pagination">
+                                            <ul class="pagination pagination-sm mb-0">
+                                                <li class="page-item" id="activeMembersPrevPage">
+                                                    <a class="page-link" href="#" onclick="changeActiveMembersPage('prev'); return false;">
+                                                        <i class="fas fa-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item" id="activeMembersNextPage">
+                                                    <a class="page-link" href="#" onclick="changeActiveMembersPage('next'); return false;">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                    
+                                    <!-- View All Link (Optional) -->
+                                    <div class="text-center mt-2" id="activeMembersViewAll" style="display: none;">
+                                        <button class="btn btn-link btn-sm text-primary" onclick="loadAllActiveMembers()">
+                                            View All Members <i class="fas fa-arrow-right ms-1"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1254,952 +1284,1156 @@
     <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
 
     <!-- Analytics Dashboard JavaScript - COMPLETE VERSION -->
-    <script>
-    // ============================================
-    // ANALYTICS DASHBOARD - COMPLETE FUNCTIONALITY
-    // ============================================
+    <!-- Analytics Dashboard JavaScript - COMPLETE VERSION WITH PAGINATION -->
+<script>
+// ============================================
+// ANALYTICS DASHBOARD - COMPLETE FUNCTIONALITY
+// ============================================
 
-    // Global variables
-    let charts = {};
-    let currentFilters = {};
-    let hasLoaded = false;
-    let isLoading = false;
+// Global variables
+let charts = {};
+let currentFilters = {};
+let hasLoaded = false;
+let isLoading = false;
 
-    // Load data when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("Analytics Dashboard - Initial Load");
-        
-        // Set default dates (last 30 days)
-        setDefaultDates();
-        
-        // Load data once
-        if (!hasLoaded) {
-            loadDashboardData();
-        }
-        
-        // Setup manual controls
-        setupManualControls();
-        
-        // Setup chart resize handling
-        setupChartResize();
-    });
+// Pagination variables
+let allActiveMembers = [];
+let currentPage = 1;
+const itemsPerPage = 4;
 
-    // ============ DATE FUNCTIONS ============
-    function setDefaultDates() {
-        const today = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(today.getDate() - 30);
-        
-        const formatDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        
-        const startInput = document.getElementById('start_date');
-        const endInput = document.getElementById('end_date');
-        
-        if (startInput) startInput.value = formatDate(thirtyDaysAgo);
-        if (endInput) endInput.value = formatDate(today);
-    }
-
-    function setQuickDateRange(rangeType) {
-        const today = new Date();
-        const format = (date) => date.toISOString().split('T')[0];
-        
-        let startDate = new Date(today);
-        
-        switch(rangeType) {
-            case 'today':
-                startDate = today;
-                break;
-            case 'week':
-                startDate.setDate(today.getDate() - 7);
-                break;
-            case 'month':
-                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                break;
-            case 'quarter':
-                const quarter = Math.floor(today.getMonth() / 3);
-                startDate = new Date(today.getFullYear(), quarter * 3, 1);
-                break;
-            case 'year':
-                startDate = new Date(today.getFullYear(), 0, 1);
-                break;
-            case 'last30':
-                startDate.setDate(today.getDate() - 30);
-                break;
-        }
-        
-        document.getElementById('start_date').value = format(startDate);
-        document.getElementById('end_date').value = format(today);
-        
-        // Load data
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Analytics Dashboard - Initial Load");
+    
+    // Set default dates (last 30 days)
+    setDefaultDates();
+    
+    // Load data once
+    if (!hasLoaded) {
         loadDashboardData();
     }
+    
+    // Setup manual controls
+    setupManualControls();
+    
+    // Setup chart resize handling
+    setupChartResize();
+});
 
-    // ============ MANUAL CONTROLS SETUP ============
-    function setupManualControls() {
-        const applyBtn = document.querySelector('button[onclick*="applyFilters"]');
-        if (applyBtn) {
-            applyBtn.onclick = function(e) {
-                e.preventDefault();
-                if (!isLoading) loadDashboardData();
-            };
-        }
-        
-        const resetBtn = document.querySelector('button[onclick*="resetFilters"]');
-        if (resetBtn) {
-            resetBtn.onclick = function(e) {
-                e.preventDefault();
-                setDefaultDates();
-                if (!isLoading) loadDashboardData();
-            };
-        }
-        
-        const refreshBtn = document.getElementById('refreshBtn');
-        if (refreshBtn) {
-            refreshBtn.onclick = function() {
-                if (!isLoading) loadDashboardData();
-            };
-        }
-        
-        // Quick date buttons
-        document.querySelectorAll('[onclick*="setQuickDateRange"]').forEach(btn => {
-            const match = btn.getAttribute('onclick').match(/'([^']+)'/);
-            if (match) {
-                const rangeType = match[1];
-                btn.onclick = function() {
-                    setQuickDateRange(rangeType);
-                };
-            }
-        });
-        
-        // Chart period buttons
-        document.querySelectorAll('[onclick*="changeChartPeriod"]').forEach(btn => {
-            const match = btn.getAttribute('onclick').match(/changeChartPeriod\('([^']+)'/);
-            if (match) {
-                const period = match[1];
-                btn.onclick = function() {
-                    changeChartPeriod(period, this);
-                };
-            }
-        });
+// ============ DATE FUNCTIONS ============
+function setDefaultDates() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    
+    if (startInput) startInput.value = formatDate(thirtyDaysAgo);
+    if (endInput) endInput.value = formatDate(today);
+}
+
+function setQuickDateRange(rangeType) {
+    const today = new Date();
+    const format = (date) => date.toISOString().split('T')[0];
+    
+    let startDate = new Date(today);
+    
+    switch(rangeType) {
+        case 'today':
+            startDate = today;
+            break;
+        case 'week':
+            startDate.setDate(today.getDate() - 7);
+            break;
+        case 'month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            break;
+        case 'quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            startDate = new Date(today.getFullYear(), quarter * 3, 1);
+            break;
+        case 'year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            break;
+        case 'last30':
+            startDate.setDate(today.getDate() - 30);
+            break;
     }
+    
+    document.getElementById('start_date').value = format(startDate);
+    document.getElementById('end_date').value = format(today);
+    
+    // Load data
+    loadDashboardData();
+}
 
-    function setupChartResize() {
-        let resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                resizeAllCharts();
-            }, 250);
-        });
-    }
-
-    function resizeAllCharts() {
-        Object.values(charts).forEach(chart => {
-            if (chart && typeof chart.resize === 'function') {
-                chart.resize();
-            }
-        });
-    }
-
-    // ============ DATA LOADING ============
-    async function loadDashboardData() {
-        if (isLoading) return;
-        
-        console.log("Loading dashboard data...");
-        isLoading = true;
-        showLoading(true);
-        
-        try {
-            const startDate = document.getElementById('start_date').value;
-            const endDate = document.getElementById('end_date').value;
-            
-            currentFilters = { start_date: startDate, end_date: endDate };
-            updateActiveFiltersDisplay();
-            
-            const params = new URLSearchParams();
-            if (startDate) params.append('start_date', startDate);
-            if (endDate) params.append('end_date', endDate);
-            
-            const url = `/api/analytics/dashboard${params.toString() ? '?' + params.toString() : ''}`;
-            
-            console.log("Fetching from:", url);
-            
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                console.log("Data loaded successfully");
-                updateAllChartsAndData(data);
-                hasLoaded = true;
-            } else {
-                throw new Error(data.error || 'Server error');
-            }
-            
-        } catch (error) {
-            console.error('Error loading data:', error);
-            showToast('Error loading data: ' + error.message, 'error');
-        } finally {
-            isLoading = false;
-            showLoading(false);
-        }
-    }
-
-    function updateAllChartsAndData(data) {
-        // Update KPI cards
-        if (data.kpis) {
-            updateKPICards(data.kpis);
-        }
-        
-        // Update charts
-        if (data.charts && data.charts.overview) {
-            updateAllCharts(data.charts.overview);
-        }
-        
-        // Update tables
-        if (data.tables.overview) {
-            console.log("Tables data structure:", data.tables.overview);
-            updateAllTables(data.tables.overview);
-        } else {
-            console.warn("No tables data in response");
-            showEmptyTables();
-        }
-        
-        // Trigger resize after all charts are loaded
-        setTimeout(resizeAllCharts, 100);
-    }
-
-    // ============ KPI CARDS ============
-    function updateKPICards(kpis) {
-        const update = (id, value, suffix = '') => {
-            const el = document.getElementById(id);
-            if (el && value !== undefined) {
-                el.textContent = typeof value === 'number' ? value.toLocaleString() + suffix : value;
-            }
+// ============ MANUAL CONTROLS SETUP ============
+function setupManualControls() {
+    const applyBtn = document.querySelector('button[onclick*="applyFilters"]');
+    if (applyBtn) {
+        applyBtn.onclick = function(e) {
+            e.preventDefault();
+            if (!isLoading) loadDashboardData();
         };
-        
-        update('totalMembers', kpis.total_users);
-        update('avgAttendance', kpis.avg_attendance ? kpis.avg_attendance + '%' : '0%');
-        update('firstTimers', kpis.first_timers);
-        update('totalItems', kpis.total_items);
-        update('pendingMaintenance', kpis.pending_maintenance);
-        update('activeSessions', kpis.total_sessions);
-        
-        // Update trend texts
-        if (document.getElementById('memberGrowth')) {
-            document.getElementById('memberGrowth').innerHTML = `<i class="fas fa-arrow-up"></i> ${kpis.new_members_this_month || 0} this month`;
-        }
-        if (document.getElementById('inventoryValue')) {
-            document.getElementById('inventoryValue').innerHTML = `₦${(kpis.total_inventory_value || 0).toLocaleString()} value`;
-        }
     }
+    
+    const resetBtn = document.querySelector('button[onclick*="resetFilters"]');
+    if (resetBtn) {
+        resetBtn.onclick = function(e) {
+            e.preventDefault();
+            setDefaultDates();
+            if (!isLoading) loadDashboardData();
+        };
+    }
+    
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = function() {
+            if (!isLoading) loadDashboardData();
+        };
+    }
+    
+    // Quick date buttons
+    document.querySelectorAll('[onclick*="setQuickDateRange"]').forEach(btn => {
+        const match = btn.getAttribute('onclick').match(/'([^']+)'/);
+        if (match) {
+            const rangeType = match[1];
+            btn.onclick = function() {
+                setQuickDateRange(rangeType);
+            };
+        }
+    });
+    
+    // Chart period buttons
+    document.querySelectorAll('[onclick*="changeChartPeriod"]').forEach(btn => {
+        const match = btn.getAttribute('onclick').match(/changeChartPeriod\('([^']+)'/);
+        if (match) {
+            const period = match[1];
+            btn.onclick = function() {
+                changeChartPeriod(period, this);
+            };
+        }
+    });
+}
 
-    // ============ CHART RENDERING ============
-    function updateAllCharts(chartData) {
-        console.log("Updating charts...");
+function setupChartResize() {
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            resizeAllCharts();
+        }, 250);
+    });
+}
+
+function resizeAllCharts() {
+    Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.resize === 'function') {
+            chart.resize();
+        }
+    });
+}
+
+// ============ DATA LOADING ============
+async function loadDashboardData() {
+    if (isLoading) return;
+    
+    console.log("Loading dashboard data...");
+    isLoading = true;
+    showLoading(true);
+    
+    try {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
         
-        // Attendance Trend Chart
-        if (chartData.attendance_trend) {
-            renderAttendanceTrendChart(chartData.attendance_trend);
+        currentFilters = { start_date: startDate, end_date: endDate };
+        updateActiveFiltersDisplay();
+        
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        
+        const url = `/api/analytics/dashboard${params.toString() ? '?' + params.toString() : ''}`;
+        
+        console.log("Fetching from:", url);
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log("Data loaded successfully");
+            updateAllChartsAndData(data);
+            hasLoaded = true;
         } else {
-            showEmptyChart('attendanceTrendChart', 'No attendance data');
+            throw new Error(data.error || 'Server error');
         }
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showToast('Error loading data: ' + error.message, 'error');
+    } finally {
+        isLoading = false;
+        showLoading(false);
+    }
+}
 
-        // Session Performance Chart
-        if (chartData.session_performance) {
-            renderSessionPerformanceChart(chartData.session_performance);
-        } else {
-            showEmptyChart('sessionPerformanceChart', 'No session data');
-        }
+function updateAllChartsAndData(data) {
+    // Update KPI cards
+    if (data.kpis) {
+        updateKPICards(data.kpis);
+    }
+    
+    // Update charts
+    if (data.charts && data.charts.overview) {
+        updateAllCharts(data.charts.overview);
+    }
+    
+    // Update tables
+    if (data.tables && data.tables.overview) {
+        console.log("Tables data structure:", data.tables.overview);
+        updateAllTables(data.tables.overview);
+    } else {
+        console.warn("No tables data in response");
+        showEmptyTables();
+    }
+    
+    // Trigger resize after all charts are loaded
+    setTimeout(resizeAllCharts, 100);
+}
 
-        // Member Growth Chart
-        if (chartData.member_growth) {
-            renderMemberGrowthChart(chartData.member_growth);
-        } else {
-            showEmptyChart('memberGrowthChart', 'No member growth data');
+// ============ KPI CARDS ============
+function updateKPICards(kpis) {
+    const update = (id, value, suffix = '') => {
+        const el = document.getElementById(id);
+        if (el && value !== undefined) {
+            el.textContent = typeof value === 'number' ? value.toLocaleString() + suffix : value;
         }
-        
-        // Member Categories Chart
-        if (chartData.member_categories) {
-            renderDonutChart('memberCategoriesChart', chartData.member_categories, ['#8b5cf6', '#f59e0b', '#10b981', '#ef4444']);
-        } else {
-            showEmptyChart('memberCategoriesChart', 'No category data');
-        }
-        
-        // Gender Distribution Chart
-        if (chartData.gender_distribution) {
-            renderDonutChart('genderChart', chartData.gender_distribution, ['#4f46e5', '#ec4899', '#94a3b8']);
-        } else {
-            showEmptyChart('genderChart', 'No gender data');
-        }
-        
-        // Age Distribution Chart
-        if (chartData.age_distribution) {
-            renderBarChart('ageDistributionChart', chartData.age_distribution, '#3b82f6');
-        } else {
-            showEmptyChart('ageDistributionChart', 'No age data');
-        }
-        
-        // Inventory Status Chart
-        if (chartData.inventory_status) {
-            renderPieChart('inventoryStatusChart', chartData.inventory_status, ['#10b981', '#f59e0b', '#ef4444']);
-            
-            const counts = chartData.inventory_status.values || [];
-            document.getElementById('goodItems') && (document.getElementById('goodItems').textContent = counts[0] || 0);
-            document.getElementById('attentionItems') && (document.getElementById('attentionItems').textContent = counts[1] || 0);
-            document.getElementById('maintenanceItems') && (document.getElementById('maintenanceItems').textContent = counts[2] || 0);
-        } else {
-            showEmptyChart('inventoryStatusChart', 'No inventory data');
-        }
-        
-        // Maintenance Timeline
-        if (chartData.maintenance_timeline) {
-            renderMaintenanceTimeline(chartData.maintenance_timeline);
-        } else {
-            const timelineContainer = document.getElementById('maintenanceTimeline');
-            if (timelineContainer) {
-                timelineContainer.innerHTML = `
-                    <div class="text-center py-4">
-                        <i class="fas fa-tools fa-2x text-muted mb-3"></i>
-                        <p class="text-muted">No upcoming maintenance scheduled</p>
-                    </div>
-                `;
-            }
-        }
-        
-        // Check-in Methods Chart
-        if (chartData.checkin_methods) {
-            renderPieChart('checkinMethodsChart', chartData.checkin_methods, ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']);
-            
-            const checkinCounts = chartData.checkin_methods.values || [];
-            document.getElementById('qrCount') && (document.getElementById('qrCount').textContent = checkinCounts[0] || 0);
-            document.getElementById('adminCount') && (document.getElementById('adminCount').textContent = checkinCounts[1] || 0);
-            document.getElementById('manualCount') && (document.getElementById('manualCount').textContent = checkinCounts[2] || 0);
-            document.getElementById('selfCount') && (document.getElementById('selfCount').textContent = checkinCounts[3] || 0);
-        }
+    };
+    
+    update('totalMembers', kpis.total_users);
+    update('avgAttendance', kpis.avg_attendance ? kpis.avg_attendance + '%' : '0%');
+    update('firstTimers', kpis.first_timers);
+    update('totalItems', kpis.total_items);
+    update('pendingMaintenance', kpis.pending_maintenance);
+    update('activeSessions', kpis.total_sessions);
+    
+    // Update trend texts
+    if (document.getElementById('memberGrowth')) {
+        document.getElementById('memberGrowth').innerHTML = `<i class="fas fa-arrow-up"></i> ${kpis.new_members_this_month || 0} this month`;
+    }
+    if (document.getElementById('inventoryValue')) {
+        document.getElementById('inventoryValue').innerHTML = `₦${(kpis.total_inventory_value || 0).toLocaleString()} value`;
+    }
+}
+
+// ============ CHART RENDERING ============
+function updateAllCharts(chartData) {
+    console.log("Updating charts...");
+    
+    // Attendance Trend Chart
+    if (chartData.attendance_trend) {
+        renderAttendanceTrendChart(chartData.attendance_trend);
+    } else {
+        showEmptyChart('attendanceTrendChart', 'No attendance data');
     }
 
-    function renderAttendanceTrendChart(data) {
-        const canvas = document.getElementById('attendanceTrendChart');
-        if (!canvas) return;
-        
-        if (charts.attendanceTrend) charts.attendanceTrend.destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts.attendanceTrend = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        label: 'Attendance',
-                        data: data.values || [],
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#4f46e5',
-                        pointBorderColor: 'white',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { mode: 'index', intersect: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering attendance trend chart:', error);
-        }
+    // Session Performance Chart
+    if (chartData.session_performance) {
+        renderSessionPerformanceChart(chartData.session_performance);
+    } else {
+        showEmptyChart('sessionPerformanceChart', 'No session data');
     }
 
-    function renderSessionPerformanceChart(data) {
-        const canvas = document.getElementById('sessionPerformanceChart');
-        if (!canvas) return;
-        
-        if (charts.sessionPerformance) charts.sessionPerformance.destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts.sessionPerformance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        label: 'Attendance',
-                        data: data.values || [],
-                        backgroundColor: '#4f46e5',
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering session performance chart:', error);
-        }
+    // Member Growth Chart
+    if (chartData.member_growth) {
+        renderMemberGrowthChart(chartData.member_growth);
+    } else {
+        showEmptyChart('memberGrowthChart', 'No member growth data');
     }
-
-    function renderMemberGrowthChart(data) {
-        const canvas = document.getElementById('memberGrowthChart');
-        if (!canvas) return;
-        
-        if (charts.memberGrowth) charts.memberGrowth.destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts.memberGrowth = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [
-                        {
-                            label: 'New Members',
-                            data: data.values || [],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.1,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Total Members',
-                            data: data.cumulative || [],
-                            borderColor: '#4f46e5',
-                            backgroundColor: 'rgba(79, 70, 229, 0.05)',
-                            borderWidth: 3,
-                            fill: false,
-                            tension: 0.1,
-                            yAxisID: 'y1'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering member growth chart:', error);
-        }
+    
+    // Member Categories Chart
+    if (chartData.member_categories) {
+        renderDonutChart('memberCategoriesChart', chartData.member_categories, ['#8b5cf6', '#f59e0b', '#10b981', '#ef4444']);
+    } else {
+        showEmptyChart('memberCategoriesChart', 'No category data');
     }
-
-    function renderDonutChart(canvasId, data, colors) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        
-        if (charts[canvasId]) charts[canvasId].destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts[canvasId] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        data: data.values || [],
-                        backgroundColor: colors,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '65%',
-                    plugins: { legend: { display: false } }
-                }
-            });
-        } catch (error) {
-            console.error(`Error rendering ${canvasId}:`, error);
-        }
+    
+    // Gender Distribution Chart
+    if (chartData.gender_distribution) {
+        renderDonutChart('genderChart', chartData.gender_distribution, ['#4f46e5', '#ec4899', '#94a3b8']);
+    } else {
+        showEmptyChart('genderChart', 'No gender data');
     }
-
-    function renderBarChart(canvasId, data, color) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        
-        if (charts[canvasId]) charts[canvasId].destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        data: data.values || [],
-                        backgroundColor: color,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-        } catch (error) {
-            console.error(`Error rendering ${canvasId}:`, error);
-        }
+    
+    // Age Distribution Chart
+    if (chartData.age_distribution) {
+        renderBarChart('ageDistributionChart', chartData.age_distribution, '#3b82f6');
+    } else {
+        showEmptyChart('ageDistributionChart', 'No age data');
     }
-
-    function renderPieChart(canvasId, data, colors) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
+    
+    // Inventory Status Chart
+    if (chartData.inventory_status) {
+        renderPieChart('inventoryStatusChart', chartData.inventory_status, ['#10b981', '#f59e0b', '#ef4444']);
         
-        if (charts[canvasId]) charts[canvasId].destroy();
-        
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            charts[canvasId] = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: data.labels || [],
-                    datasets: [{
-                        data: data.values || [],
-                        backgroundColor: colors,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } }
-                }
-            });
-        } catch (error) {
-            console.error(`Error rendering ${canvasId}:`, error);
-        }
+        const counts = chartData.inventory_status.values || [];
+        document.getElementById('goodItems') && (document.getElementById('goodItems').textContent = counts[0] || 0);
+        document.getElementById('attentionItems') && (document.getElementById('attentionItems').textContent = counts[1] || 0);
+        document.getElementById('maintenanceItems') && (document.getElementById('maintenanceItems').textContent = counts[2] || 0);
+    } else {
+        showEmptyChart('inventoryStatusChart', 'No inventory data');
     }
-
-    function showEmptyChart(canvasId, message) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        
-        if (charts[canvasId]) charts[canvasId].destroy();
-        
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-    }
-
-    function renderMaintenanceTimeline(data) {
-        const container = document.getElementById('maintenanceTimeline');
-        if (!container) return;
-        
-        if (!Array.isArray(data) || data.length === 0) {
-            container.innerHTML = `
+    
+    // Maintenance Timeline
+    if (chartData.maintenance_timeline) {
+        renderMaintenanceTimeline(chartData.maintenance_timeline);
+    } else {
+        const timelineContainer = document.getElementById('maintenanceTimeline');
+        if (timelineContainer) {
+            timelineContainer.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-tools fa-2x text-muted mb-3"></i>
                     <p class="text-muted">No upcoming maintenance scheduled</p>
                 </div>
             `;
-            return;
         }
-        
-        let html = '';
-        data.slice(0, 3).forEach((item) => {
-            let statusClass = '';
-            let statusText = '';
-            
-            if (item.days_until <= 0) {
-                statusClass = 'overdue';
-                statusText = 'Overdue';
-            } else if (item.days_until <= 7) {
-                statusClass = 'upcoming';
-                statusText = 'Due Soon';
-            } else {
-                statusClass = 'recent';
-                statusText = 'Good';
-            }
-            
-            const lastMaintenance = item.last_maintenance ? 
-                new Date(item.last_maintenance).toLocaleDateString() : 'Never';
-            const nextDue = item.next_due ? 
-                new Date(item.next_due).toLocaleDateString() : 'Unknown';
-            
-            html += `
-                <div class="timeline-item ${statusClass}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6>${item.item_name || 'Unknown Item'}</h6>
-                            <p>${item.description || 'No description'}</p>
-                            <small>Last: ${lastMaintenance}</small>
-                        </div>
-                        <div class="text-end">
-                            <span class="status-badge status-${statusText.toLowerCase()}">${statusText}</span><br>
-                            <small>Due: ${nextDue}</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
     }
-
-    // ============ TABLE FUNCTIONS ============
-    function updateAllTables(tableData) {
-        console.log("Updating tables with data:", tableData);
+    
+    // Check-in Methods Chart
+    if (chartData.checkin_methods) {
+        renderPieChart('checkinMethodsChart', chartData.checkin_methods, ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']);
         
-        // First Timers Table
-        if (tableData.first_timers && tableData.first_timers.length > 0) {
-            console.log("Loading first timers:", tableData.first_timers.length);
-            updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
-                <td>
-                    <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
-                    <small class="text-muted">${user.email || ''}</small>
-                </td>
-                <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
-                <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
-                <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
-            `);
-        } else {
-            document.getElementById('firstTimersTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No first timers data available</td></tr>';
-        }
+        const checkinCounts = chartData.checkin_methods.values || [];
+        document.getElementById('qrCount') && (document.getElementById('qrCount').textContent = checkinCounts[0] || 0);
+        document.getElementById('adminCount') && (document.getElementById('adminCount').textContent = checkinCounts[1] || 0);
+        document.getElementById('manualCount') && (document.getElementById('manualCount').textContent = checkinCounts[2] || 0);
+        document.getElementById('selfCount') && (document.getElementById('selfCount').textContent = checkinCounts[3] || 0);
+    }
+}
 
-        // ACTIVE MEMBERS TABLE
-        if (tableData.active_members && tableData.active_members.length > 0) {
-            console.log("Loading active members:", tableData.active_members.length);
-            updateTable('activeMembersTableBody', tableData.active_members, (member) => {
-                let lastActive = member.last_active || 'Never';
-                
-                let engagementClass = 'secondary';
-                let engagementText = 'Low';
-                const rate = parseFloat(member.attendance_rate) || 0;
-                
-                if (rate >= 50) {
-                    engagementClass = 'success';
-                    engagementText = 'High';
-                } else if (rate >= 20) {
-                    engagementClass = 'warning';
-                    engagementText = 'Medium';
+function renderAttendanceTrendChart(data) {
+    const canvas = document.getElementById('attendanceTrendChart');
+    if (!canvas) return;
+    
+    if (charts.attendanceTrend) charts.attendanceTrend.destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts.attendanceTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Attendance',
+                    data: data.values || [],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#4f46e5',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
                 }
-                
-                return `
-                    <td>
-                        <strong>${member.name || ''}</strong><br>
-                        <small class="text-muted">${member.email || ''}</small>
-                    </td>
-                    <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
-                    <td>${lastActive}</td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">${member.attendance_rate || '0%'}</span>
-                            <span class="badge bg-${engagementClass}">${engagementText}</span>
-                        </div>
-                    </td>
-                `;
-            });
-        } else {
-            const tbody = document.getElementById('activeMembersTableBody');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
-            }
-        }
-        
-        // Sessions Table
-        if (tableData.sessions && tableData.sessions.length > 0) {
-            console.log("Loading sessions:", tableData.sessions.length);
-            updateTable('sessionsTableBody', tableData.sessions, (session) => {
-                const attendance = session.attendance || 0;
-                const capacity = session.capacity || 1;
-                const occupancy = Math.round((attendance / capacity) * 100);
-                return `
-                    <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
-                    <td>
-                        <strong>${session.name || ''}</strong><br>
-                        <small class="text-muted">${session.location || 'No location'}</small>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">${attendance}</span>
-                            <div class="progress-modern">
-                                <div class="progress-bar-modern ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
-                                     style="width: ${occupancy}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${capacity}</td>
-                `;
-            });
-        } else {
-            const tbody = document.getElementById('sessionsTableBody');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No sessions data available</td></tr>';
-            }
-        }
-        
-        // High Value Items Table
-        if (tableData.high_value_items && tableData.high_value_items.length > 0) {
-            updateTable('highValueItemsTableBody', tableData.high_value_items, (item) => `
-                <td><strong>${item.name || ''}</strong></td>
-                <td>${item.category || 'N/A'}</td>
-                <td>₦${parseFloat(item.value || 0).toLocaleString()}</td>
-                <td><span class="badge ${getItemStatusClass(item.status)}">${item.status || 'Unknown'}</span></td>
-            `);
-        } else {
-            document.getElementById('highValueItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No high value items data</td></tr>';
-        }
-        
-        // Attention Items Table
-        if (tableData.attention_items && tableData.attention_items.length > 0) {
-            updateTable('attentionItemsTableBody', tableData.attention_items, (item) => `
-                <td><strong>${item.name || ''}</strong></td>
-                <td>${item.last_maintenance ? new Date(item.last_maintenance).toLocaleDateString() : 'Never'}</td>
-                <td><span class="badge ${item.days_since > 90 ? 'bg-danger' : item.days_since > 60 ? 'bg-warning' : 'bg-info'}">${item.days_since || 0}</span></td>
-                <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
-            `);
-        } else {
-            document.getElementById('attentionItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No attention items data</td></tr>';
-        }
-        
-        // Recent Maintenance Table
-        if (tableData.recent_maintenance && tableData.recent_maintenance.length > 0) {
-            updateTable('recentMaintenanceTableBody', tableData.recent_maintenance, (item) => `
-                <td><strong>${item.item_name || ''}</strong></td>
-                <td>${item.maintenance_date ? new Date(item.maintenance_date).toLocaleDateString() : ''}</td>
-                <td>₦${parseFloat(item.cost || 0).toLocaleString()}</td>
-                <td>${item.vendor || 'N/A'}</td>
-            `);
-        } else {
-            document.getElementById('recentMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No recent maintenance data</td></tr>';
-        }
-        
-        // Upcoming Maintenance Table
-        if (tableData.upcoming_maintenance && tableData.upcoming_maintenance.length > 0) {
-            updateTable('upcomingMaintenanceTableBody', tableData.upcoming_maintenance, (item) => {
-                const daysUntil = item.days_until || 0;
-                return `
-                    <td><strong>${item.item_name || ''}</strong></td>
-                    <td>${item.next_due ? new Date(item.next_due).toLocaleDateString() : ''}</td>
-                    <td><span class="badge ${daysUntil <= 0 ? 'bg-danger' : daysUntil <= 7 ? 'bg-warning' : 'bg-success'}">${daysUntil}</span></td>
-                    <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
-                `;
-            });
-        } else {
-            document.getElementById('upcomingMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No upcoming maintenance data</td></tr>';
-        }
-    }
-
-    function updateTable(tbodyId, data, rowTemplate) {
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody || !Array.isArray(data)) return;
-        
-        tbody.innerHTML = '';
-        data.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = rowTemplate(item);
-            tbody.appendChild(row);
-        });
-    }
-
-    function getUserStatusClass(count) {
-        if (count >= 3) return 'badge-success';
-        if (count >= 1) return 'badge-warning';
-        return 'badge-secondary';
-    }
-
-    function getUserStatusText(count) {
-        if (count >= 3) return 'Converted';
-        if (count >= 1) return 'Attending';
-        return 'New';
-    }
-
-    function getItemStatusClass(status) {
-        const statusMap = {
-            'good': 'bg-success',
-            'attention': 'bg-warning',
-            'critical': 'bg-danger',
-            'maintenance': 'bg-info'
-        };
-        return statusMap[status?.toLowerCase()] || 'bg-secondary';
-    }
-
-    function getPriorityClass(priority) {
-        const priorityMap = {
-            'high': 'bg-danger',
-            'medium': 'bg-warning',
-            'low': 'bg-info',
-            'critical': 'bg-danger'
-        };
-        return priorityMap[priority?.toLowerCase()] || 'bg-secondary';
-    }
-
-    function showEmptyTables() {
-        const tables = [
-            'firstTimersTableBody', 
-            'activeMembersTableBody', 
-            'sessionsTableBody',
-            'highValueItemsTableBody',
-            'attentionItemsTableBody',
-            'recentMaintenanceTableBody',
-            'upcomingMaintenanceTableBody'
-        ];
-        
-        tables.forEach(id => {
-            const tbody = document.getElementById(id);
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>';
             }
         });
+    } catch (error) {
+        console.error('Error rendering attendance trend chart:', error);
     }
+}
 
-    // ============ UTILITY FUNCTIONS ============
-    function updateActiveFiltersDisplay() {
-        const container = document.getElementById('filterTags');
-        if (!container) return;
-        
-        let html = '';
-        if (currentFilters.start_date) {
-            const date = new Date(currentFilters.start_date).toLocaleDateString();
-            html += `<span class="filter-tag">From: ${date}</span>`;
-        }
-        if (currentFilters.end_date) {
-            const date = new Date(currentFilters.end_date).toLocaleDateString();
-            html += `<span class="filter-tag">To: ${date}</span>`;
-        }
-        
-        container.innerHTML = html;
-        
-        const displayContainer = document.getElementById('activeFiltersContainer');
-        if (displayContainer) {
-            displayContainer.style.display = html ? 'block' : 'none';
-        }
+function renderSessionPerformanceChart(data) {
+    const canvas = document.getElementById('sessionPerformanceChart');
+    if (!canvas) return;
+    
+    if (charts.sessionPerformance) charts.sessionPerformance.destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts.sessionPerformance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Attendance',
+                    data: data.values || [],
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error rendering session performance chart:', error);
     }
+}
 
-    function showLoading(show) {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            overlay.style.display = show ? 'flex' : 'none';
-        }
+function renderMemberGrowthChart(data) {
+    const canvas = document.getElementById('memberGrowthChart');
+    if (!canvas) return;
+    
+    if (charts.memberGrowth) charts.memberGrowth.destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts.memberGrowth = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [
+                    {
+                        label: 'New Members',
+                        data: data.values || [],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Members',
+                        data: data.cumulative || [],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error rendering member growth chart:', error);
     }
+}
 
-    function showToast(message, type = 'info') {
-        const toastId = 'toast-' + Date.now();
-        const toastHtml = `
-            <div id="${toastId}" class="toast-modern ${type}" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} me-2"></i>
-                    <div class="flex-grow-1">${message}</div>
-                    <button type="button" class="btn-close btn-sm" onclick="document.getElementById('${toastId}').remove()"></button>
+function renderDonutChart(canvasId, data, colors) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    if (charts[canvasId]) charts[canvasId].destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    data: data.values || [],
+                    backgroundColor: colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '65%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    } catch (error) {
+        console.error(`Error rendering ${canvasId}:`, error);
+    }
+}
+
+function renderBarChart(canvasId, data, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    if (charts[canvasId]) charts[canvasId].destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    data: data.values || [],
+                    backgroundColor: color,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    } catch (error) {
+        console.error(`Error rendering ${canvasId}:`, error);
+    }
+}
+
+function renderPieChart(canvasId, data, colors) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    if (charts[canvasId]) charts[canvasId].destroy();
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        charts[canvasId] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    data: data.values || [],
+                    backgroundColor: colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+    } catch (error) {
+        console.error(`Error rendering ${canvasId}:`, error);
+    }
+}
+
+function showEmptyChart(canvasId, message) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    if (charts[canvasId]) charts[canvasId].destroy();
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+}
+
+function renderMaintenanceTimeline(data) {
+    const container = document.getElementById('maintenanceTimeline');
+    if (!container) return;
+    
+    if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-tools fa-2x text-muted mb-3"></i>
+                <p class="text-muted">No upcoming maintenance scheduled</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    data.slice(0, 3).forEach((item) => {
+        let statusClass = '';
+        let statusText = '';
+        
+        if (item.days_until <= 0) {
+            statusClass = 'overdue';
+            statusText = 'Overdue';
+        } else if (item.days_until <= 7) {
+            statusClass = 'upcoming';
+            statusText = 'Due Soon';
+        } else {
+            statusClass = 'recent';
+            statusText = 'Good';
+        }
+        
+        const lastMaintenance = item.last_maintenance ? 
+            new Date(item.last_maintenance).toLocaleDateString() : 'Never';
+        const nextDue = item.next_due ? 
+            new Date(item.next_due).toLocaleDateString() : 'Unknown';
+        
+        html += `
+            <div class="timeline-item ${statusClass}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6>${item.item_name || 'Unknown Item'}</h6>
+                        <p>${item.description || 'No description'}</p>
+                        <small>Last: ${lastMaintenance}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="status-badge status-${statusText.toLowerCase()}">${statusText}</span><br>
+                        <small>Due: ${nextDue}</small>
+                    </div>
                 </div>
             </div>
         `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// ============ TABLE FUNCTIONS ============
+function updateAllTables(tableData) {
+    console.log("Updating tables with data:", tableData);
+    
+    // First Timers Table
+    if (tableData.first_timers && tableData.first_timers.length > 0) {
+        console.log("Loading first timers:", tableData.first_timers.length);
+        updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
+            <td>
+                <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
+                <small class="text-muted">${user.email || ''}</small>
+            </td>
+            <td>${user.date_joined ? new Date(user.date_joined).toLocaleDateString() : ''}</td>
+            <td><span class="badge bg-primary">${user.attendance_count || 0}</span></td>
+            <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
+        `);
+    } else {
+        document.getElementById('firstTimersTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No first timers data available</td></tr>';
+    }
+
+    // ACTIVE MEMBERS TABLE - WITH PAGINATION
+    if (tableData.active_members && tableData.active_members.length > 0) {
+        console.log("Loading active members for pagination:", tableData.active_members.length);
         
-        const container = document.getElementById('toastContainer');
-        if (container) {
-            container.innerHTML = toastHtml;
-            
-            setTimeout(() => {
-                const toast = document.getElementById(toastId);
-                if (toast) toast.remove();
-            }, 5000);
+        // Store all members for pagination
+        allActiveMembers = tableData.active_members.map(member => ({
+            name: member.name || '',
+            email: member.email || '',
+            attendance_count: member.attendance_count || 0,
+            attendance_rate: member.attendance_rate || '0%',
+            last_active: member.last_active || 'Never'
+        }));
+        
+        // Reset to first page when new data loads
+        currentPage = 1;
+        
+        // Update pagination display
+        updateActiveMembersPagination();
+    } else {
+        const tbody = document.getElementById('activeMembersTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
+        }
+        const paginationContainer = document.getElementById('activeMembersPagination');
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        const viewAllLink = document.getElementById('activeMembersViewAll');
+        if (viewAllLink) viewAllLink.style.display = 'none';
+        const showingElement = document.getElementById('activeMembersShowing');
+        if (showingElement) showingElement.textContent = 'Showing 0 members';
+    }
+    
+    // Sessions Table
+    if (tableData.sessions && tableData.sessions.length > 0) {
+        console.log("Loading sessions:", tableData.sessions.length);
+        updateTable('sessionsTableBody', tableData.sessions, (session) => {
+            const attendance = session.attendance || 0;
+            const capacity = session.capacity || 1;
+            const occupancy = Math.round((attendance / capacity) * 100);
+            return `
+                <td>${session.date ? new Date(session.date).toLocaleDateString() : ''}</td>
+                <td>
+                    <strong>${session.name || ''}</strong><br>
+                    <small class="text-muted">${session.location || 'No location'}</small>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">${attendance}</span>
+                        <div class="progress-modern">
+                            <div class="progress-bar-modern ${occupancy > 80 ? 'bg-success' : occupancy > 50 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${occupancy}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${capacity}</td>
+            `;
+        });
+    } else {
+        const tbody = document.getElementById('sessionsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No sessions data available</td></tr>';
         }
     }
-
-    function changeChartPeriod(period, button) {
-        const buttons = button.parentElement.querySelectorAll('.btn');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        loadDashboardData();
+    
+    // High Value Items Table
+    if (tableData.high_value_items && tableData.high_value_items.length > 0) {
+        updateTable('highValueItemsTableBody', tableData.high_value_items, (item) => `
+            <td><strong>${item.name || ''}</strong></td>
+            <td>${item.category || 'N/A'}</td>
+            <td>₦${parseFloat(item.value || 0).toLocaleString()}</td>
+            <td><span class="badge ${getItemStatusClass(item.status)}">${item.status || 'Unknown'}</span></td>
+        `);
+    } else {
+        document.getElementById('highValueItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No high value items data</td></tr>';
     }
-
-    function updateSessionPerformance(value) {
-        console.log('Updating session performance for:', value);
-        loadDashboardData();
+    
+    // Attention Items Table
+    if (tableData.attention_items && tableData.attention_items.length > 0) {
+        updateTable('attentionItemsTableBody', tableData.attention_items, (item) => `
+            <td><strong>${item.name || ''}</strong></td>
+            <td>${item.last_maintenance ? new Date(item.last_maintenance).toLocaleDateString() : 'Never'}</td>
+            <td><span class="badge ${item.days_since > 90 ? 'bg-danger' : item.days_since > 60 ? 'bg-warning' : 'bg-info'}">${item.days_since || 0}</span></td>
+            <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
+        `);
+    } else {
+        document.getElementById('attentionItemsTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No attention items data</td></tr>';
     }
-
-    function exportDashboard() {
-        showToast('Export feature coming soon!', 'info');
+    
+    // Recent Maintenance Table
+    if (tableData.recent_maintenance && tableData.recent_maintenance.length > 0) {
+        updateTable('recentMaintenanceTableBody', tableData.recent_maintenance, (item) => `
+            <td><strong>${item.item_name || ''}</strong></td>
+            <td>${item.maintenance_date ? new Date(item.maintenance_date).toLocaleDateString() : ''}</td>
+            <td>₦${parseFloat(item.cost || 0).toLocaleString()}</td>
+            <td>${item.vendor || 'N/A'}</td>
+        `);
+    } else {
+        document.getElementById('recentMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No recent maintenance data</td></tr>';
     }
-
-    function refreshDashboard() {
-        loadDashboardData();
+    
+    // Upcoming Maintenance Table
+    if (tableData.upcoming_maintenance && tableData.upcoming_maintenance.length > 0) {
+        updateTable('upcomingMaintenanceTableBody', tableData.upcoming_maintenance, (item) => {
+            const daysUntil = item.days_until || 0;
+            return `
+                <td><strong>${item.item_name || ''}</strong></td>
+                <td>${item.next_due ? new Date(item.next_due).toLocaleDateString() : ''}</td>
+                <td><span class="badge ${daysUntil <= 0 ? 'bg-danger' : daysUntil <= 7 ? 'bg-warning' : 'bg-success'}">${daysUntil}</span></td>
+                <td><span class="badge ${getPriorityClass(item.priority)}">${item.priority || 'Normal'}</span></td>
+            `;
+        });
+    } else {
+        document.getElementById('upcomingMaintenanceTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No upcoming maintenance data</td></tr>';
     }
+}
 
-    function applyFilters() {
-        loadDashboardData();
+function updateTable(tbodyId, data, rowTemplate) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody || !Array.isArray(data)) return;
+    
+    tbody.innerHTML = '';
+    data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = rowTemplate(item);
+        tbody.appendChild(row);
+    });
+}
+
+function getUserStatusClass(count) {
+    if (count >= 3) return 'badge-success';
+    if (count >= 1) return 'badge-warning';
+    return 'badge-secondary';
+}
+
+function getUserStatusText(count) {
+    if (count >= 3) return 'Converted';
+    if (count >= 1) return 'Attending';
+    return 'New';
+}
+
+function getItemStatusClass(status) {
+    const statusMap = {
+        'good': 'bg-success',
+        'attention': 'bg-warning',
+        'critical': 'bg-danger',
+        'maintenance': 'bg-info'
+    };
+    return statusMap[status?.toLowerCase()] || 'bg-secondary';
+}
+
+function getPriorityClass(priority) {
+    const priorityMap = {
+        'high': 'bg-danger',
+        'medium': 'bg-warning',
+        'low': 'bg-info',
+        'critical': 'bg-danger'
+    };
+    return priorityMap[priority?.toLowerCase()] || 'bg-secondary';
+}
+
+function showEmptyTables() {
+    const tables = [
+        'firstTimersTableBody', 
+        'activeMembersTableBody', 
+        'sessionsTableBody',
+        'highValueItemsTableBody',
+        'attentionItemsTableBody',
+        'recentMaintenanceTableBody',
+        'upcomingMaintenanceTableBody'
+    ];
+    
+    tables.forEach(id => {
+        const tbody = document.getElementById(id);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data available</td></tr>';
+        }
+    });
+}
+
+// ============ PAGINATION FUNCTIONS ============
+function updateActiveMembersPagination() {
+    console.log("Updating pagination. Total members:", allActiveMembers.length);
+    
+    const tbody = document.getElementById('activeMembersTableBody');
+    const paginationContainer = document.getElementById('activeMembersPagination');
+    const showingElement = document.getElementById('activeMembersShowing');
+    const pageInfoElement = document.getElementById('activeMembersPageInfo');
+    const viewAllElement = document.getElementById('activeMembersViewAll');
+    
+    if (!tbody) {
+        console.error("Active members table body not found!");
+        return;
     }
-
-    function resetFilters() {
-        setDefaultDates();
-        loadDashboardData();
+    
+    if (!allActiveMembers || allActiveMembers.length === 0) {
+        console.log("No active members data");
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
+        
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (viewAllElement) viewAllElement.style.display = 'none';
+        if (showingElement) showingElement.textContent = 'Showing 0 members';
+        return;
     }
-
-    function loadMoreFirstTimers() {
-        showToast('Loading more first timers...', 'info');
+    
+    // Calculate pagination
+    const totalItems = allActiveMembers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    const currentItems = allActiveMembers.slice(startIndex, endIndex);
+    
+    console.log("Pagination calculation:", {
+        totalItems,
+        totalPages,
+        startIndex,
+        endIndex,
+        currentItemsCount: currentItems.length
+    });
+    
+    // Update showing text
+    if (showingElement) {
+        showingElement.textContent = `Showing ${startIndex + 1}-${endIndex} of ${totalItems}`;
     }
-
-    function loadMoreActiveMembers() {
-        showToast('Loading more active members...', 'info');
+    
+    // Update page info
+    if (pageInfoElement) {
+        pageInfoElement.textContent = `Page ${currentPage} of ${totalPages}`;
     }
-
-    function loadMoreSessions() {
-        showToast('Loading more sessions...', 'info');
+    
+    // Show/hide pagination based on number of pages
+    if (paginationContainer) {
+        if (totalPages > 1) {
+            paginationContainer.style.display = 'flex';
+        } else {
+            paginationContainer.style.display = 'none';
+        }
     }
-
-    function loadMoreHighValueItems() {
-        showToast('Loading more high value items...', 'info');
+    
+    // Show "View All" link if there are more than 5 items
+    if (viewAllElement) {
+        if (totalItems > 5) {
+            viewAllElement.style.display = 'block';
+        } else {
+            viewAllElement.style.display = 'none';
+        }
     }
-
-    function loadMoreAttentionItems() {
-        showToast('Loading more attention items...', 'info');
+    
+    // Update prev/next buttons
+    const prevBtn = document.getElementById('activeMembersPrevPage');
+    const nextBtn = document.getElementById('activeMembersNextPage');
+    
+    if (prevBtn) {
+        if (currentPage === 1) {
+            prevBtn.classList.add('disabled');
+        } else {
+            prevBtn.classList.remove('disabled');
+        }
     }
-
-    function loadMoreMaintenance() {
-        showToast('Loading more maintenance records...', 'info');
+    
+    if (nextBtn) {
+        if (currentPage === totalPages) {
+            nextBtn.classList.add('disabled');
+        } else {
+            nextBtn.classList.remove('disabled');
+        }
     }
+    
+    // Render current page items
+    renderActiveMembers(currentItems);
+}
 
-    function loadUpcomingMaintenance() {
-        showToast('Loading upcoming maintenance...', 'info');
+function renderActiveMembers(members) {
+    const tbody = document.getElementById('activeMembersTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    members.forEach(member => {
+        const row = document.createElement('tr');
+        
+        let lastActive = member.last_active || 'Never';
+        let engagementClass = 'secondary';
+        let engagementText = 'Low';
+        const rate = parseFloat(member.attendance_rate) || 0;
+        
+        if (rate >= 50) {
+            engagementClass = 'success';
+            engagementText = 'High';
+        } else if (rate >= 20) {
+            engagementClass = 'warning';
+            engagementText = 'Medium';
+        }
+        
+        row.innerHTML = `
+            <td>
+                <strong>${member.name || ''}</strong><br>
+                <small class="text-muted">${member.email || ''}</small>
+            </td>
+            <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
+            <td>${lastActive}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <span class="me-2">${member.attendance_rate || '0%'}</span>
+                    <span class="badge bg-${engagementClass}">${engagementText}</span>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function changeActiveMembersPage(direction) {
+    if (!allActiveMembers || allActiveMembers.length === 0) return;
+    
+    const totalPages = Math.ceil(allActiveMembers.length / itemsPerPage);
+    
+    if (direction === 'prev' && currentPage > 1) {
+        currentPage--;
+    } else if (direction === 'next' && currentPage < totalPages) {
+        currentPage++;
     }
+    
+    updateActiveMembersPagination();
+}
 
-    console.log("Analytics dashboard loaded - Complete functionality");
-    </script>
+function loadAllActiveMembers() {
+    if (!allActiveMembers || allActiveMembers.length === 0) return;
+    
+    // Show all members
+    const tbody = document.getElementById('activeMembersTableBody');
+    if (tbody) {
+        renderActiveMembers(allActiveMembers);
+    }
+    
+    // Update showing text
+    const showingElement = document.getElementById('activeMembersShowing');
+    if (showingElement) {
+        showingElement.textContent = `Showing all ${allActiveMembers.length} members`;
+    }
+    
+    // Hide pagination controls
+    const paginationContainer = document.getElementById('activeMembersPagination');
+    if (paginationContainer) {
+        paginationContainer.style.display = 'none';
+    }
+    
+    // Hide view all link
+    const viewAllLink = document.getElementById('activeMembersViewAll');
+    if (viewAllLink) {
+        viewAllLink.style.display = 'none';
+    }
+    
+    // Add a "Show Less" button if not already present
+    if (!document.getElementById('activeMembersShowLess')) {
+        const showLessBtn = document.createElement('div');
+        showLessBtn.className = 'text-center mt-2';
+        showLessBtn.id = 'activeMembersShowLess';
+        showLessBtn.innerHTML = `
+            <button class="btn btn-link btn-sm text-primary" onclick="resetActiveMembersPagination()">
+                <i class="fas fa-arrow-up me-1"></i> Show Less
+            </button>
+        `;
+        
+        // Find the container to append to
+        const container = document.querySelector('.modern-card .p-4');
+        if (container) {
+            container.appendChild(showLessBtn);
+        }
+    }
+}
+
+function resetActiveMembersPagination() {
+    // Reset to paginated view
+    currentPage = 1;
+    updateActiveMembersPagination();
+    
+    // Remove show less button
+    const showLessBtn = document.getElementById('activeMembersShowLess');
+    if (showLessBtn) {
+        showLessBtn.remove();
+    }
+}
+
+// ============ UTILITY FUNCTIONS ============
+function updateActiveFiltersDisplay() {
+    const container = document.getElementById('filterTags');
+    if (!container) return;
+    
+    let html = '';
+    if (currentFilters.start_date) {
+        const date = new Date(currentFilters.start_date).toLocaleDateString();
+        html += `<span class="filter-tag">From: ${date}</span>`;
+    }
+    if (currentFilters.end_date) {
+        const date = new Date(currentFilters.end_date).toLocaleDateString();
+        html += `<span class="filter-tag">To: ${date}</span>`;
+    }
+    
+    container.innerHTML = html;
+    
+    const displayContainer = document.getElementById('activeFiltersContainer');
+    if (displayContainer) {
+        displayContainer.style.display = html ? 'block' : 'none';
+    }
+}
+
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = show ? 'flex' : 'none';
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast-modern ${type}" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close btn-sm" onclick="document.getElementById('${toastId}').remove()"></button>
+            </div>
+        </div>
+    `;
+    
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.innerHTML = toastHtml;
+        
+        setTimeout(() => {
+            const toast = document.getElementById(toastId);
+            if (toast) toast.remove();
+        }, 5000);
+    }
+}
+
+function changeChartPeriod(period, button) {
+    const buttons = button.parentElement.querySelectorAll('.btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    loadDashboardData();
+}
+
+function updateSessionPerformance(value) {
+    console.log('Updating session performance for:', value);
+    loadDashboardData();
+}
+
+function exportDashboard() {
+    showToast('Export feature coming soon!', 'info');
+}
+
+function refreshDashboard() {
+    loadDashboardData();
+}
+
+function applyFilters() {
+    loadDashboardData();
+}
+
+function resetFilters() {
+    setDefaultDates();
+    loadDashboardData();
+}
+
+function loadMoreFirstTimers() {
+    showToast('Loading more first timers...', 'info');
+}
+
+function loadMoreActiveMembers() {
+    showToast('Loading more active members...', 'info');
+}
+
+function loadMoreSessions() {
+    showToast('Loading more sessions...', 'info');
+}
+
+function loadMoreHighValueItems() {
+    showToast('Loading more high value items...', 'info');
+}
+
+function loadMoreAttentionItems() {
+    showToast('Loading more attention items...', 'info');
+}
+
+function loadMoreMaintenance() {
+    showToast('Loading more maintenance records...', 'info');
+}
+
+function loadUpcomingMaintenance() {
+    showToast('Loading upcoming maintenance...', 'info');
+}
+
+console.log("Analytics dashboard loaded - Complete functionality with pagination");
+</script>
+
+
 </body>
 </html>
