@@ -248,7 +248,7 @@
         .action-buttons {
             display: flex;
             gap: 6px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         .action-btn {
@@ -270,6 +270,44 @@
         .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
+        }
+
+
+        /* New action button style */
+
+        /* Action Buttons - Force single row */
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap; /* Prevent wrapping */
+            justify-content: flex-start;
+            min-width: 160px; /* Ensure enough space for all buttons */
+        }
+
+        .action-btn {
+            width: 32px; /* Slightly smaller buttons */
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0; /* Prevent buttons from shrinking */
+        }
+
+        /* Ensure the table column doesn't wrap */
+        .table-modern td.text-nowrap {
+            white-space: nowrap !important;
+        }
+
+        /* For very small screens, show a dropdown instead */
+        @media (max-width: 768px) {
+            .action-buttons {
+                gap: 2px;
+                min-width: 140px;
+            }
+            
+            .action-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
         }
 
         .action-btn-warning:hover { background: var(--warning); color: white; border-color: var(--warning); }
@@ -511,13 +549,11 @@
                                     <th>Session Name</th>
                                     <th>Description</th>
                                     <th>Date</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
+                                    <th>Time</th>
                                     <th>Location</th>
                                     <th>Status</th>
                                     <th>Attendance</th>
                                     <th>Capacity</th>
-                                    <th>Remaining</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -731,7 +767,7 @@
     <!-- Your existing JavaScript (preserved exactly as is) -->
     <script>
         $(document).ready(function() {
-            // Initialize DataTable with responsive extension
+    // Initialize DataTable with responsive extension
             $('#activityTable').DataTable({
                 processing: true,
                 responsive: {
@@ -767,7 +803,15 @@
                 columns: [
                     { data: "id", visible: false },
                     { data: "name" },
-                    { data: "description" },
+                    { 
+                        data: "description",
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return data && data.length > 30 ? data.substring(0, 30) + '...' : (data || 'N/A');
+                            }
+                            return data;
+                        }
+                    },
                     { 
                         data: "date",
                         render: function(data, type, row) {
@@ -775,15 +819,11 @@
                         }
                     },
                     { 
-                        data: "start_time",
+                        data: null,
                         render: function(data, type, row) {
-                            return data ? data : 'N/A';
-                        }
-                    },
-                    { 
-                        data: "end_time",
-                        render: function(data, type, row) {
-                            return data ? data : 'N/A';
+                            const start = row.start_time || 'N/A';
+                            const end = row.end_time || 'N/A';
+                            return `${start} - ${end}`;
                         }
                     },
                     { 
@@ -802,7 +842,8 @@
                                 'cancelled': 'badge-modern badge-danger'
                             }[data] || 'badge-modern badge-secondary';
                             
-                            return `<span class="${statusClass}">${data || 'N/A'}</span>`;
+                            const statusText = data ? data.charAt(0).toUpperCase() + data.slice(1) : 'N/A';
+                            return `<span class="${statusClass}">${statusText}</span>`;
                         }
                     },
                     { 
@@ -814,14 +855,7 @@
                     { 
                         data: "capacity",
                         render: function(data, type, row) {
-                            return data ? data : 'N/A';
-                        }
-                    },
-                    { 
-                        data: "remaining",
-                        render: function(data, type, row) {
-                            if (data === 'Unlimited') return data;
-                            return data !== undefined ? data : 'N/A';
+                            return data ? data : 'Unlimited';
                         }
                     },
                     {
@@ -831,7 +865,7 @@
                             const maxCapacity = capacityParts.length > 1 ? capacityParts[1] : capacityParts[0];
 
                             return `
-                                <div class="action-buttons">
+                                <div class="action-buttons" style="display: flex; gap: 4px; flex-wrap: nowrap; justify-content: flex-start;">
                                     <button id="edit-button-${row.id}" 
                                         class="action-btn action-btn-warning edit-button" 
                                         data-id="${row.id}"
@@ -843,45 +877,51 @@
                                         data-location="${row.location || ''}"
                                         data-status="${row.status || ''}"
                                         data-max-capacity="${maxCapacity}"
-                                        data-attendance-count="${row.attendance_count || 0}">
+                                        data-attendance-count="${row.attendance_count || 0}"
+                                        title="Edit Session">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="action-btn action-btn-info view-attendees-btn" 
-                                        data-id="${row.id}">
+                                        data-id="${row.id}"
+                                        title="View Attendees">
                                         <i class="fas fa-users"></i>
                                     </button>
                                     <button class="action-btn action-btn-primary view-details-btn" 
-                                        data-id="${row.id}">
+                                        data-id="${row.id}"
+                                        title="View Details">
                                         <i class="fas fa-clock"></i>
                                     </button>
                                     <button class="action-btn action-btn-danger delete-button" 
-                                        data-id="${row.id}">
+                                        data-id="${row.id}"
+                                        title="Delete Session">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             `;
                         },
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        className: 'text-nowrap' // Prevent wrapping
                     }
                 ],
                 columnDefs: [
-                    { responsivePriority: 1, targets: 1 },
-                    { responsivePriority: 2, targets: -1 },
-                    { responsivePriority: 3, targets: 3 },
-                    { responsivePriority: 4, targets: 7 },
-                    { responsivePriority: 5, targets: 8 },
-                    { responsivePriority: 6, targets: 9 },
-                    { responsivePriority: 7, targets: 2 },
-                    { responsivePriority: 8, targets: 4 },
-                    { responsivePriority: 9, targets: 5 },
-                    { responsivePriority: 10, targets: 6 },
-                    { responsivePriority: 11, targets: 10 }
+                    { responsivePriority: 1, targets: 1 }, // Session Name
+                    { responsivePriority: 2, targets: -1 }, // Actions
+                    { responsivePriority: 3, targets: 3 }, // Date
+                    { responsivePriority: 4, targets: 6 }, // Status
+                    { responsivePriority: 5, targets: 7 }, // Attendance
+                    { responsivePriority: 6, targets: 8 }, // Capacity
+                    { responsivePriority: 7, targets: 2 }, // Description
+                    { responsivePriority: 8, targets: 4 }, // Time
+                    { responsivePriority: 9, targets: 5 }, // Location
+                    { width: '120px', targets: -1 } // Fixed width for actions column
                 ]
             });
             
+            // Rest of your code remains the same...
             fetchStatusOptions();
 
+            // Your existing event handlers...
             $('#activityTable').on('click', '.edit-button', function() {
                 const id = $(this).data('id');
                 const name = $(this).data('name');
