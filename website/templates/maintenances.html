@@ -20,7 +20,7 @@
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Material Design Icons (for compatibility) -->
+    <!-- Material Design Icons -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
@@ -50,16 +50,14 @@
             color: var(--dark);
         }
 
-        /* Main Content Area - Centered */
+        /* Main Content Area */
         .content-area {
             margin-left: 260px;
             min-height: 100vh;
             background-color: #f1f5f9;
-            display: flex;
-            justify-content: center;
+            transition: margin-left 0.3s ease;
         }
 
-        /* Container for content - centered with max width */
         .content-container {
             width: 100%;
             max-width: 1600px;
@@ -119,23 +117,36 @@
             font-size: 0.95rem;
         }
 
-        /* Stats Cards */
+        /* Stats Cards - Improved Layout */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
+            gap: 20px;
             margin-bottom: 24px;
         }
 
         .stat-card {
             background: white;
             border-radius: 20px;
-            padding: 1.5rem;
+            padding: 1.5rem 1.2rem;
             box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            opacity: 0.5;
         }
 
         .stat-card:hover {
@@ -144,14 +155,15 @@
         }
 
         .stat-icon {
-            width: 60px;
-            height: 60px;
+            width: 55px;
+            height: 55px;
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 1rem;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
+            flex-shrink: 0;
         }
 
         .stat-icon.primary {
@@ -174,21 +186,30 @@
             color: var(--warning);
         }
 
+        .stat-content {
+            min-width: 0;
+            flex: 1;
+        }
+
         .stat-content h3 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 700;
             margin: 0;
             line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-content p {
             color: var(--secondary);
             margin: 0;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
+            white-space: nowrap;
         }
 
-        /* Filter Section */
+        /* Filter Section - COMPLETELY REDESIGNED */
         .filter-section {
             background: white;
             border-radius: 20px;
@@ -197,9 +218,17 @@
             box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
         }
 
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
         .filter-title {
             font-weight: 600;
-            margin-bottom: 1.5rem;
             color: var(--dark);
             display: flex;
             align-items: center;
@@ -210,11 +239,168 @@
             color: var(--primary);
         }
 
+        .filter-badge {
+            background: var(--primary-light);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .filter-toggle-btn {
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            color: var(--secondary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-toggle-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .filter-toggle-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Search Bar */
+        .search-wrapper {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-wrapper .input-group {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+
+        .search-wrapper .input-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .search-wrapper .input-group-text {
+            background: white;
+            border: none;
+            color: var(--secondary);
+        }
+
+        .search-wrapper .form-control {
+            border: none;
+            padding: 0.75rem 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-wrapper .form-control:focus {
+            box-shadow: none;
+        }
+
+        .action-buttons-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Advanced Filters - Collapsible */
+        .advanced-filters {
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .advanced-filters.show {
+            display: block;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .filter-group {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .filter-group-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group-title i {
+            color: var(--primary);
+        }
+
+        .range-inputs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .range-inputs .form-control {
+            flex: 1;
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .filter-tag {
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-tag i {
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .filter-tag i:hover {
+            color: var(--danger);
+        }
+
+        .filter-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Form Controls */
         .form-label {
             font-weight: 600;
             color: var(--dark);
             margin-bottom: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .form-control, .form-select {
@@ -222,6 +408,7 @@
             border-radius: 12px;
             padding: 0.6rem 1rem;
             transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
 
         .form-control:focus, .form-select:focus {
@@ -245,6 +432,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            white-space: nowrap;
         }
 
         .btn-primary-modern {
@@ -283,7 +471,23 @@
             background: #f8fafc;
         }
 
+        .btn-danger-modern {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+            box-shadow: 0 10px 20px -8px var(--danger);
+        }
+
+        .btn-danger-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px var(--danger);
+            color: white;
+        }
+
         /* Table Styling */
+        .table-responsive {
+            border-radius: 16px;
+        }
+
         .table-modern {
             width: 100% !important;
             border-collapse: separate;
@@ -294,7 +498,7 @@
             background: #f8fafc;
             color: var(--secondary);
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             padding: 1rem;
@@ -330,7 +534,7 @@
         .action-buttons {
             display: flex;
             gap: 8px;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         .action-btn {
@@ -391,11 +595,6 @@
             font-size: 1.3rem;
         }
 
-        .modal-modern .modal-header .btn-close {
-            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
-            opacity: 1;
-        }
-
         .modal-modern .modal-body {
             padding: 2rem;
         }
@@ -406,35 +605,53 @@
         }
 
         /* Loading Overlay */
+        /* Loading Overlay - FIXED POSITIONING */
         .loading-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
-            z-index: 9999;
+            z-index: 99999;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
 
+        .loading-overlay.active {
+            display: flex;
+        }
+
         .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-spinner.small {
+            width: 30px;
+            height: 30px;
+            border-width: 3px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Ensure the spinner container is properly positioned */
+        .content-area {
+            position: relative;
+            min-height: 100vh;
+        }
+
 
         /* Toast Notifications */
         .toast-container {
@@ -455,53 +672,117 @@
             animation: slideIn 0.3s ease;
         }
 
-        .toast-modern.success {
-            border-left-color: var(--success);
-        }
-
-        .toast-modern.error {
-            border-left-color: var(--danger);
-        }
-
-        .toast-modern.warning {
-            border-left-color: var(--warning);
-        }
-
-        .toast-modern.info {
-            border-left-color: var(--info);
-        }
+        .toast-modern.success { border-left-color: var(--success); }
+        .toast-modern.error { border-left-color: var(--danger); }
+        .toast-modern.warning { border-left-color: var(--warning); }
+        .toast-modern.info { border-left-color: var(--info); }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Responsive */
+        /* Responsive Improvements */
         @media (max-width: 1200px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .filters-grid {
+                grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 768px) {
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.4rem;
+                margin-right: 0.8rem;
+            }
+            
+            .stat-content h3 {
+                font-size: 1.4rem;
+            }
+            
+            .filter-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .filter-toggle-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .search-wrapper {
+                padding: 1rem;
+            }
+            
+            .action-buttons-group {
+                flex-direction: column;
+            }
+            
+            .filter-footer {
+                flex-direction: column;
+            }
+            
+            .filter-footer .btn {
+                width: 100%;
             }
             
             .action-buttons {
-                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-header-modern {
+                padding: 1.2rem;
+            }
+            
+            .card-header-modern h4 {
+                font-size: 1.3rem;
+            }
+            
+            .range-inputs {
+                flex-direction: column;
             }
         }
 
         /* Preloader */
         .preloader {
             display: none;
+        }
+
+        /* Active filter count badge */
+        .filter-count-badge {
+            background: var(--primary);
+            color: white;
+            border-radius: 30px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
         }
     </style>
 </head>
@@ -539,9 +820,9 @@
                     </h1>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="{{ url_for('views.home') }}" class="text-decoration-none">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Manage Inventory</a></li>
-                            <li class="breadcrumb-item active">Maintenance History</li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('views.home') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-muted">Manage Inventory</a></li>
+                            <li class="breadcrumb-item active" style="color: var(--primary);">Maintenance History</li>
                         </ol>
                     </nav>
                 </div>
@@ -590,82 +871,141 @@
                 </div>
             </div>
 
-            <!-- Filter Section -->
+            <!-- Filter Section - REDESIGNED -->
             <div class="filter-section">
-                <div class="filter-title">
-                    <i class="fas fa-sliders-h"></i>
-                    <span>Filters & Search</span>
+                <div class="filter-header">
+                    <div class="filter-title">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Filter Maintenance Records</span>
+                        <span class="filter-badge" id="filterCount">0 filters active</span>
+                    </div>
+                    <button class="filter-toggle-btn" id="toggleAdvancedFilters" type="button">
+                        <i class="fas fa-chevron-down" id="toggleIcon"></i>
+                        Advanced Filters
+                    </button>
                 </div>
 
-                <!-- Search Bar -->
-                <div class="row mb-4">
-                    <div class="col-md-8">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" id="globalSearch" class="form-control" placeholder="Search across all fields...">
-                            <button class="btn btn-outline-modern" type="button" id="clearSearch">
-                                <i class="fas fa-times"></i> Clear
-                            </button>
+                <!-- Quick Search Bar -->
+                <div class="search-wrapper">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="globalSearch" class="form-control" placeholder="Search across all fields...">
+                                <button class="btn btn-outline-modern" type="button" id="clearSearch">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-modern btn-success-modern w-50" data-bs-toggle="modal" data-bs-target="#exportModal">
-                                <i class="fas fa-download"></i> Export
-                            </button>
-                            <button class="btn btn-modern btn-primary-modern w-50" id="refreshData">
-                                <i class="fas fa-sync-alt"></i> Refresh
-                            </button>
+                        <div class="col-md-4">
+                            <div class="action-buttons-group">
+                                <button class="btn btn-modern btn-success-modern w-100" data-bs-toggle="modal" data-bs-target="#exportModal">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                                <button class="btn btn-modern btn-primary-modern w-100" id="refreshData">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Filters Row -->
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Item</label>
-                        <select id="itemFilter" class="form-select">
-                            <option value="">All Items</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">Vendor</label>
-                        <select id="vendorFilter" class="form-select">
-                            <option value="">All Vendors</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">Custodian Unit</label>
-                        <select id="custodianFilter" class="form-select">
-                            <option value="">All Units</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">Description</label>
-                        <input type="text" id="descriptionFilter" class="form-control" placeholder="Filter by description...">
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">Date Range</label>
-                        <div class="d-flex gap-2">
-                            <input type="date" id="startDate" class="form-control" placeholder="Start">
-                            <input type="date" id="endDate" class="form-control" placeholder="End">
+                <!-- Advanced Filters - Collapsible -->
+                <div class="advanced-filters" id="advancedFilters">
+                    <div class="filters-grid">
+                        <!-- Item & Vendor Group -->
+                        <div class="filter-group">
+                            <div class="filter-group-title">
+                                <i class="fas fa-box"></i>
+                                <span>Item & Vendor</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Item</label>
+                                <select id="itemFilter" class="form-select">
+                                    <option value="">All Items</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Vendor</label>
+                                <select id="vendorFilter" class="form-select">
+                                    <option value="">All Vendors</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Custodian Unit</label>
+                                <select id="custodianFilter" class="form-select">
+                                    <option value="">All Units</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Date Range Group -->
+                        <div class="filter-group">
+                            <div class="filter-group-title">
+                                <i class="fas fa-calendar"></i>
+                                <span>Date Range</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">From</label>
+                                <input type="date" id="startDate" class="form-control">
+                            </div>
+                            <div>
+                                <label class="form-label">To</label>
+                                <input type="date" id="endDate" class="form-control">
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-modern w-100" id="clearDates">
+                                    <i class="fas fa-undo-alt"></i> Clear Dates
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Amount Range Group -->
+                        <div class="filter-group">
+                            <div class="filter-group-title">
+                                <i class="fas fa-money-bill"></i>
+                                <span>Amount Range (₦)</span>
+                            </div>
+                            <div class="range-inputs">
+                                <div class="w-50">
+                                    <label class="form-label">Min</label>
+                                    <input type="number" id="minAmount" class="form-control" placeholder="Min" step="0.01">
+                                </div>
+                                <div class="w-50">
+                                    <label class="form-label">Max</label>
+                                    <input type="number" id="maxAmount" class="form-control" placeholder="Max" step="0.01">
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-modern w-100" id="clearAmount">
+                                    <i class="fas fa-undo-alt"></i> Clear Range
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">Amount Range (₦)</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" id="minAmount" class="form-control" placeholder="Min" step="0.01">
-                            <input type="number" id="maxAmount" class="form-control" placeholder="Max" step="0.01">
+
+                    <!-- Description Filter -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="filter-group">
+                                <div class="filter-group-title">
+                                    <i class="fas fa-align-left"></i>
+                                    <span>Description Contains</span>
+                                </div>
+                                <input type="text" id="descriptionFilter" class="form-control" placeholder="Filter by description...">
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button class="btn btn-modern btn-outline-modern w-100" id="resetFilters">
+
+                    <!-- Active Filter Tags -->
+                    <div class="filter-tags" id="filterTags"></div>
+
+                    <!-- Filter Footer Actions -->
+                    <div class="filter-footer">
+                        <button class="btn btn-modern btn-outline-modern" id="applyFilters">
+                            <i class="fas fa-check"></i> Apply Filters
+                        </button>
+                        <button class="btn btn-modern btn-danger-modern" id="resetFilters">
                             <i class="fas fa-undo-alt"></i> Reset All
                         </button>
                     </div>
@@ -704,8 +1044,9 @@
         </div>
     </main>
 
-    <!-- Export Modal -->
+    <!-- Export Modal (unchanged) -->
     <div class="modal fade modal-modern" id="exportModal" tabindex="-1" aria-hidden="true">
+        <!-- ... keep existing export modal content ... -->
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -771,8 +1112,9 @@
         </div>
     </div>
 
-    <!-- Details Modal -->
+    <!-- Details Modal (unchanged) -->
     <div class="modal fade modal-modern" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <!-- ... keep existing details modal content ... -->
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -792,8 +1134,9 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit Modal (unchanged) -->
     <div class="modal fade modal-modern" id="editModal" tabindex="-1" aria-hidden="true">
+        <!-- ... keep existing edit modal content ... -->
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -879,6 +1222,9 @@
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
     <!-- Your existing template scripts -->
     <script src="{{url_for('static',filename='lib/bootstrap/dist/js/bootstrap.min.js')}}"></script>
@@ -890,11 +1236,12 @@
     <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
 
-    <!-- Main JavaScript -->
+    <!-- Main JavaScript - UPDATED WITH NEW FILTER FUNCTIONALITY -->
     <script>
         $(document).ready(function() {
             let maintenanceData = [];
             let filterTimeout;
+            let activeFilterCount = 0;
 
             // Initialize DataTable
             const table = $('#maintenanceTable').DataTable({
@@ -985,6 +1332,22 @@
                 }
             });
 
+            // Hide default DataTable search since we have custom search
+            $('.dataTables_filter').hide();
+
+            // Advanced Filters Toggle
+            $('#toggleAdvancedFilters').on('click', function() {
+                $('#advancedFilters').slideToggle(300);
+                const icon = $('#toggleIcon');
+                if ($('#advancedFilters').hasClass('show')) {
+                    $('#advancedFilters').removeClass('show');
+                    icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                } else {
+                    $('#advancedFilters').addClass('show');
+                    icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                }
+            });
+
             // Load initial data
             loadData();
 
@@ -1004,6 +1367,7 @@
                             updateTable(response.data);
                             updateFilters(response.filters);
                             updateStatistics(response.stats);
+                            updateFilterCount();
                         } else {
                             showToast('Failed to load data: ' + (response.error || 'Unknown error'), 'error');
                         }
@@ -1065,6 +1429,79 @@
                 }
             }
 
+            function updateFilterCount() {
+                activeFilterCount = 0;
+                if ($('#itemFilter').val()) activeFilterCount++;
+                if ($('#vendorFilter').val()) activeFilterCount++;
+                if ($('#custodianFilter').val()) activeFilterCount++;
+                if ($('#descriptionFilter').val()) activeFilterCount++;
+                if ($('#startDate').val() || $('#endDate').val()) activeFilterCount++;
+                if ($('#minAmount').val() || $('#maxAmount').val()) activeFilterCount++;
+                if ($('#globalSearch').val()) activeFilterCount++;
+                
+                const filterText = activeFilterCount === 1 ? 'filter active' : 'filters active';
+                $('#filterCount').text(`${activeFilterCount} ${filterText}`);
+                
+                updateFilterTags();
+            }
+
+            function updateFilterTags() {
+                const tags = [];
+                
+                if ($('#itemFilter').val()) {
+                    const itemText = $('#itemFilter option:selected').text();
+                    tags.push(`<span class="filter-tag">Item: ${itemText} <i class="fas fa-times" onclick="clearFilter('itemFilter')"></i></span>`);
+                }
+                
+                if ($('#vendorFilter').val()) {
+                    const vendorText = $('#vendorFilter option:selected').text();
+                    tags.push(`<span class="filter-tag">Vendor: ${vendorText} <i class="fas fa-times" onclick="clearFilter('vendorFilter')"></i></span>`);
+                }
+                
+                if ($('#custodianFilter').val()) {
+                    const unitText = $('#custodianFilter option:selected').text();
+                    tags.push(`<span class="filter-tag">Unit: ${unitText} <i class="fas fa-times" onclick="clearFilter('custodianFilter')"></i></span>`);
+                }
+                
+                if ($('#descriptionFilter').val()) {
+                    tags.push(`<span class="filter-tag">Desc: ${$('#descriptionFilter').val()} <i class="fas fa-times" onclick="clearFilter('descriptionFilter')"></i></span>`);
+                }
+                
+                if ($('#startDate').val() || $('#endDate').val()) {
+                    const start = $('#startDate').val() || 'any';
+                    const end = $('#endDate').val() || 'any';
+                    tags.push(`<span class="filter-tag">Date: ${start} to ${end} <i class="fas fa-times" onclick="clearDateFilter()"></i></span>`);
+                }
+                
+                if ($('#minAmount').val() || $('#maxAmount').val()) {
+                    const min = $('#minAmount').val() || '0';
+                    const max = $('#maxAmount').val() || '∞';
+                    tags.push(`<span class="filter-tag">Amount: ₦${min} - ₦${max} <i class="fas fa-times" onclick="clearAmountFilter()"></i></span>`);
+                }
+                
+                if ($('#globalSearch').val()) {
+                    tags.push(`<span class="filter-tag">Search: ${$('#globalSearch').val()} <i class="fas fa-times" onclick="clearFilter('globalSearch')"></i></span>`);
+                }
+                
+                $('#filterTags').html(tags.join(''));
+            }
+
+            // Clear filter functions
+            window.clearFilter = function(filterId) {
+                $('#' + filterId).val('');
+                applyFilters();
+            };
+
+            window.clearDateFilter = function() {
+                $('#startDate, #endDate').val('');
+                applyFilters();
+            };
+
+            window.clearAmountFilter = function() {
+                $('#minAmount, #maxAmount').val('');
+                applyFilters();
+            };
+
             function applyFilters() {
                 const itemId = $('#itemFilter').val();
                 const vendor = $('#vendorFilter').val();
@@ -1106,6 +1543,7 @@
                 });
                 
                 updateTable(filteredData);
+                updateFilterCount();
             }
 
             // Event Listeners
@@ -1116,8 +1554,20 @@
             });
             $('#startDate, #endDate, #minAmount, #maxAmount').on('change', applyFilters);
             
+            $('#applyFilters').on('click', applyFilters);
+            
             $('#clearSearch').on('click', function() {
                 $('#globalSearch').val('');
+                applyFilters();
+            });
+            
+            $('#clearDates').on('click', function() {
+                $('#startDate, #endDate').val('');
+                applyFilters();
+            });
+            
+            $('#clearAmount').on('click', function() {
+                $('#minAmount, #maxAmount').val('');
                 applyFilters();
             });
             
@@ -1133,7 +1583,7 @@
                 showToast('Data refreshed successfully!', 'success');
             });
 
-            // View details
+            // View details (same as before)
             $(document).on('click', '.view-details', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
@@ -1194,7 +1644,7 @@
                 }
             });
 
-            // Edit record
+            // Edit record (same as before)
             $(document).on('click', '.edit-record', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1308,9 +1758,10 @@
                         exportToCSV(exportData, selectedColumns);
                         break;
                     case 'excel':
+                        exportToExcel(exportData, selectedColumns);
+                        break;
                     case 'pdf':
-                        showToast(format.toUpperCase() + ' export requires additional libraries. Using CSV instead.', 'info');
-                        exportToCSV(exportData, selectedColumns);
+                        exportToPDF(exportData, selectedColumns);
                         break;
                     default:
                         showToast('Export format not supported!', 'error');
@@ -1403,6 +1854,17 @@
                 document.body.removeChild(link);
                 
                 showToast('CSV file downloaded successfully!', 'success');
+            }
+
+            function exportToExcel(data, columns) {
+                // Simple Excel export (CSV with .xls extension)
+                exportToCSV(data, columns);
+                showToast('Excel export saved as CSV file', 'info');
+            }
+
+            function exportToPDF(data, columns) {
+                showToast('PDF export requires additional setup. Using CSV instead.', 'info');
+                exportToCSV(data, columns);
             }
 
             // Utility functions
