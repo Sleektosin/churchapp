@@ -3,197 +3,309 @@
         --sidebar-width: 260px;
         --sidebar-bg: #ffffff;
         --active-blue: #3b82f6;
+        --active-blue-bg: rgba(59, 130, 246, 0.08);
         --text-muted: #64748b;
         --text-dark: #1e293b;
+        --hover-bg: #f1f5f9;
     }
 
+    /*
+     * Z-INDEX LADDER (do not change these):
+     *   Page content  : 0
+     *   Header        : 1030  (.app-header)
+     *   Overlay       : 1040  (#sidebarOverlay, defined in header.html)
+     *   Sidebar       : 1045  (.left-sidebar)
+     */
     .left-sidebar {
         width: var(--sidebar-width);
         background: var(--sidebar-bg);
         border-right: 1px solid rgba(0,0,0,0.05);
-        height: 100vh;
+        height: calc(100vh - 70px);
         position: fixed;
-        transition: 0.3s ease;
-        z-index: 10;
+        top: 60px;
+        left: 0;
+        z-index: 1045;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        scrollbar-width: thin;
+        scrollbar-color: #e2e8f0 transparent;
     }
 
+    .left-sidebar::-webkit-scrollbar { width: 4px; }
+    .left-sidebar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
     .sidebar-nav {
-        padding: 1.5rem 1rem;
+        padding: 1.25rem 1rem 2rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #sidebarnav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        flex: 1;
     }
 
     .nav-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         color: #94a3b8;
         font-weight: 700;
-        margin: 1.5rem 0 0.75rem 0.75rem;
+        margin: 1.5rem 0 0.5rem 0.75rem;
+        user-select: none;
     }
+
+    .nav-label:first-child { margin-top: 0.25rem; }
 
     .sidebar-link {
         display: flex;
         align-items: center;
-        padding: 0.8rem 1rem;
+        padding: 0.72rem 1rem;
         color: var(--text-muted);
         text-decoration: none;
-        border-radius: 12px;
-        margin-bottom: 0.4rem;
-        transition: all 0.2s ease;
+        border-radius: 10px;
+        margin-bottom: 0.25rem;
+        transition: background 0.18s ease, color 0.18s ease;
         font-weight: 500;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        gap: 11px;
     }
 
-    .sidebar-link i {
-        font-size: 1.1rem;
-        margin-right: 12px;
+    .sidebar-link i.nav-icon {
+        font-size: 1rem;
         width: 20px;
         text-align: center;
+        flex-shrink: 0;
     }
 
-    .sidebar-link:hover {
-        background: #f1f5f9;
+    .sidebar-link .link-label { flex: 1; }
+
+    .sidebar-link .chevron {
+        font-size: 0.65rem;
+        margin-left: auto;
+        transition: transform 0.25s ease;
+        color: #cbd5e1;
+    }
+
+    .sidebar-link[aria-expanded="true"] .chevron {
+        transform: rotate(180deg);
         color: var(--active-blue);
     }
 
+    .sidebar-link:hover {
+        background: var(--hover-bg);
+        color: var(--text-dark);
+        text-decoration: none;
+    }
+
     .sidebar-link.active {
-        background: rgba(59, 130, 246, 0.1);
-        color: var(--active-blue) !important;
+        background: var(--active-blue-bg);
+        color: var(--active-blue);
         font-weight: 600;
     }
 
-    .sidebar-item.parent-active > .sidebar-link {
-        color: var(--text-dark);
+    .sidebar-link.parent-active {
         background: #f8fafc;
+        color: var(--text-dark);
+        font-weight: 600;
     }
 
     .first-level {
-        padding-left: 1.5rem;
         list-style: none;
+        padding: 0 0 0 0.75rem;
+        margin: 0 0 0.25rem;
     }
 
     .first-level .sidebar-link {
-        font-size: 0.85rem;
-        padding: 0.6rem 1rem;
+        font-size: 0.84rem;
+        padding: 0.58rem 0.9rem;
+        border-radius: 8px;
+        gap: 9px;
     }
 
-    .logout-link {
+    .first-level .sidebar-link i.nav-icon { font-size: 0.85rem; }
+
+    .first-level .sidebar-link.active {
+        background: var(--active-blue-bg);
+        color: var(--active-blue);
+        font-weight: 600;
+        position: relative;
+    }
+
+    .first-level .sidebar-link.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 20%;
+        height: 60%;
+        width: 3px;
+        background: var(--active-blue);
+        border-radius: 0 3px 3px 0;
+    }
+
+    .sidebar-footer {
         margin-top: auto;
-        color: #ef4444 !important;
-    }
-    .logout-link:hover {
-        background: #fef2f2 !important;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
     }
 
-    /* Mobile Responsive Styles - Only apply on smaller screens */
-    @media (max-width: 768px) {
+    .logout-link { color: #ef4444 !important; }
+    .logout-link:hover { background: #fef2f2 !important; color: #dc2626 !important; }
+
+    /* Simple collapse animation */
+    .inventory-collapse {
+        transition: all 0.25s ease;
+    }
+    
+    .inventory-collapse.collapsed {
+        display: none;
+    }
+
+    /* ── Mobile: sidebar hidden off-screen by default ── */
+    @media (max-width: 991px) {
         .left-sidebar {
             transform: translateX(-100%);
             box-shadow: none;
-            transition: transform 0.3s ease;
-            z-index: 1040;
         }
 
         .left-sidebar.show {
             transform: translateX(0);
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        }
-
-        /* Add padding to prevent content from being hidden behind header on mobile */
-        .sidebar-nav {
-            padding-top: 70px; /* Account for fixed header */
+            box-shadow: 4px 0 24px rgba(0,0,0,0.12);
         }
     }
-
-    /* Ensure content doesn't get hidden behind header */
-    @media (min-width: 769px) {
-        .sidebar-nav {
-            padding-top: 1rem;
+    
+    /* Desktop: sidebar is always visible */
+    @media (min-width: 992px) {
+        .left-sidebar {
+            transform: translateX(0) !important;
+        }
+        
+        .sidebar-overlay {
+            display: none !important;
         }
     }
 </style>
 
-<aside class="left-sidebar" id="mainSidebar">
-    <div class="scroll-sidebar">
-        <nav class="sidebar-nav">
-            <ul id="sidebarnav" class="p-0" style="list-style: none;">
-                
-                <p class="nav-label">Main Menu</p>
+{% set path = request.path %}
+{% set is_home        = (path == url_for('views.home')) %}
+{% set is_sessions    = path.startswith(url_for('views.sessions')) %}
+{% set is_users       = path.startswith(url_for('views.manageusers')) %}
+{% set is_analytics   = path.startswith(url_for('views.analytics')) %}
+{% set is_items       = path.startswith(url_for('views.items')) %}
+{% set is_maintenance = path.startswith(url_for('views.maintenance_history')) %}
+{% set is_inventories = false %}
+{% set is_inventory_section = is_items or is_maintenance or is_inventories %}
 
-                {% if current_user.has_role('Admin') or current_user.has_role('User') or current_user.has_role('Guest') %}
-                <li class="sidebar-item">
-                    <a class="sidebar-link {% if home %}active{% endif %}" href="{{url_for('views.home')}}">
-                        <i class="fa-solid fa-house"></i>
-                        <span class="hide-menu">Home</span>
-                    </a>
-                </li>
-                {% endif %}
+<aside class="left-sidebar" id="mainSidebar" aria-label="Main navigation">
+    <nav class="sidebar-nav">
+        <ul id="sidebarnav">
 
-                {% if current_user.has_role('Admin') or current_user.has_role('User') %}
-                <li class="sidebar-item">
-                    <a class="sidebar-link {% if sessions or activity or sessiondetails %}active{% endif %}" href="{{url_for('views.sessions')}}">
-                        <i class="fa-solid fa-chart-line"></i>
-                        <span class="hide-menu">Sessions</span>
-                    </a>
-                </li>
-                {% endif %}
+            <p class="nav-label">Main Menu</p>
 
-                {% if current_user.has_role('Admin') %}
-                <p class="nav-label">Administration</p>
-                <li class="sidebar-item">
-                    <a href="{{url_for('views.manageusers')}}" class="sidebar-link {% if createusers or userdetails %}active{% endif %}">
-                        <i class="fa-solid fa-users-gear"></i>
-                        <span class="hide-menu">Manage Users</span>
-                    </a>
-                </li>
-                {% endif %}
+            {% if current_user.has_role('Admin') or current_user.has_role('User') or current_user.has_role('Guest') %}
+            <li class="sidebar-item">
+                <a class="sidebar-link {% if is_home %}active{% endif %}" href="{{ url_for('views.home') }}">
+                    <i class="fa-solid fa-house nav-icon"></i>
+                    <span class="link-label">Home</span>
+                </a>
+            </li>
+            {% endif %}
 
-                {% if current_user.has_role('Admin') or current_user.has_role('User') %}
-                <p class="nav-label">Resources</p>
-                <li class="sidebar-item {% if items or inventories or maintenances or item %}parent-active{% endif %}">
-                    <a class="sidebar-link has-arrow" data-bs-toggle="collapse" href="#inventorySub" role="button">
-                        <i class="fa-solid fa-boxes-stacked"></i>
-                        <span class="hide-menu">Inventory</span>
-                        <i class="fa-solid fa-chevron-down ms-auto fs-xs" style="font-size: 0.7rem;"></i>
-                    </a>
-                    <div class="collapse {% if items or inventories or maintenances or item %}show{% endif %}" id="inventorySub">
-                        <ul class="first-level">
-                            <li class="sidebar-item">
-                                <a href="{{ url_for('views.items') }}" class="sidebar-link {% if items or item %}active{% endif %}">
-                                    <i class="fa-solid fa-box-open"></i> Items
-                                </a>
-                            </li>
-                            <li class="sidebar-item">
-                                <a href="{{ url_for('views.maintenance_history')}}" class="sidebar-link {% if maintenances %}active{% endif %}">
-                                    <i class="fa-solid fa-screwdriver-wrench"></i> Maintenance
-                                </a>
-                            </li>
-                            <li class="sidebar-item">
-                                <a href="#" class="sidebar-link {% if inventories %}active{% endif %}">
-                                    <i class="fa-solid fa-warehouse"></i> Inventories
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+            {% if current_user.has_role('Admin') %}
+            <li class="sidebar-item">
+                <a class="sidebar-link {% if is_sessions %}active{% endif %}" href="{{ url_for('views.sessions') }}">
+                    <i class="fa-solid fa-chart-line nav-icon"></i>
+                    <span class="link-label">Sessions</span>
+                </a>
+            </li>
+            {% endif %}
 
-                <li class="sidebar-item">
-                    <a href="{{url_for('views.analytics')}}" class="sidebar-link {% if analytics %}active{% endif %}">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span class="hide-menu">Analytics</span>
-                    </a>
-                </li>
-                {% endif %}
+            {% if current_user.has_role('Admin') %}
+            <p class="nav-label">Administration</p>
+            <li class="sidebar-item">
+                <a class="sidebar-link {% if is_users %}active{% endif %}" href="{{ url_for('views.manageusers') }}">
+                    <i class="fa-solid fa-users-gear nav-icon"></i>
+                    <span class="link-label">Manage Users</span>
+                </a>
+            </li>
+            {% endif %}
 
-                <div style="margin-top: 3rem; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
-                    <li class="sidebar-item">
-                        <a href="{{url_for('views.logout')}}" class="sidebar-link logout-link">
-                            <i class="fa-solid fa-power-off"></i>
-                            <span class="hide-menu">Logout</span>
-                        </a>
-                    </li>
+            {% if current_user.has_role('Admin') %}
+            <p class="nav-label">Resources</p>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link {% if is_inventory_section %}parent-active{% endif %}"
+                   id="inventoryToggle"
+                   href="javascript:void(0)"
+                   role="button"
+                   aria-expanded="{{ 'true' if is_inventory_section else 'false' }}">
+                    <i class="fa-solid fa-boxes-stacked nav-icon"></i>
+                    <span class="link-label">Inventory</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </a>
+                <div id="inventorySub" class="inventory-collapse {% if not is_inventory_section %}collapsed{% endif %}">
+                    <ul class="first-level">
+                        <li class="sidebar-item">
+                            <a href="{{ url_for('views.items') }}" class="sidebar-link {% if is_items %}active{% endif %}">
+                                <i class="fa-solid fa-box-open nav-icon"></i>
+                                <span class="link-label">Items</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{{ url_for('views.maintenance_history') }}" class="sidebar-link {% if is_maintenance %}active{% endif %}">
+                                <i class="fa-solid fa-screwdriver-wrench nav-icon"></i>
+                                <span class="link-label">Maintenance</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link {% if is_inventories %}active{% endif %}">
+                                <i class="fa-solid fa-warehouse nav-icon"></i>
+                                <span class="link-label">Inventories</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
+            </li>
 
-            </ul>
-        </nav>
-    </div>
+            <li class="sidebar-item">
+                <a href="{{ url_for('views.analytics') }}" class="sidebar-link {% if is_analytics %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie nav-icon"></i>
+                    <span class="link-label">Analytics</span>
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('views.logout') }}" class="sidebar-link logout-link">
+                <i class="fa-solid fa-power-off nav-icon"></i>
+                <span class="link-label">Logout</span>
+            </a>
+        </div>
+    </nav>
 </aside>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('inventoryToggle');
+        const submenu = document.getElementById('inventorySub');
+        
+        if (toggle && submenu) {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Toggle collapsed class
+                submenu.classList.toggle('collapsed');
+                // Update aria-expanded
+                const isExpanded = !submenu.classList.contains('collapsed');
+                toggle.setAttribute('aria-expanded', isExpanded);
+            });
+        }
+    });
+</script>

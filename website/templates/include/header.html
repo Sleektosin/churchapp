@@ -1,84 +1,207 @@
 <style>
-    /* Mobile responsive styles for header */
-    @media (max-width: 768px) {
-        .navbar {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }
-        
-        .navbar-brand span {
-            font-size: 0.9rem !important;
-            max-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        /* Adjust notifications badge position on mobile */
-        .position-absolute.top-1.start-100 {
-            transform: translate(-50%, -50%) !important;
-        }
-        
-        /* Make profile section more compact on mobile */
-        .navbar-nav .dropdown-menu {
-            position: absolute !important;
-            width: 280px;
-            right: 0 !important;
-            left: auto !important;
-        }
-
-        /* Hide the header nav collapse on mobile - we'll use sidebar instead */
-        #headerNav {
-            display: none !important;
-        }
-
-        /* Show sidebar toggle button prominently on mobile */
-        #sidebarCollapse {
-            display: block !important;
-            margin-left: auto;
-            margin-right: 0.5rem;
-        }
+    /*
+     * Z-INDEX LADDER (matches leftnavbar.html — do not change):
+     *   Page content  : 0
+     *   Header        : 1030
+     *   Overlay       : 1040
+     *   Sidebar       : 1045
+     */
+    .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 1px 8px rgba(0,0,0,0.04);
     }
 
-    /* Desktop styles */
-    @media (min-width: 769px) {
-        #sidebarCollapse {
-            display: block;
-        }
-        
-        /* Keep header nav visible on desktop */
-        #headerNav {
-            display: flex !important;
-            flex-basis: auto;
-        }
+    .app-header .navbar {
+        padding: 0.5rem 1.5rem;
+        min-height: 60px;
     }
 
-    /* Additional mobile optimization for very small screens */
-    @media (max-width: 480px) {
-        .navbar-brand span {
-            max-width: 120px;
-            font-size: 0.8rem !important;
-        }
-        
-        .d-none.d-md-block {
-            display: none !important;
-        }
-        
-        .navbar-nav .dropdown-menu {
-            width: 260px;
-        }
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-decoration: none;
     }
 
-    /* Overlay for mobile when sidebar is open */
+    .brand-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #3b82f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .brand-name {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #1e293b;
+        letter-spacing: -0.4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 220px;
+    }
+
+    .header-icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        color: #64748b;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: background 0.18s ease, color 0.18s ease;
+        text-decoration: none;
+        flex-shrink: 0;
+        font-size: 1.05rem;
+    }
+
+    .header-icon-btn:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    /* Hamburger button - hidden on desktop by default */
+    #sidebarToggle {
+        display: none;
+    }
+
+    .header-search {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.35rem 0.75rem;
+        gap: 0.5rem;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        width: 240px;
+    }
+
+    .header-search:focus-within {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .header-search i { color: #94a3b8; font-size: 0.85rem; flex-shrink: 0; }
+
+    .header-search input {
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 0.875rem;
+        color: #334155;
+        width: 100%;
+    }
+
+    .header-search input::placeholder { color: #94a3b8; }
+
+    .notif-wrap { position: relative; }
+
+    .notif-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ef4444;
+        border: 2px solid white;
+        pointer-events: none;
+    }
+
+    .profile-trigger {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.3rem 0.65rem 0.3rem 0.3rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.18s ease;
+        text-decoration: none;
+        border: none;
+        background: transparent;
+        color: inherit;
+    }
+
+    .profile-trigger:hover { background: #f1f5f9; text-decoration: none; }
+
+    .profile-trigger img {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .profile-name {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #1e293b;
+        max-width: 130px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .profile-chevron { font-size: 0.65rem; color: #94a3b8; }
+
+    .header-dropdown {
+        border: none !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+        padding: 0.5rem !important;
+        min-width: 200px;
+    }
+
+    .header-dropdown .dropdown-item {
+        border-radius: 8px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.875rem;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: background 0.15s ease;
+    }
+
+    .header-dropdown .dropdown-item:hover { background: #f1f5f9; color: #1e293b; }
+
+    .header-dropdown .dropdown-item.text-danger:hover {
+        background: #fef2f2;
+        color: #dc2626 !important;
+    }
+
+    .header-dropdown .dropdown-divider { margin: 0.4rem 0; border-color: #f1f5f9; }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-left: auto;
+    }
+
+    /* Overlay — sits between header (1030) and sidebar (1045) */
     .sidebar-overlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1035;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 1040;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
@@ -88,7 +211,7 @@
         opacity: 1;
     }
 
-    /* Fix for Bootstrap dropdown in DataTables */
+    /* DataTables helpers */
     .dataTables_length .form-select-sm,
     .dataTables_length .custom-select-sm {
         width: auto !important;
@@ -96,239 +219,146 @@
         display: inline-block !important;
     }
 
-    .dataTables_length {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-    }
+    .dataTables_length { display: flex; align-items: center; flex-wrap: wrap; }
+    .table-responsive  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Adjust header layout for mobile */
-    @media (max-width: 768px) {
-        .navbar .container-fluid {
+    /* Show hamburger ONLY on mobile/tablet (when sidebar is hidden) */
+    @media (max-width: 991px) {
+        .app-header .navbar { padding: 0.5rem 1rem; }
+        .header-search      { display: none; }
+        .profile-name       { display: none; }
+        .profile-chevron    { display: none; }
+        .brand-name         { max-width: 160px; font-size: 0.9rem; }
+        
+        /* Show hamburger on mobile */
+        #sidebarToggle {
             display: flex;
-            flex-wrap: nowrap;
-            align-items: center;
-            justify-content: space-between;
         }
+    }
 
-        /* Move the sidebar toggle to the right side of header */
-        .navbar-nav.me-auto {
-            margin-left: auto !important;
-            margin-right: 0 !important;
-            flex-direction: row;
-        }
-
-        .navbar-nav.me-auto .nav-item {
-            margin-left: 0;
-        }
-
-        /* Hide the search input completely on mobile */
-        .input-group {
+    /* On desktop, keep hamburger hidden (sidebar is always visible) */
+    @media (min-width: 992px) {
+        #sidebarToggle {
             display: none !important;
         }
+    }
 
-        /* Adjust profile section for mobile */
-        .navbar-nav.align-items-center {
-            flex-direction: row;
-            margin-left: 0;
-        }
-
-        .navbar-nav.align-items-center .nav-item.dropdown {
-            margin-right: 0.25rem;
-        }
-
-        /* Make profile image smaller on mobile */
-        .rounded-circle {
-            width: 30px !important;
-            height: 30px !important;
-        }
-
-        /* Hide username text on mobile to save space */
-        .d-none.d-lg-block {
-            display: none !important;
-        }
-
-        /* Adjust profile dropdown button padding */
-        .nav-link.d-flex {
-            padding: 0.25rem 0.5rem !important;
-        }
+    @media (max-width: 400px) {
+        .brand-name { max-width: 115px; font-size: 0.82rem; }
     }
 </style>
 
-<header class="sticky-top shadow-sm" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05);">
-    <nav class="navbar navbar-expand-lg navbar-light px-4 py-2">
+<header class="app-header" id="appHeader">
+    <nav class="navbar navbar-light">
         <div class="container-fluid px-0">
-            <a class="navbar-brand d-flex align-items-center" href="/">
-                <div class="bg-primary d-flex align-items-center justify-content-center rounded-3 me-2" style="width: 35px; height: 35px;">
+
+            <a class="navbar-brand" href="{{ url_for('views.home') }}">
+                <div class="brand-logo">
                     <img src="{{ url_for('static', filename='uploads/128px-Rccg_logo.png') }}" alt="logo" width="22" />
                 </div>
-                <span class="fw-bold tracking-tight text-slate-800" style="font-size: 1.1rem; letter-spacing: -0.5px;">RCCG PowerHouse Parish</span>
+                <span class="brand-name">RCCG PowerHouse Parish</span>
             </a>
 
-            <!-- Mobile: Only show sidebar toggle and profile -->
-            <div class="d-flex align-items-center d-lg-none">
-                <!-- Sidebar toggle button (visible on mobile) -->
-                <a class="nav-link text-slate-500 hover:text-blue-600 px-2" href="javascript:void(0)" id="sidebarCollapse">
-                    <i class="fa-solid fa-bars-staggered fs-5"></i>
+            <div class="header-right">
+                <a class="header-icon-btn" href="javascript:void(0)" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="fa-solid fa-bars-staggered"></i>
                 </a>
-                
-                <!-- Notifications (mobile) -->
-                <div class="dropdown me-1">
-                    <a class="nav-link position-relative text-slate-600" href="#" id="notifDropdownMobile" data-bs-toggle="dropdown">
-                        <i class="fa-regular fa-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
-                            3
-                        </span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4">
-                        <li><h6 class="dropdown-header">Notifications</h6></li>
-                        <li><a class="dropdown-item rounded-3 py-2" href="#"><small>Event starting today</small></a></li>
-                        <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><small>View all</small></a></li>
-                    </ul>
-                </div>
 
-                <!-- Profile (mobile) -->
                 <div class="dropdown">
-                    <a class="nav-link d-flex align-items-center p-0" href="#" id="profileDropdownMobile" data-bs-toggle="dropdown">
-                        <img src="{{ url_for('static', filename='uploads/users/1.jpg') }}" class="rounded-circle border border-2 border-white shadow-sm" width="32" height="32" alt="user">
+                    <a class="profile-trigger" href="#" data-bs-toggle="dropdown" aria-label="User menu">
+                        <img src="{{ url_for('static', filename='uploads/users/1.jpg') }}" alt="user avatar">
+                        <span class="profile-name">
+                            {{ current_user.username if current_user.is_authenticated else 'Guest User' }}
+                        </span>
+                        <i class="fa-solid fa-chevron-down profile-chevron"></i>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4 mt-2">
+                    <ul class="dropdown-menu dropdown-menu-end header-dropdown">
                         <li>
-                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="{{ url_for('views.userdetails', id=current_user.id) if current_user.is_authenticated else '#' }}">
-                                <i class="fa-regular fa-circle-user me-2 text-muted"></i> My Profile
+                            <a class="dropdown-item"
+                               href="{{ url_for('views.userdetails', id=current_user.id) if current_user.is_authenticated else '#' }}">
+                                <i class="fa-regular fa-circle-user text-muted"></i> My Profile
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="#">
-                                <i class="fa-solid fa-gear me-2 text-muted"></i> Settings
+                        <!-- <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fa-solid fa-gear text-muted"></i> Settings
                             </a>
-                        </li>
-                        <li><hr class="dropdown-divider opacity-50"></li>
+                        </li> -->
+                        <li><hr class="dropdown-divider"></li>
                         <li>
-                            <a class="dropdown-item rounded-3 d-flex align-items-center py-2 text-danger" href="{{ url_for('views.logout') }}">
-                                <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Logout
+                            <a class="dropdown-item text-danger" href="{{ url_for('views.logout') }}">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
                             </a>
                         </li>
                     </ul>
                 </div>
-            </div>
-
-            <!-- Desktop: Full header navigation -->
-            <div class="collapse navbar-collapse d-none d-lg-flex" id="headerNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link text-slate-500 hover:text-blue-600 px-3" href="javascript:void(0)" id="sidebarCollapseDesktop">
-                            <i class="fa-solid fa-bars-staggered"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item ms-2">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
-                            <input type="text" class="form-control border-0 bg-light" placeholder="Global search..." style="width: 250px;">
-                        </div>
-                    </li>
-                </ul>
-
-                <ul class="navbar-nav align-items-center">
-                    <li class="nav-item dropdown me-2">
-                        <a class="nav-link position-relative text-slate-600" href="#" id="notifDropdown" data-bs-toggle="dropdown">
-                            <i class="fa-regular fa-bell fs-5"></i>
-                            <span class="position-absolute top-1 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
-                                3
-                            </span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4">
-                            <li><h6 class="dropdown-header">Notifications</h6></li>
-                            <li><a class="dropdown-item rounded-3 py-2" href="#"><small>Event starting today</small></a></li>
-                            <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><small>View all</small></a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link d-flex align-items-center gap-2 p-1 pe-3 rounded-pill hover:bg-light" href="#" id="profileDropdown" data-bs-toggle="dropdown">
-                            <img src="{{ url_for('static', filename='uploads/users/1.jpg') }}" class="rounded-circle border border-2 border-white shadow-sm" width="35" height="35" alt="user">
-                            <div>
-                                <p class="mb-0 fw-semibold text-slate-800" style="font-size: 0.85rem;">{{ current_user.username if current_user.is_authenticated else 'Guest User' }}</p>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 rounded-4 mt-2">
-                            <li>
-                                <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="{{ url_for('views.userdetails', id=current_user.id) if current_user.is_authenticated else '#' }}">
-                                    <i class="fa-regular fa-circle-user me-2 text-muted"></i> My Profile
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item rounded-3 d-flex align-items-center py-2" href="#">
-                                    <i class="fa-solid fa-gear me-2 text-muted"></i> Settings
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider opacity-50"></li>
-                            <li>
-                                <a class="dropdown-item rounded-3 d-flex align-items-center py-2 text-danger" href="{{ url_for('views.logout') }}">
-                                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Logout
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
             </div>
         </div>
     </nav>
 </header>
 
-<!-- Add overlay for mobile sidebar -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script>
-// Mobile sidebar toggle functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    const sidebarCollapseDesktop = document.getElementById('sidebarCollapseDesktop');
-    const sidebar = document.getElementById('mainSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    
-    function toggleSidebar() {
-        sidebar.classList.toggle('show');
-        overlay.classList.toggle('show');
-        
-        // Prevent body scrolling when sidebar is open on mobile
-        if (sidebar.classList.contains('show')) {
-            document.body.style.overflow = 'hidden';
-        } else {
+document.addEventListener('DOMContentLoaded', function () {
+    var toggle  = document.getElementById('sidebarToggle');
+    var sidebar = document.getElementById('mainSidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+
+    if (!toggle || !sidebar || !overlay) return;
+
+    function openSidebar() {
+        sidebar.classList.add('show');
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('show');
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    toggle.addEventListener('click', function () {
+        sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+    });
+
+    overlay.addEventListener('click', closeSidebar);
+
+    function handleDesktopView() {
+        if (window.innerWidth > 991) {
+            // On desktop, ensure sidebar is closed (CSS will show it via transform)
+            if (sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+            }
+            if (overlay.classList.contains('show')) {
+                overlay.classList.remove('show');
+            }
             document.body.style.overflow = '';
         }
     }
     
-    if (sidebarCollapse) {
-        sidebarCollapse.addEventListener('click', toggleSidebar);
-    }
-    
-    if (sidebarCollapseDesktop) {
-        sidebarCollapseDesktop.addEventListener('click', toggleSidebar);
-    }
-    
-    if (overlay) {
-        // Close sidebar when clicking overlay
-        overlay.addEventListener('click', toggleSidebar);
-    }
-    
-    // Close sidebar on window resize if above mobile breakpoint
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768 && sidebar && overlay) {
-            sidebar.classList.remove('show');
-            overlay.classList.remove('show');
-            document.body.style.overflow = '';
+    // Handle resize events
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 991) {
+            closeSidebar();
         }
+        handleDesktopView();
     });
     
+    // Initial check
+    handleDesktopView();
+
+    if (sidebar) {
+        sidebar.querySelectorAll('a.sidebar-link:not([data-bs-toggle])').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 991) closeSidebar();
+            });
+        });
+    }
+
     {% if current_user.is_authenticated %}
-    // Your existing silent logout code
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
         navigator.sendBeacon("{{ url_for('views.silent_logout') }}");
     });
     {% endif %}

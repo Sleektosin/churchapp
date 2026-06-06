@@ -48,36 +48,32 @@
         }
 
         /* Main Content Area - Centered */
-        .content-area {
+        .page-wrapper {
             margin-left: 260px;
             min-height: 100vh;
             background-color: #f1f5f9;
             display: flex;
             justify-content: center;
+            transition: margin-left 0.3s ease;
         }
 
-        /* Container for content - centered with max width */
         .content-container {
             width: 100%;
-            max-width: 1600px; /* Increased max-width for larger screens */
-            padding: 30px 30px 30px 30px;
-            margin: 0 auto; /* Center the container */
+            max-width: 1600px;
+            padding: 30px;
+            margin: 0 auto;
         }
 
         @media (max-width: 1800px) {
-            .content-container {
-                max-width: 95%; /* Use percentage on very large screens */
-            }
+            .content-container { max-width: 95%; }
         }
 
         @media (max-width: 1400px) {
-            .content-container {
-                max-width: 98%;
-            }
+            .content-container { max-width: 98%; }
         }
 
-        @media (max-width: 991.98px) {
-            .content-area {
+        @media (max-width: 991px) {
+            .page-wrapper {
                 margin-left: 0;
             }
             .content-container {
@@ -177,20 +173,16 @@
             box-shadow: 0 15px 25px -8px var(--primary);
         }
 
-        .btn-success-modern {
-            background: linear-gradient(135deg, var(--success), #0d9488);
-            color: white;
-            box-shadow: 0 10px 20px -8px var(--success);
-        }
-
-        .btn-success-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px -8px var(--success);
-        }
-
         /* Table Styling */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
         .table-modern {
             width: 100% !important;
+            min-width: 800px;
             border-collapse: separate;
             border-spacing: 0 8px;
             margin: 0;
@@ -244,11 +236,14 @@
         .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
         .badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--secondary); }
 
-        /* Action Buttons */
+        /* Action Buttons - FIXED for mobile */
         .action-buttons {
             display: flex;
             gap: 6px;
+            justify-content: flex-start;
+            align-items: center;
             flex-wrap: nowrap;
+            min-width: fit-content;
         }
 
         .action-btn {
@@ -265,49 +260,12 @@
             color: var(--secondary);
             border: 1px solid #e2e8f0;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.2);
-        }
-
-
-        /* New action button style */
-
-        /* Action Buttons - Force single row */
-        .action-buttons {
-            display: flex;
-            gap: 4px;
-            flex-wrap: nowrap; /* Prevent wrapping */
-            justify-content: flex-start;
-            min-width: 160px; /* Ensure enough space for all buttons */
-        }
-
-        .action-btn {
-            width: 32px; /* Slightly smaller buttons */
-            height: 32px;
-            border-radius: 8px;
-            flex-shrink: 0; /* Prevent buttons from shrinking */
-        }
-
-        /* Ensure the table column doesn't wrap */
-        .table-modern td.text-nowrap {
-            white-space: nowrap !important;
-        }
-
-        /* For very small screens, show a dropdown instead */
-        @media (max-width: 768px) {
-            .action-buttons {
-                gap: 2px;
-                min-width: 140px;
-            }
-            
-            .action-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 0.8rem;
-            }
         }
 
         .action-btn-warning:hover { background: var(--warning); color: white; border-color: var(--warning); }
@@ -359,6 +317,7 @@
             color: var(--dark);
             margin-bottom: 0.5rem;
             font-size: 0.95rem;
+            display: block;
         }
 
         .form-control-modern, .form-select-modern {
@@ -375,28 +334,6 @@
             border-color: var(--primary);
             outline: none;
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-        }
-
-        /* Custom Checkbox */
-        .checkbox-modern {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            cursor: pointer;
-        }
-
-        .checkbox-modern input[type="checkbox"] {
-            width: 1.3rem;
-            height: 1.3rem;
-            border-radius: 6px;
-            border: 2px solid #e2e8f0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .checkbox-modern input[type="checkbox"]:checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
         }
 
         /* DataTables Customization */
@@ -443,6 +380,8 @@
             align-items: center;
             margin-bottom: 2rem;
             width: 100%;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .page-header h1 {
@@ -452,37 +391,73 @@
             margin: 0;
         }
 
-        .page-header .breadcrumb {
-            margin: 0;
-            padding: 0;
-            background: transparent;
-        }
-
-        .page-header .breadcrumb-item a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .page-header .breadcrumb-item.active {
-            color: var(--secondary);
-        }
-
-        /* Responsive adjustments */
         @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            
             .action-buttons {
-                flex-direction: row;
+                flex-direction: row !important;
                 justify-content: center;
+                flex-wrap: nowrap;
+                gap: 4px;
+            }
+            
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 0.8rem;
+                flex-shrink: 0;
+            }
+            
+            .table-modern {
+                min-width: 600px;
             }
             
             .table-modern td {
-                white-space: normal;
+                white-space: normal !important;
+                word-break: break-word;
+                min-width: 100px;
+            }
+            
+            .modern-card .p-4 {
+                padding: 1rem !important;
             }
             
             .page-header {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+                align-items: stretch !important;
+            }
+            
+            .page-header .btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                width: 100%;
+                text-align: left !important;
+            }
+            
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            
+            .modal-modern .modal-body {
+                padding: 1rem;
+            }
+            
+            .modal-modern .modal-footer {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .modal-modern .modal-footer .btn {
+                width: 100%;
+                margin: 0;
             }
         }
     </style>
@@ -493,12 +468,12 @@
     {% include "include/leftnavbar.html" %}
 
     <!-- Main Content Area - Centered -->
-    <main class="content-area">
+    <main class="page-wrapper">
         <div class="content-container">
             <!-- Page Header -->
             <div class="page-header">
                 <div>
-                    <h1>Activity Management</h1>
+                    <h1><i class="fas fa-calendar-alt me-3" style="color: var(--primary);"></i>Activity Management</h1>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
@@ -512,14 +487,6 @@
             </div>
 
             <!-- Flash Messages -->
-            <div class="alert-modern alert-success-modern" style="display: none;" id="flash-message-container">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle me-3 fa-lg"></i>
-                    <div id="message-box" class="flex-grow-1"></div>
-                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.style.display='none'"></button>
-                </div>
-            </div>
-
             {% with Messages = get_flashed_messages() %}
                 {% if Messages %}
                     {% for message in Messages %}
@@ -764,18 +731,17 @@
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
 
-    <!-- Your existing JavaScript (preserved exactly as is) -->
     <script>
         $(document).ready(function() {
-    // Initialize DataTable with responsive extension
-            $('#activityTable').DataTable({
+            // Initialize DataTable with responsive extension - SIMPLIFIED & FIXED
+            var activityTable = $('#activityTable').DataTable({
                 processing: true,
                 responsive: {
                     details: {
                         display: $.fn.dataTable.Responsive.display.modal({
                             header: function(row) {
                                 var data = row.data();
-                                return 'Details for ' + data.name;
+                                return 'Details for ' + (data.name || 'Session');
                             }
                         }),
                         renderer: $.fn.dataTable.Responsive.renderer.tableAll({
@@ -785,10 +751,7 @@
                 },
                 pageLength: 10,
                 paging: true,
-                lengthMenu: [
-                    [5, 10, 15, 20, 25, 50, 60, -1],
-                    [5, 10, 15, 20, 25, 50, 60, "All"]
-                ],
+                lengthMenu: [[5, 10, 15, 20, 25, 50, 60, -1], [5, 10, 15, 20, 25, 50, 60, "All"]],
                 serverSide: true,
                 order: [[3, 'desc']],
                 sort: true,
@@ -796,12 +759,12 @@
                 ajax: {
                     url: "/get_sessions_data",
                     type: "POST",
-                    "beforeSend": function(xhr) {
+                    beforeSend: function(xhr) {
                         xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
                     }
                 },
                 columns: [
-                    { data: "id", visible: false },
+                    { data: "id" },
                     { data: "name" },
                     { 
                         data: "description",
@@ -812,12 +775,7 @@
                             return data;
                         }
                     },
-                    { 
-                        data: "date",
-                        render: function(data, type, row) {
-                            return data ? data : 'N/A';
-                        }
-                    },
+                    { data: "date" },
                     { 
                         data: null,
                         render: function(data, type, row) {
@@ -826,12 +784,7 @@
                             return `${start} - ${end}`;
                         }
                     },
-                    { 
-                        data: "location",
-                        render: function(data, type, row) {
-                            return data ? data : 'N/A';
-                        }
-                    },
+                    { data: "location" },
                     { 
                         data: "status",
                         render: function(data, type, row) {
@@ -846,12 +799,7 @@
                             return `<span class="${statusClass}">${statusText}</span>`;
                         }
                     },
-                    { 
-                        data: "attendance_count",
-                        render: function(data, type, row) {
-                            return data !== undefined ? data : '0';
-                        }
-                    },
+                    { data: "attendance_count" },
                     { 
                         data: "capacity",
                         render: function(data, type, row) {
@@ -859,97 +807,59 @@
                         }
                     },
                     {
-                        data: "actions",
-                        render: function(data, type, row) {
-                            const capacityParts = row.capacity ? row.capacity.split('/') : ['0', '0'];
-                            const maxCapacity = capacityParts.length > 1 ? capacityParts[1] : capacityParts[0];
-
+                        data: null,
+                        render: function (data, type, row) {
                             return `
-                                <div class="action-buttons" style="display: flex; gap: 4px; flex-wrap: nowrap; justify-content: flex-start;">
-                                    <button id="edit-button-${row.id}" 
-                                        class="action-btn action-btn-warning edit-button" 
-                                        data-id="${row.id}"
-                                        data-name="${row.name || ''}"
-                                        data-description="${row.description || ''}"
-                                        data-date="${row.date || ''}"
-                                        data-start-time="${row.start_time || ''}"
-                                        data-end-time="${row.end_time || ''}"
-                                        data-location="${row.location || ''}"
-                                        data-status="${row.status || ''}"
-                                        data-max-capacity="${maxCapacity}"
-                                        data-attendance-count="${row.attendance_count || 0}"
-                                        title="Edit Session">
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-warning edit-button" 
+                                        onclick="editRow(
+                                            '${data.id}', 
+                                            '${data.name ? data.name.replace(/'/g, "\\'") : ''}', 
+                                            '${data.description ? data.description.replace(/'/g, "\\'") : ''}', 
+                                            '${data.date || ''}', 
+                                            '${data.start_time || ''}', 
+                                            '${data.end_time || ''}', 
+                                            '${data.location ? data.location.replace(/'/g, "\\'") : ''}', 
+                                            '${data.status || ''}', 
+                                            '${data.capacity || ''}'
+                                        )">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="action-btn action-btn-info view-attendees-btn" 
-                                        data-id="${row.id}"
-                                        title="View Attendees">
+                                    <button class="action-btn action-btn-info" onclick="viewAttendees(${data.id})">
                                         <i class="fas fa-users"></i>
                                     </button>
-                                    <button class="action-btn action-btn-primary view-details-btn" 
-                                        data-id="${row.id}"
-                                        title="View Details">
+                                    <button class="action-btn action-btn-primary" onclick="viewDetails(${data.id})">
                                         <i class="fas fa-clock"></i>
                                     </button>
-                                    <button class="action-btn action-btn-danger delete-button" 
-                                        data-id="${row.id}"
-                                        title="Delete Session">
+                                    <button class="action-btn action-btn-danger delete-button" onclick="deleteRow(${data.id})">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             `;
                         },
                         orderable: false,
-                        searchable: false,
-                        className: 'text-nowrap' // Prevent wrapping
+                        searchable: false
                     }
                 ],
                 columnDefs: [
                     { responsivePriority: 1, targets: 1 }, // Session Name
-                    { responsivePriority: 2, targets: -1 }, // Actions
-                    { responsivePriority: 3, targets: 3 }, // Date
-                    { responsivePriority: 4, targets: 6 }, // Status
-                    { responsivePriority: 5, targets: 7 }, // Attendance
-                    { responsivePriority: 6, targets: 8 }, // Capacity
-                    { responsivePriority: 7, targets: 2 }, // Description
-                    { responsivePriority: 8, targets: 4 }, // Time
-                    { responsivePriority: 9, targets: 5 }, // Location
-                    { width: '120px', targets: -1 } // Fixed width for actions column
+                    { responsivePriority: 2, targets: -1 }, // Action column
+                    { responsivePriority: 3, targets: 3 },  // Date
+                    { responsivePriority: 4, targets: 6 },  // Status
+                    { responsivePriority: 5, targets: 7 },  // Attendance
+                    { responsivePriority: 6, targets: 8 },  // Capacity
+                    { responsivePriority: 7, targets: 2 },  // Description
+                    { responsivePriority: 8, targets: 4 },  // Time
+                    { responsivePriority: 9, targets: 5 }   // Location
                 ]
             });
-            
-            // Rest of your code remains the same...
+
             fetchStatusOptions();
 
-            // Your existing event handlers...
-            $('#activityTable').on('click', '.edit-button', function() {
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                const description = $(this).data('description');
-                const date = $(this).data('date');
-                const startTime = $(this).data('start-time');
-                const endTime = $(this).data('end-time');
-                const location = $(this).data('location');
-                const status = $(this).data('status');
-                const maxCapacity = $(this).data('max-capacity'); 
-                const attendanceCount = $(this).data('attendance-count');
-
-                editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity);
-            });
-
-            $('#activityTable').on('click', '.view-attendees-btn', function() {
-                const sessionId = $(this).data('id');
-                window.location.href = `/activity/${sessionId}`;
-            });
-
-            $('#activityTable').on('click', '.view-details-btn', function() {
-                const sessionId = $(this).data('id');
-                window.location.href = `/sessiondetails/${sessionId}`;
-            });
-
-            $('#activityTable').on('click', '.delete-button', function() {
-                const sessionId = $(this).data('id');
-                deleteRow(sessionId);
+            // Trigger responsive recalculation on window resize for mobile
+            $(window).on('resize', function() {
+                activityTable.responsive.recalc();
+                activityTable.columns.adjust();
             });
         });
 
@@ -960,7 +870,8 @@
                 fetch(url, {
                     method: "POST",
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
                     }
                 }).then(response => response.json())
                 .then(data => {
@@ -977,8 +888,7 @@
             }
         }
 
-        function editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity) 
-        {
+        function editRow(id, name, description, date, startTime, endTime, location, status, maxCapacity) {
             $('#editactivitySessionId').val(id);
             $('#editactivityName').val(name);
             $('#editactivityDescription').val(description);
@@ -991,6 +901,14 @@
             fetchStatusOptionsForEdit(id);
             
             $('#editActivityModal').modal('show');
+        }
+
+        function viewAttendees(sessionId) {
+            window.location.href = `/activity/${sessionId}`;
+        }
+
+        function viewDetails(sessionId) {
+            window.location.href = `/sessiondetails/${sessionId}`;
         }
 
         function submitEditSessionForm() {
@@ -1015,7 +933,7 @@
                 },
                 success: function(response) {
                     $('#editActivityModal').modal('hide');
-                    $('#activityTable').DataTable().ajax.reload(null, false);
+                    $('#activityTable').DataTable().ajax.reload();
                 },
                 error: function(error) {
                     console.error('Error:', error);
