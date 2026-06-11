@@ -357,10 +357,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    {% if current_user.is_authenticated %}
-    window.addEventListener('beforeunload', function () {
-        navigator.sendBeacon("{{ url_for('views.silent_logout') }}");
-    });
-    {% endif %}
 });
 </script>

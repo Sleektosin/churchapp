@@ -62,10 +62,21 @@ import uuid
 from flask import session as flask_session
 from flask_wtf.csrf import CSRFProtect
 from collections import defaultdict
+from functools import wraps
 
 
 
 views = Blueprint('views', __name__)
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(*args, **kwargs):
+        if not current_user.has_role('Admin'):
+            abort(403)
+        return view_func(*args, **kwargs)
+    return wrapped_view
 
 
 ######################################################
@@ -370,8 +381,7 @@ def addUsersToSession_handler(id):
 
 # adding maintenance to product
 @views.route('/addMaintenanceToProduct/<id>', methods=['POST'])  
-@csrf.exempt
-@login_required
+@admin_required
 def addMaintenanceToProduct(id):
     # Fetch the selected product details
     product = db.session.query(
@@ -430,7 +440,7 @@ def logging_handler():
     if user:
         flash('Logged in successfully!', category='success')
         login_user(user, remember=True)
-        return redirect(url_for('views.session'))
+        return redirect(url_for('views.sessions'))
     else:
         # Show error message on failed login
         return render_template('login.html', error='Invalid QR code. Please try again.')
@@ -630,7 +640,7 @@ def datatable():
 
 # Route to delete user
 @views.route('/userdelete/<id>/', methods=['POST'])
-@csrf.exempt
+@admin_required
 def userdelete(id):
     my_data = User.query.get(id)
     if my_data:
@@ -643,7 +653,7 @@ def userdelete(id):
 
 # Route to delete session
 @views.route('/sessiondelete/<id>/', methods=['POST'])
-@csrf.exempt
+@admin_required
 def sessiondelete(id):
     my_data = Session.query.get(id)
     if my_data:
@@ -658,7 +668,7 @@ def sessiondelete(id):
 
 # Route to delete session
 @views.route('/itemdelete/<id>/', methods=['POST'])
-@csrf.exempt
+@admin_required
 def itemdelete(id):
     my_data = Item.query.get(id)
     if my_data:
@@ -672,8 +682,9 @@ def itemdelete(id):
 
 
 # Route to delete session
-@views.route('/maintenancdelete/<id>/', methods=['GET', 'POST'])
-@csrf.exempt
+@views.route('/maintenancdelete/<id>/', methods=['POST'])
+@views.route('/maintenance/delete/<id>/', methods=['POST'])
+@admin_required
 def maintenancdelete(id):
     my_data = Maintenance.query.get(id)
     if my_data:
@@ -819,7 +830,7 @@ def get_session_status_options():
 
 
 @views.route('/get_roles', methods=['GET'])
-@csrf.exempt
+@admin_required
 def get_roles():
     user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
 
@@ -844,7 +855,7 @@ def get_roles():
 
 
 @views.route('/get_roless', methods=['GET'])
-@csrf.exempt
+@admin_required
 def get_roless():
     user_id = request.args.get('user_id')  # Get user_id from the query parameters if provided
 
@@ -870,7 +881,7 @@ def get_roless():
 from datetime import datetime  # Import datetime module
 
 @views.route('/update_user_data', methods=['POST'])
-@csrf.exempt
+@admin_required
 def update_user_data():
     try:
         # Get form data from the AJAX request
@@ -929,8 +940,7 @@ def update_user_data():
 
 
 @views.route('/addmaintenance', methods=['POST'])
-@csrf.exempt
-@login_required
+@admin_required
 def addmaintenance():
     print(request.form) 
     # Get the form data
@@ -968,46 +978,52 @@ def addmaintenance():
 
 
 @views.route('/update_maintenance_data', methods=['POST'])
-@csrf.exempt
+@views.route('/api/maintenance/update', methods=['POST'])
+@admin_required
 def update_maintenance_data():
     try:
-        # Get form data from the AJAX request
-        editmaintenanceid = request.form.get('maintenance_id')
-        editmaintenancedescripton = request.form.get('maintenance_description')
-        editmaintenancevendor = request.form.get('maintenance_vendor')
-        editmaintenancedate = request.form.get('maintenance_date')
-        editmaintenanceamount = request.form.get('maintenance_amount')
+        maintenance_id = request.form.get('maintenance_id') or request.form.get('record_id')
+        maintenance_description = request.form.get('maintenance_description')
+        maintenance_vendor = request.form.get('maintenance_vendor')
+        maintenance_date = request.form.get('maintenance_date') or request.form.get('date')
+        maintenance_amount = request.form.get('maintenance_amount') or request.form.get('amount')
+        item_id = request.form.get('item_id')
           
-        # Convert the date_of_birth from string to Python date object
-        if editmaintenancedate:
+        if maintenance_date:
             try:
-                # Adjust format string according to the date format received, e.g., "%Y-%m-%d" for "2024-09-12"
-                editmaintenancedate = datetime.strptime(editmaintenancedate, "%Y-%m-%d").date()
+                maintenance_date = datetime.strptime(maintenance_date, "%Y-%m-%d").date()
             except ValueError:
-                return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+                return jsonify({'success': False, 'status': 'error', 'message': 'Invalid date format'}), 400
 
-        # Find the user by ID
-        maintenance = Maintenance.query.get(editmaintenanceid)
+        maintenance = Maintenance.query.get(maintenance_id)
 
         if maintenance:
-            # Update the user's details
-            maintenance.maintenance_description = editmaintenancedescripton
-            maintenance.maintenance_vendor = editmaintenancevendor
-            maintenance.date = editmaintenancedate
-            maintenance.amount = editmaintenanceamount
-            # Commit the changes to the database
+            if item_id:
+                item = Item.query.get(item_id)
+                if not item:
+                    return jsonify({'success': False, 'status': 'error', 'message': 'Item not found'}), 404
+                maintenance.item_id = item.id
+
+            maintenance.maintenance_description = maintenance_description
+            maintenance.maintenance_vendor = maintenance_vendor
+            maintenance.date = maintenance_date
+            maintenance.amount = maintenance_amount
             db.session.commit()
-            return jsonify({'status': 'success', 'message': 'Maintenance data updated successfully'})
+            return jsonify({
+                'success': True,
+                'status': 'success',
+                'message': 'Maintenance data updated successfully'
+            })
         else:
-            return jsonify({'status': 'error', 'message': 'Maintenance not found'}), 404
+            return jsonify({'success': False, 'status': 'error', 'message': 'Maintenance not found'}), 404
 
     except Exception as e:
-        db.session.rollback()  # Rollback in case of an error
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        db.session.rollback()
+        return jsonify({'success': False, 'status': 'error', 'message': str(e)}), 500
 
 
 @views.route('/update_session_data', methods=['POST'])
-@csrf.exempt
+@admin_required
 def update_session_data():
     print("Received form data:", request.form)  # Debug what's actually being received
     
@@ -1085,7 +1101,7 @@ def update_session_data():
 
 
 @views.route('/update_item_data', methods=['POST'])
-@csrf.exempt
+@admin_required
 def update_item_data():
     try:
         # Get form data from the AJAX request
@@ -1135,6 +1151,7 @@ def update_item_data():
 
 
 @views.route('/get_users_data', methods=['POST','GET'])
+@admin_required
 def get_users_data():
     # Define parameters for server-side processing
     draw = request.form.get('draw')
@@ -1327,7 +1344,7 @@ def download_json(data):
 
 
 @views.route('/get_items_data', methods=['POST','GET'])
-@csrf.exempt
+@admin_required
 def get_items_data():
     # Define parameters for server-side processing
     draw = request.form.get('draw')
@@ -1405,6 +1422,7 @@ def get_items_data():
 
 
 @views.route('/get_sessions_data', methods=['POST','GET'])
+@admin_required
 def get_sessions_data():
     # Define parameters for server-side processing
     draw = request.form.get('draw')
@@ -1650,8 +1668,7 @@ def get_sessions_summary_data():
 
 
 @views.route('/addsession', methods=['POST'])
-@csrf.exempt
-@login_required
+@admin_required
 def addsession():
     if request.method == 'POST':
         try:
@@ -1880,8 +1897,7 @@ def generate_qr(qr_code):
 
 
 @views.route('/additem', methods=['POST'])
-@csrf.exempt
-@login_required
+@admin_required
 def additem():
     if request.method == 'POST':
         name = request.form.get("addItemName")
@@ -1912,12 +1928,11 @@ def adduserstosession():
         db.session.add(new_activity)
         db.session.commit()
         flash("User Added Successfully")
-        return redirect(url_for('views.session'))
+        return redirect(url_for('views.sessions'))
 
 
 @views.route('/insert', methods=['POST'])
-@csrf.exempt
-@login_required
+@admin_required
 def insert():
     if request.method == 'POST':
         username = request.form.get("username")
@@ -2270,7 +2285,7 @@ def userdetails(id):
     user = User.query.get(id)
     if not user:
         flash("User not found")
-        return redirect(url_for('home'))
+        return redirect(url_for('views.home'))
     
     # Get attendance statistics
     attendance_stats = get_user_attendance_stats(id)
@@ -2442,7 +2457,7 @@ def scan_session(qr_code):
         if not current_user.is_authenticated:
             flask_session['next'] = url_for('views.user_checkin')
             flash('Please login to complete check-in', 'info')
-            return redirect(url_for('login'))  # Adjust to your login route name
+            return redirect(url_for('views.login'))
             
         return redirect(url_for('views.user_checkin'))
         
@@ -2779,7 +2794,7 @@ def generate_code():
 @views.route('/prevalidate', methods=['GET', 'POST'])
 def prevalidate():
     if 'pending_user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('views.login'))
     if request.method == 'POST':
         code = request.form['code']
         if code == session.get('validation_code'):

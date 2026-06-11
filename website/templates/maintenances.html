@@ -1259,13 +1259,13 @@
                 </div>
                 <div class="modal-body">
                     <form id="editMaintenanceForm">
-                        <input type="hidden" id="editRecordId" name="record_id">
+                        <input type="hidden" id="editRecordId" name="maintenance_id">
                         
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="form-label">Maintenance Date *</label>
-                                    <input type="date" class="form-control" id="editDate" name="date" required>
+                                    <input type="date" class="form-control" id="editDate" name="maintenance_date" required>
                                 </div>
                             </div>
                             
@@ -1288,7 +1288,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="form-label">Amount (₦)</label>
-                                    <input type="number" class="form-control" id="editAmount" name="amount" step="0.01" placeholder="0.00">
+                                    <input type="number" class="form-control" id="editAmount" name="maintenance_amount" step="0.01" placeholder="0.00">
                                 </div>
                             </div>
                             
@@ -1357,6 +1357,26 @@
             let filterTimeout;
             let activeFilterCount = 0;
 
+            function escapeHtml(value) {
+                return String(value ?? '').replace(/[&<>"']/g, function(char) {
+                    return ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    })[char];
+                });
+            }
+
+            function formatCurrency(value) {
+                return new Intl.NumberFormat('en-NG', {
+                    style: 'currency',
+                    currency: 'NGN',
+                    minimumFractionDigits: 2
+                }).format(parseFloat(value || 0));
+            }
+
             // Initialize DataTable
             const table = $('#maintenanceTable').DataTable({
                 pageLength: 10,
@@ -1382,44 +1402,45 @@
                     { 
                         data: 'item_name',
                         render: function(data) {
-                            return data || 'N/A';
+                            return escapeHtml(data || 'N/A');
                         }
                     },
                     { 
                         data: 'maintenance_description',
                         render: function(data) {
-                            return data && data.length > 50 ? data.substring(0, 50) + '...' : (data || 'No description');
+                            const description = data && data.length > 50 ? data.substring(0, 50) + '...' : (data || 'No description');
+                            return escapeHtml(description);
                         }
                     },
                     { 
                         data: 'maintenance_vendor',
                         render: function(data) {
-                            return data || 'N/A';
+                            return escapeHtml(data || 'N/A');
                         }
                     },
                     { 
                         data: 'amount',
                         render: function(data) {
-                            return data ? '₦' + parseFloat(data).toLocaleString('en-NG', {minimumFractionDigits: 2}) : '₦0.00';
+                            return formatCurrency(data);
                         },
                         className: 'amount-cell'
                     },
                     { 
                         data: 'custodian_unit',
                         render: function(data) {
-                            return data || 'N/A';
+                            return escapeHtml(data || 'N/A');
                         }
                     },
                     { 
                         data: 'manufacturer',
                         render: function(data) {
-                            return data || 'N/A';
+                            return escapeHtml(data || 'N/A');
                         }
                     },
                     { 
                         data: 'model',
                         render: function(data) {
-                            return data || 'N/A';
+                            return escapeHtml(data || 'N/A');
                         }
                     },
                     {
@@ -1509,7 +1530,7 @@
                 $('#itemFilter').empty().append('<option value="">All Items</option>');
                 if (filterData && filterData.items) {
                     filterData.items.forEach(item => {
-                        $('#itemFilter').append(`<option value="${item.id}">${item.name}</option>`);
+                        $('#itemFilter').append(`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`);
                     });
                 }
                 
@@ -1518,7 +1539,7 @@
                 if (filterData && filterData.vendors) {
                     filterData.vendors.forEach(vendor => {
                         if (vendor) {
-                            $('#vendorFilter').append(`<option value="${vendor}">${vendor}</option>`);
+                            $('#vendorFilter').append(`<option value="${escapeHtml(vendor)}">${escapeHtml(vendor)}</option>`);
                         }
                     });
                 }
@@ -1528,7 +1549,7 @@
                 if (filterData && filterData.custodian_units) {
                     filterData.custodian_units.forEach(unit => {
                         if (unit) {
-                            $('#custodianFilter').append(`<option value="${unit}">${unit}</option>`);
+                            $('#custodianFilter').append(`<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`);
                         }
                     });
                 }
@@ -1537,7 +1558,7 @@
             function updateStatistics(stats) {
                 if (stats) {
                     $('#totalRecords').text(stats.total_records?.toLocaleString() || '0');
-                    $('#totalAmount').text('₦' + (parseFloat(stats.total_amount) || 0).toLocaleString('en-NG', {minimumFractionDigits: 2}));
+                    $('#totalAmount').text(formatCurrency(stats.total_amount));
                     $('#activeItems').text(stats.active_items?.toLocaleString() || '0');
                     $('#totalVendors').text(stats.total_vendors?.toLocaleString() || '0');
                 }
@@ -1563,22 +1584,22 @@
                 const tags = [];
                 
                 if ($('#itemFilter').val()) {
-                    const itemText = $('#itemFilter option:selected').text();
+                    const itemText = escapeHtml($('#itemFilter option:selected').text());
                     tags.push(`<span class="filter-tag">Item: ${itemText} <i class="fas fa-times" onclick="clearFilter('itemFilter')"></i></span>`);
                 }
                 
                 if ($('#vendorFilter').val()) {
-                    const vendorText = $('#vendorFilter option:selected').text();
+                    const vendorText = escapeHtml($('#vendorFilter option:selected').text());
                     tags.push(`<span class="filter-tag">Vendor: ${vendorText} <i class="fas fa-times" onclick="clearFilter('vendorFilter')"></i></span>`);
                 }
                 
                 if ($('#custodianFilter').val()) {
-                    const unitText = $('#custodianFilter option:selected').text();
+                    const unitText = escapeHtml($('#custodianFilter option:selected').text());
                     tags.push(`<span class="filter-tag">Unit: ${unitText} <i class="fas fa-times" onclick="clearFilter('custodianFilter')"></i></span>`);
                 }
                 
                 if ($('#descriptionFilter').val()) {
-                    tags.push(`<span class="filter-tag">Desc: ${$('#descriptionFilter').val()} <i class="fas fa-times" onclick="clearFilter('descriptionFilter')"></i></span>`);
+                    tags.push(`<span class="filter-tag">Desc: ${escapeHtml($('#descriptionFilter').val())} <i class="fas fa-times" onclick="clearFilter('descriptionFilter')"></i></span>`);
                 }
                 
                 if ($('#startDate').val() || $('#endDate').val()) {
@@ -1590,11 +1611,11 @@
                 if ($('#minAmount').val() || $('#maxAmount').val()) {
                     const min = $('#minAmount').val() || '0';
                     const max = $('#maxAmount').val() || '∞';
-                    tags.push(`<span class="filter-tag">Amount: ₦${min} - ₦${max} <i class="fas fa-times" onclick="clearAmountFilter()"></i></span>`);
+                    tags.push(`<span class="filter-tag">Amount: ${escapeHtml(min)} - ${escapeHtml(max)} NGN <i class="fas fa-times" onclick="clearAmountFilter()"></i></span>`);
                 }
                 
                 if ($('#globalSearch').val()) {
-                    tags.push(`<span class="filter-tag">Search: ${$('#globalSearch').val()} <i class="fas fa-times" onclick="clearFilter('globalSearch')"></i></span>`);
+                    tags.push(`<span class="filter-tag">Search: ${escapeHtml($('#globalSearch').val())} <i class="fas fa-times" onclick="clearFilter('globalSearch')"></i></span>`);
                 }
                 
                 $('#filterTags').html(tags.join(''));
@@ -1704,6 +1725,7 @@
                 const record = maintenanceData.find(r => r.id == id);
                 
                 if (record) {
+                    const maintenanceDate = record.date ? new Date(record.date).toLocaleDateString('en-NG') : 'N/A';
                     const detailsHtml = `
                         <div class="row">
                             <div class="col-md-6">
@@ -1711,19 +1733,19 @@
                                 <table class="table table-sm">
                                     <tr>
                                         <th width="40%">Date:</th>
-                                        <td>${new Date(record.date).toLocaleDateString('en-NG')}</td>
+                                        <td>${escapeHtml(maintenanceDate)}</td>
                                     </tr>
                                     <tr>
                                         <th>Description:</th>
-                                        <td>${record.maintenance_description || 'N/A'}</td>
+                                        <td>${escapeHtml(record.maintenance_description || 'N/A')}</td>
                                     </tr>
                                     <tr>
                                         <th>Vendor:</th>
-                                        <td>${record.maintenance_vendor || 'N/A'}</td>
+                                        <td>${escapeHtml(record.maintenance_vendor || 'N/A')}</td>
                                     </tr>
                                     <tr>
                                         <th>Amount:</th>
-                                        <td><strong class="text-success">₦${parseFloat(record.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</strong></td>
+                                        <td><strong class="text-success">${escapeHtml(formatCurrency(record.amount))}</strong></td>
                                     </tr>
                                 </table>
                             </div>
@@ -1732,25 +1754,25 @@
                                 <table class="table table-sm">
                                     <tr>
                                         <th width="40%">Item Name:</th>
-                                        <td>${record.item_name}</td>
+                                        <td>${escapeHtml(record.item_name || 'N/A')}</td>
                                     </tr>
                                     <tr>
                                         <th>Custodian Unit:</th>
-                                        <td>${record.custodian_unit || 'N/A'}</td>
+                                        <td>${escapeHtml(record.custodian_unit || 'N/A')}</td>
                                     </tr>
                                     <tr>
                                         <th>Manufacturer:</th>
-                                        <td>${record.manufacturer || 'N/A'}</td>
+                                        <td>${escapeHtml(record.manufacturer || 'N/A')}</td>
                                     </tr>
                                     <tr>
                                         <th>Model:</th>
-                                        <td>${record.model || 'N/A'}</td>
+                                        <td>${escapeHtml(record.model || 'N/A')}</td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
                         <div class="mt-3 text-muted">
-                            <small>Record ID: ${record.id}</small>
+                            <small>Record ID: ${escapeHtml(record.id)}</small>
                         </div>
                     `;
                     $('#detailsContent').html(detailsHtml);
@@ -1788,13 +1810,17 @@
             function populateEditItemsDropdown(selectedItemId) {
                 $('#editItem').empty().append('<option value="">Select Item</option>');
                 
-                const items = [...new Set(maintenanceData.map(record => ({
-                    id: record.item_id,
-                    name: record.item_name
-                })))].filter(item => item.id && item.name);
+                const items = Array.from(new Map(
+                    maintenanceData
+                        .filter(record => record.item_id && record.item_name)
+                        .map(record => [String(record.item_id), {
+                            id: record.item_id,
+                            name: record.item_name
+                        }])
+                ).values());
                 
                 items.forEach(item => {
-                    $('#editItem').append(`<option value="${item.id}" ${item.id == selectedItemId ? 'selected' : ''}>${item.name}</option>`);
+                    $('#editItem').append(`<option value="${escapeHtml(item.id)}" ${item.id == selectedItemId ? 'selected' : ''}>${escapeHtml(item.name)}</option>`);
                 });
             }
 
@@ -1821,9 +1847,10 @@
                         if (response.success) {
                             showToast('Maintenance record updated successfully!', 'success');
                             $('#editModal').modal('hide');
+                            saveBtn.html(originalText).prop('disabled', false);
                             loadData(); // Refresh the data
                         } else {
-                            showToast('Error: ' + (response.error || 'Failed to update record'), 'error');
+                            showToast('Error: ' + (response.message || response.error || 'Failed to update record'), 'error');
                             saveBtn.html(originalText).prop('disabled', false);
                         }
                     },
@@ -1944,7 +1971,7 @@
                                 value = record.maintenance_vendor || 'N/A';
                                 break;
                             case 'Amount':
-                                value = record.amount ? '₦' + parseFloat(record.amount).toLocaleString('en-NG', {minimumFractionDigits: 2}) : '₦0.00';
+                                value = formatCurrency(record.amount);
                                 break;
                             case 'Custodian Unit':
                                 value = record.custodian_unit || 'N/A';
