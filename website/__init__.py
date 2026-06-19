@@ -212,10 +212,24 @@ def create_app():
         engine.dispose()  # Cleanup connection pool
 
     from .views import views
+    #from .biometric_routes import biometric_bp   
     from .auth import auth
+    from .biometric_routes import biometric_bp
+    csrf.exempt(biometric_bp)
+
+    # Test the biometric import
+    # Simple debug
+    print("\n" + "="*50)
+    print("📋 REGISTERING BLUEPRINTS:")
+    print(f"✅ views: {views}")
+    print(f"✅ auth: {auth}")
+    print(f"✅ biometric_bp: {biometric_bp}")
+    print("="*50 + "\n")
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
+    app.register_blueprint(biometric_bp, url_prefix='/')
+
 
 
     from .models import User,Session

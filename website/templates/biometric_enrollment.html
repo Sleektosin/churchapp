@@ -1,0 +1,660 @@
+<!-- templates/biometric_enrollment.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enroll Fingerprint - RCCG Power House Parish</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .biometric-container {
+            width: 100%;
+            max-width: 480px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .biometric-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            padding: 32px 24px;
+            text-align: center;
+            color: white;
+        }
+
+        .biometric-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .biometric-icon i { font-size: 36px; color: white; }
+        .biometric-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .biometric-header p { font-size: 14px; opacity: 0.9; line-height: 1.5; }
+        .biometric-content { padding: 32px 24px; }
+
+        .info-cards {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .info-card i { font-size: 20px; color: var(--primary); margin-top: 2px; width: 24px; text-align: center; }
+        .info-card-content h4 { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+        .info-card-content p { font-size: 13px; color: var(--gray-600); line-height: 1.4; }
+
+        .user-info-card {
+            padding: 16px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .user-details { flex: 1; }
+        .user-details .user-name { font-weight: 600; color: var(--gray-900); font-size: 16px; margin-bottom: 2px; }
+        .user-details .user-email { font-size: 13px; color: var(--gray-600); }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-enroll {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-enroll:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-skip {
+            background: white;
+            color: var(--gray-600);
+            border: 2px solid var(--gray-300);
+            margin-top: 10px;
+        }
+
+        .btn-skip:hover { background: var(--gray-50); }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-icon { font-size: 18px; }
+
+        .status-message {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-message.show { display: flex; }
+        .status-message.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .status-message.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .status-message.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn.loading .btn-text { display: none; }
+        .btn.loading .btn-icon { display: none; }
+        .btn.loading .spinner { display: block; }
+
+        .success-section { text-align: center; display: none; }
+        .success-section.show { display: block; }
+        .success-icon { font-size: 64px; color: var(--success); margin-bottom: 20px; }
+
+        /* Already Enrolled Section */
+        .already-enrolled-section {
+            text-align: center;
+            padding: 20px 0;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .already-enrolled-section.show { display: block; }
+
+        .warning-icon {
+            font-size: 64px;
+            color: var(--warning);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .existing-device-info {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 16px 0;
+            text-align: left;
+        }
+
+        .existing-device-info p {
+            color: #92400e;
+            font-size: 14px;
+            margin: 0 0 4px 0;
+        }
+
+        .existing-device-info p:last-child { margin-bottom: 0; }
+
+        .enrollment-section { margin-bottom: 24px; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .section-header i { font-size: 20px; color: var(--primary); }
+        .section-header h3 { font-size: 16px; font-weight: 600; color: var(--gray-900); }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .biometric-container { border-radius: 16px; }
+            .biometric-header { padding: 24px 20px; }
+            .biometric-content { padding: 24px 20px; }
+            .btn { padding: 12px 20px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="biometric-container">
+        <!-- Header -->
+        <div class="biometric-header">
+            <div class="biometric-icon">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+            <h1>Enroll Your Fingerprint</h1>
+            <p>Set up fingerprint for quick and secure attendance marking</p>
+        </div>
+
+        <!-- Content -->
+        <div class="biometric-content">
+            <!-- Info Cards -->
+            <div class="info-cards" id="infoCards">
+                <div class="info-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <div class="info-card-content">
+                        <h4>Secure & Private</h4>
+                        <p>Your fingerprint never leaves this device</p>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <i class="fas fa-bolt"></i>
+                    <div class="info-card-content">
+                        <h4>Quick Check-in</h4>
+                        <p>Just scan your finger and you're marked present</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Info Card -->
+            <div class="user-info-card" id="userInfoCard">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-email" id="userEmail"></div>
+                </div>
+            </div>
+
+            <!-- Enrollment Section -->
+            <div class="enrollment-section" id="enrollmentSection">
+                <div class="section-header">
+                    <i class="fas fa-fingerprint"></i>
+                    <h3>Enroll Fingerprint</h3>
+                </div>
+                
+                <button id="enroll-btn" class="btn btn-enroll" onclick="handleEnrollment()">
+                    <i class="fas fa-fingerprint btn-icon"></i>
+                    <span class="btn-text">Scan Fingerprint Now</span>
+                    <div class="spinner"></div>
+                </button>
+                
+                <button class="btn btn-skip" onclick="skipEnrollment()">
+                    Skip for now
+                </button>
+                
+                <div id="enroll-status" class="status-message"></div>
+            </div>
+
+            <!-- Already Enrolled Section -->
+            <div class="already-enrolled-section" id="alreadyEnrolledSection">
+                <div class="warning-icon">
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                </div>
+                <h2 style="color: var(--gray-900); margin-bottom: 10px;">Already Enrolled!</h2>
+                <p style="color: var(--gray-600); margin-bottom: 8px;">
+                    This user already has a fingerprint registered on this device.
+                </p>
+                <div class="existing-device-info">
+                    <p>
+                        <i class="fas fa-mobile-alt me-2"></i>
+                        <strong>Device:</strong> <span id="existingDeviceName"></span>
+                    </p>
+                    <p>
+                        <i class="fas fa-calendar me-2"></i>
+                        <strong>Enrolled on:</strong> <span id="existingEnrollDate"></span>
+                    </p>
+                </div>
+                <button class="btn btn-success" onclick="goBackToUsers()" style="margin-top: 16px;">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </button>
+            </div>
+
+            <!-- Success Section -->
+            <div class="success-section" id="successSection">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 style="margin-bottom: 10px; color: var(--gray-900);">Fingerprint Enrolled!</h2>
+                <p style="color: var(--gray-600); margin-bottom: 24px;">
+                    You can now use your fingerprint for faster check-ins at church.
+                </p>
+                <button class="btn btn-success" onclick="goBackToUsers()">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // Get user data from Flask template
+        // ==========================================
+        const userId = {{ user_id }};
+        const userName = "{{ user_name }}";
+        const userEmail = "{{ user_email }}";
+        
+        // Set user info in the card
+        document.getElementById('userName').textContent = userName;
+        document.getElementById('userEmail').textContent = userEmail;
+        
+        // Set avatar initials
+        const nameParts = userName.split(' ');
+        const initials = nameParts.map(n => n[0]).join('').toUpperCase();
+        document.getElementById('userAvatar').textContent = initials || '?';
+        
+        console.log('Biometric enrollment page loaded');
+        console.log('User ID:', userId, '| Name:', userName);
+
+        // ==========================================
+        // BiometricManager Class
+        // ==========================================
+        class BiometricManager {
+            constructor() {
+                this.checkSupport();
+            }
+
+            checkSupport() {
+                if (!window.PublicKeyCredential) {
+                    console.warn('WebAuthn not supported on this browser');
+                    return false;
+                }
+                console.log('✅ WebAuthn supported');
+                return true;
+            }
+
+            async enrollFingerprint(userId) {
+                console.log('📡 Fetching registration options...');
+                const startResponse = await fetch('/api/biometric/register/begin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(userId) })
+                });
+
+                const startData = await startResponse.json();
+                console.log('Start enrollment response:', startData);
+                
+                if (!startData.success) {
+                    throw new Error(startData.error || 'Failed to start enrollment');
+                }
+
+                console.log('🔐 Creating credentials - user should scan fingerprint now...');
+                const options = this._formatOptions(startData.options);
+                const credential = await navigator.credentials.create({ publicKey: options });
+                console.log('✅ Credential created:', credential.id);
+
+                console.log('📡 Sending credential to server...');
+                const credentialData = {
+                    user_id: parseInt(userId),
+                    id: credential.id,
+                    rawId: this._arrayBufferToBase64(credential.rawId),
+                    response: {
+                        attestationObject: this._arrayBufferToBase64(credential.response.attestationObject),
+                        clientDataJSON: this._arrayBufferToBase64(credential.response.clientDataJSON),
+                    },
+                    type: credential.type,
+                    device_name: this._getDeviceName()
+                };
+
+                const completeResponse = await fetch('/api/biometric/register/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentialData)
+                });
+
+                const result = await completeResponse.json();
+                console.log('Complete enrollment response:', result);
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Enrollment failed');
+                }
+
+                return result;
+            }
+
+            async getBiometricStatus(userId) {
+                try {
+                    const response = await fetch(`/api/biometric/status/${userId}`);
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Status check error:', error);
+                    throw error;
+                }
+            }
+
+            _formatOptions(options) {
+                return {
+                    rp: options.rp,
+                    user: {
+                        id: this._base64ToArrayBuffer(options.user.id),
+                        name: options.user.name,
+                        displayName: options.user.displayName,
+                    },
+                    challenge: this._base64ToArrayBuffer(options.challenge),
+                    pubKeyCredParams: options.pubKeyCredParams,
+                    timeout: options.timeout,
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'required',
+                        residentKey: 'required',
+                    },
+                    attestation: 'none',
+                };
+            }
+
+            _arrayBufferToBase64(buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                bytes.forEach(byte => binary += String.fromCharCode(byte));
+                return btoa(binary);
+            }
+
+            _base64ToArrayBuffer(base64) {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            _getDeviceName() {
+                const ua = navigator.userAgent;
+                if (/iPhone/.test(ua)) return 'iPhone';
+                if (/iPad/.test(ua)) return 'iPad';
+                if (/Android/.test(ua)) return 'Android Device';
+                if (/Windows NT/.test(ua)) return 'Windows PC';
+                if (/Macintosh/.test(ua)) return 'Mac';
+                return 'Unknown Device';
+            }
+        }
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        const bioAuth = new BiometricManager();
+
+        // ==========================================
+        // Check if user already has credentials on this device
+        // ==========================================
+        async function checkExistingOnDevice() {
+            const userIdInt = parseInt(userId);
+            
+            try {
+                const status = await bioAuth.getBiometricStatus(userIdInt);
+                
+                if (status.has_biometric && status.devices.length > 0) {
+                    const currentDevice = getDeviceName();
+                    const existingOnDevice = status.devices.find(d => d.device_name === currentDevice);
+                    
+                    if (existingOnDevice) {
+                        console.log('⚠️ User already has fingerprint on this device:', currentDevice);
+                        
+                        document.getElementById('enrollmentSection').style.display = 'none';
+                        document.getElementById('infoCards').style.display = 'none';
+                        document.getElementById('alreadyEnrolledSection').classList.add('show');
+                        document.getElementById('existingDeviceName').textContent = currentDevice;
+                        document.getElementById('existingEnrollDate').textContent = 
+                            new Date(existingOnDevice.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric', month: 'long', day: 'numeric'
+                            });
+                        
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('Error checking existing credentials:', error);
+                return false;
+            }
+        }
+
+        function getDeviceName() {
+            const ua = navigator.userAgent;
+            if (/iPhone/.test(ua)) return 'iPhone';
+            if (/iPad/.test(ua)) return 'iPad';
+            if (/Android/.test(ua)) return 'Android Device';
+            if (/Windows NT/.test(ua)) return 'Windows PC';
+            if (/Macintosh/.test(ua)) return 'Mac';
+            return 'Unknown Device';
+        }
+
+        // ==========================================
+        // Handle Enrollment
+        // ==========================================
+        async function handleEnrollment() {
+            const userIdInt = parseInt(userId);
+            
+            if (!userIdInt) {
+                showStatus('enroll-status', 'error', 'User not identified. Please try again.');
+                return;
+            }
+
+            const enrollBtn = document.getElementById('enroll-btn');
+            enrollBtn.classList.add('loading');
+            hideStatus('enroll-status');
+
+            try {
+                console.log('Starting enrollment for user ID:', userIdInt);
+                const result = await bioAuth.enrollFingerprint(userIdInt);
+                
+                document.getElementById('enrollmentSection').style.display = 'none';
+                document.getElementById('infoCards').style.display = 'none';
+                document.getElementById('userInfoCard').style.display = 'none';
+                document.getElementById('successSection').classList.add('show');
+                
+                console.log('✅ Enrollment successful! Device:', result.device_name);
+
+            } catch (error) {
+                console.error('❌ Enrollment failed:', error);
+                showStatus('enroll-status', 'error', `Enrollment failed: ${error.message}`);
+            } finally {
+                enrollBtn.classList.remove('loading');
+            }
+        }
+
+        // ==========================================
+        // Navigation
+        // ==========================================
+        function skipEnrollment() {
+            window.location.href = '/admin/users';
+        }
+
+        function goBackToUsers() {
+            window.location.href = '/manageusers';
+        }
+
+        // ==========================================
+        // Status Message Helpers
+        // ==========================================
+        function showStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status-message ${type} show`;
+            const icon = type === 'success' ? 'check-circle' : 
+                         type === 'error' ? 'exclamation-circle' : 'info-circle';
+            element.innerHTML = `<i class="fas fa-${icon}"></i>${message}`;
+            
+            if (type === 'success') {
+                setTimeout(() => hideStatus(elementId), 5000);
+            }
+        }
+
+        function hideStatus(elementId) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('show');
+        }
+
+        // ==========================================
+        // Page Load - Check if already enrolled
+        // ==========================================
+        (async function init() {
+            console.log('WebAuthn supported:', window.PublicKeyCredential ? '✅ Yes' : '❌ No');
+            console.log('Checking if user is already enrolled on this device...');
+            
+            const alreadyEnrolled = await checkExistingOnDevice();
+            if (alreadyEnrolled) {
+                console.log('⚠️ User already enrolled on this device');
+            } else {
+                console.log('✅ Ready for fingerprint enrollment');
+            }
+        })();
+    </script>
+</body>
+</html>

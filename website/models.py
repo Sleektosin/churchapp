@@ -85,11 +85,15 @@ class User(db.Model, UserMixin):
             'home_address':self.home_address,
             'phone_no':self.phone_no,
             'date_of_birth': self.date_of_birth.isoformat() if self.date_of_birth else None,
-            'qr_code': base64.b64encode(self.qr_code).decode('utf-8') if self.qr_code else None,
+            'qr_code': base64.b64encode(self.qr_code.encode('utf-8')).decode('utf-8') if self.qr_code else None,
             'roles': [role.name for role in self.roles],
             'is_first_timer': self.is_first_timer,
             'date_joined': self.date_joined.isoformat() if self.date_joined else None
         }       
+    
+    def has_biometric(self):
+        """Check if user has enrolled biometric"""
+        return len(self.webauthn_credentials) > 0 if hasattr(self, 'webauthn_credentials') else False
 
 
 
@@ -232,7 +236,15 @@ class Attendance(db.Model):
         return self.check_in_time <= session_start
     
     def __repr__(self):
-        return f'<Attendance {self.user.name} - {self.session.name}>'          
+        return f'<Attendance {self.user.name} - {self.session.name}>'  
+
+    def can_use_biometric(self):
+        """Check if user has enrolled biometric"""
+        return len(self.webauthn_credentials) > 0
+
+    def get_biometric_credential_ids(self):
+        """Get all credential IDs for biometric auth"""
+        return [cred.credential_id for cred in self.webauthn_credentials]        
 
 
 # Define the association table for the many-to-many relationship
@@ -241,6 +253,24 @@ session_users = db.Table('session_users',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('date', db.DateTime, nullable=True)
 )
+
+######Major Modification starts here#########################
+# Add these new models for WebAuthn
+class WebAuthnCredential(db.Model):
+    """Stores WebAuthn credentials for biometric authentication"""
+    __tablename__ = 'webauthn_credential'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    credential_id = db.Column(db.String(255), unique=True, nullable=False)
+    public_key = db.Column(db.Text, nullable=False)
+    sign_count = db.Column(db.Integer, default=0)
+    device_name = db.Column(db.String(255))  # e.g., "iPhone 15", "Windows Laptop"
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref=db.backref('webauthn_credentials', lazy=True))
 
 
 

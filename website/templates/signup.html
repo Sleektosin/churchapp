@@ -780,11 +780,106 @@
                             </div>
                         </div>
                     </div>
-                    
+                    <!-- Add this section before the submit button -->
+                    <!-- Biometric Enrollment Option -->
+                    <!-- Biometric Enrollment Option -->
+                    <div class="biometric-enroll-section">
+                        <div class="section-title">
+                            <i class="fas fa-fingerprint"></i>
+                            Biometric Setup (Optional)
+                        </div>
+                        
+                        <div class="biometric-option-card">
+                            <div class="biometric-content">
+                                <div class="biometric-icon-wrapper">
+                                    <i class="fas fa-fingerprint"></i>
+                                </div>
+                                <div class="biometric-text">
+                                    <strong>Enroll fingerprint for faster check-ins</strong>
+                                    <span>After registration, you'll be prompted to set up your fingerprint.</span>
+                                </div>
+                                <i class="fas fa-arrow-right" style="color: var(--primary); font-size: 20px;"></i>
+                            </div>
+                        </div>
+                        <!-- Always enroll biometric after registration -->
+                        <input type="hidden" name="enroll_biometric" value="yes">
+                    </div>
+
+                    <style>
+                       /* Biometric Enrollment Section Styles */
+                        .biometric-enroll-section {
+                            margin: 20px 0;
+                        }
+
+                        .biometric-option-card {
+                            background: linear-gradient(135deg, #eef2ff 0%, #ddd6fe 100%);
+                            border: 2px solid var(--primary);
+                            border-radius: 16px;
+                            padding: 20px;
+                            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+                        }
+
+                        .biometric-content {
+                            display: flex;
+                            align-items: center;
+                            gap: 16px;
+                        }
+
+                        .biometric-icon-wrapper {
+                            width: 56px;
+                            height: 56px;
+                            min-width: 56px;
+                            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                            border-radius: 14px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+                        }
+
+                        .biometric-text {
+                            flex: 1;
+                        }
+
+                        .biometric-text strong {
+                            display: block;
+                            font-size: 15px;
+                            color: var(--dark);
+                            margin-bottom: 4px;
+                            font-weight: 600;
+                        }
+
+                        .biometric-text span {
+                            display: block;
+                            font-size: 13px;
+                            color: #6b7280;
+                            line-height: 1.4;
+                        }
+
+                        @media (max-width: 576px) {
+                            .biometric-content {
+                                flex-direction: row;
+                                text-align: left;
+                            }
+                            
+                            .biometric-icon-wrapper {
+                                margin: 0;
+                            }
+                            
+                            .biometric-text strong {
+                                font-size: 14px;
+                            }
+                            
+                            .biometric-text span {
+                                font-size: 12px;
+                            }
+                        }
+                    </style>
                     <button type="submit" class="btn-register">
                         <i class="fas fa-user-plus"></i>Create Account
-                    </button>
-                    
+                    </button>                   
                     <div class="register-links">
                         <a href="{{url_for('views.login')}}">
                             <i class="fas fa-arrow-right"></i>

@@ -14,7 +14,7 @@ from datetime import timedelta
 from unicodedata import category
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 import requests
-from .models import User, Session,session_users, Role,Item, Maintenance, Attendance 
+from .models import User, Session,session_users, Role,Item, Maintenance, Attendance,WebAuthnCredential 
 from website import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
@@ -63,10 +63,424 @@ from flask import session as flask_session
 from flask_wtf.csrf import CSRFProtect
 from collections import defaultdict
 from functools import wraps
+from webauthn import generate_registration_options, verify_registration_response
+from webauthn import generate_authentication_options, verify_authentication_response
+from webauthn.helpers.structs import (
+    RegistrationCredential,
+    AuthenticationCredential,
+    AuthenticatorSelectionCriteria,
+    UserVerificationRequirement,
+)
+import sys 
+from .models import WebAuthnCredential
+
 
 
 
 views = Blueprint('views', __name__)
+webauthn_bp = Blueprint('webauthn', __name__)
+
+
+# Add this import at the top if not already there
+
+
+@views.route('/api/users/lookup', methods=['GET'])
+def lookup_user():
+    """Find user by email or username"""
+    try:
+        # Get the search term
+        search_term = request.args.get('term', '').strip()
+        
+        # ============ DEBUGGING ============
+        print("\n" + "="*50)
+        print("🔍 USER LOOKUP REQUEST RECEIVED")
+        print("="*50)
+        print(f"Search term received: '{search_term}'")
+        print(f"Search term length: {len(search_term)}")
+        print(f"Request args: {dict(request.args)}")
+        print(f"Request method: {request.method}")
+        print(f"Request URL: {request.url}")
+        sys.stdout.flush()
+        # ===================================
+        
+        if not search_term:
+            print("❌ Empty search term")
+            return jsonify({
+                'success': False, 
+                'error': 'Please enter an email or username to search.'
+            }), 400
+        
+        # ============ DEBUG: Check all users ============
+        print("\n📋 ALL USERS IN DATABASE:")
+        all_users = User.query.all()
+        for u in all_users:
+            print(f"  - ID: {u.id}, Username: '{u.username}', Email: '{u.email}'")
+        print(f"Total users: {len(all_users)}")
+        # =================================================
+        
+        # Search for user - case insensitive
+        print(f"\n🔎 SEARCHING FOR: '{search_term}'")
+        
+        # Method 1: Try with ilike (PostgreSQL)
+        user = User.query.filter(
+            (User.email.ilike(f'%{search_term}%')) | 
+            (User.username.ilike(f'%{search_term}%'))
+        ).first()
+        
+        if user:
+            print(f"✅ USER FOUND: ID={user.id}, Username={user.username}, Email={user.email}")
+            return jsonify({
+                'success': True,
+                'user': user.to_dict()
+            })
+        
+        # Method 2: Try exact match
+        print("⚠️ No partial match found, trying exact match...")
+        user = User.query.filter(
+            (User.email == search_term) | 
+            (User.username == search_term)
+        ).first()
+        
+        if user:
+            print(f"✅ USER FOUND (exact): ID={user.id}, Username={user.username}, Email={user.email}")
+            return jsonify({
+                'success': True,
+                'user': user.to_dict()
+            })
+        
+        # No user found
+        print(f"❌ NO USER FOUND for: '{search_term}'")
+        print("="*50 + "\n")
+        
+        return jsonify({
+            'success': False,
+            'error': f'No account found with "{search_term}". Please check and try again.'
+        }), 404
+            
+    except Exception as e:
+        print(f"❌ EXCEPTION: {str(e)}")
+        print(f"Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        
+        return jsonify({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        }), 500
+
+
+# In-memory challenge storage (use Redis in production)
+pending_challenges = {}
+
+@webauthn_bp.route('/api/biometric/register/begin', methods=['POST'])
+def biometric_register_begin():
+    """Start biometric registration for a user"""
+    data = request.json
+    user_id = data.get('user_id')  # User must be identified first
+    
+    if not user_id:
+        return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    try:
+        # Generate registration options
+        registration_options = generate_registration_options(
+            rp_id=RP_ID,
+            rp_name=RP_NAME,
+            user_id=str(user.id).encode(),
+            user_name=user.username,
+            user_display_name=f"{user.first_name} {user.last_name}",
+            attestation_type='none',
+            authenticator_selection=AuthenticatorSelectionCriteria(
+                user_verification=UserVerificationRequirement.REQUIRED,
+                resident_key='preferred',
+            ),
+            timeout=CHALLENGE_TIMEOUT,
+        )
+        
+        # Store challenge temporarily
+        pending_challenges[user.id] = registration_options.challenge
+        
+        # Convert bytes to base64 for JSON
+        options_dict = {
+            'rp': {'name': RP_NAME, 'id': RP_ID},
+            'user': {
+                'id': base64.b64encode(str(user.id).encode()).decode(),
+                'name': user.username,
+                'displayName': f"{user.first_name} {user.last_name}"
+            },
+            'challenge': base64.b64encode(registration_options.challenge).decode(),
+            'pubKeyCredParams': [
+                {'type': 'public-key', 'alg': -7},  # ES256
+                {'type': 'public-key', 'alg': -257},  # RS256
+            ],
+            'timeout': CHALLENGE_TIMEOUT,
+            'authenticatorSelection': {
+                'userVerification': 'required',
+                'residentKey': 'preferred',
+            },
+            'attestation': 'none',
+        }
+        
+        return jsonify({
+            'success': True,
+            'options': options_dict
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@webauthn_bp.route('/api/biometric/register/complete', methods=['POST'])
+def biometric_register_complete():
+    """Complete biometric registration"""
+    data = request.json
+    user_id = data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Retrieve stored challenge
+    challenge = pending_challenges.get(user.id)
+    if not challenge:
+        return jsonify({'error': 'No pending registration'}), 400
+    
+    try:
+        # Decode the credential
+        credential = RegistrationCredential(
+            id=data.get('id'),
+            raw_id=base64.b64decode(data.get('rawId')),
+            response={
+                'attestationObject': data.get('response', {}).get('attestationObject'),
+                'clientDataJSON': data.get('response', {}).get('clientDataJSON'),
+            },
+            type='public-key'
+        )
+        
+        # Verify the registration
+        verification = verify_registration_response(
+            credential=credential,
+            expected_challenge=challenge,
+            expected_rp_id=RP_ID,
+            expected_origin=ORIGIN,
+        )
+        
+        # Store the credential
+        new_credential = WebAuthnCredential(
+            user_id=user.id,
+            credential_id=verification.credential_id,
+            public_key=json.dumps(verification.credential_public_key),
+            sign_count=verification.sign_count,
+            device_name=data.get('device_name', 'Unknown Device')
+        )
+        
+        db.session.add(new_credential)
+        db.session.commit()
+        
+        # Clear challenge
+        del pending_challenges[user.id]
+        
+        return jsonify({
+            'success': True,
+            'message': 'Biometric registered successfully',
+            'credential_id': verification.credential_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@webauthn_bp.route('/api/biometric/auth/begin', methods=['POST'])
+def biometric_auth_begin():
+    """Start biometric authentication to add user to session"""
+    data = request.json
+    session_id = data.get('session_id')
+    
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 400
+    
+    try:
+        # Get all enrolled users
+        enrolled_users = User.query.filter(
+            User.webauthn_credentials.any()
+        ).all()
+        
+        if not enrolled_users:
+            return jsonify({'error': 'No users enrolled in biometric system'}), 404
+        
+        # For authentication, we need to generate options
+        # We'll try to match against all enrolled users
+        allow_credentials = []
+        for user in enrolled_users:
+            for cred in user.webauthn_credentials:
+                allow_credentials.append({
+                    'type': 'public-key',
+                    'id': cred.credential_id,
+                })
+        
+        authentication_options = generate_authentication_options(
+            rp_id=RP_ID,
+            timeout=CHALLENGE_TIMEOUT,
+            user_verification=UserVerificationRequirement.REQUIRED,
+        )
+        
+        # Store challenge with session_id
+        pending_challenges[f"auth_{session_id}"] = {
+            'challenge': authentication_options.challenge,
+            'session_id': session_id
+        }
+        
+        options_dict = {
+            'challenge': base64.b64encode(authentication_options.challenge).decode(),
+            'timeout': CHALLENGE_TIMEOUT,
+            'rpId': RP_ID,
+            'allowCredentials': allow_credentials,
+            'userVerification': 'required',
+        }
+        
+        return jsonify({
+            'success': True,
+            'options': options_dict,
+            'enrolled_users_count': len(enrolled_users)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@webauthn_bp.route('/api/biometric/auth/complete', methods=['POST'])
+def biometric_auth_complete():
+    """Complete biometric authentication and add user to session"""
+    data = request.json
+    session_id = data.get('session_id')
+    
+    if not session_id:
+        return jsonify({'error': 'Session ID required'}), 400
+    
+    # Retrieve stored challenge
+    challenge_data = pending_challenges.get(f"auth_{session_id}")
+    if not challenge_data:
+        return jsonify({'error': 'No pending authentication'}), 400
+    
+    try:
+        # Find the credential in database
+        credential_id = data.get('id')
+        stored_credential = WebAuthnCredential.query.filter_by(
+            credential_id=credential_id
+        ).first()
+        
+        if not stored_credential:
+            return jsonify({'error': 'Unknown credential'}), 400
+        
+        # Decode the authentication credential
+        authentication_credential = AuthenticationCredential(
+            id=data.get('id'),
+            raw_id=base64.b64decode(data.get('rawId')),
+            response={
+                'authenticatorData': data.get('response', {}).get('authenticatorData'),
+                'clientDataJSON': data.get('response', {}).get('clientDataJSON'),
+                'signature': data.get('response', {}).get('signature'),
+                'userHandle': data.get('response', {}).get('userHandle'),
+            },
+            type='public-key'
+        )
+        
+        # Verify the authentication
+        verification = verify_authentication_response(
+            credential=authentication_credential,
+            expected_challenge=challenge_data['challenge'],
+            expected_rp_id=RP_ID,
+            expected_origin=ORIGIN,
+            credential_public_key=json.loads(stored_credential.public_key),
+            credential_current_sign_count=stored_credential.sign_count,
+        )
+        
+        # Update sign count
+        stored_credential.sign_count = verification.new_sign_count
+        stored_credential.last_used_at = datetime.utcnow()
+        
+        # Add user to session
+        user = stored_credential.user
+        session = Session.query.get(challenge_data['session_id'])
+        
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+        
+        # Check if session is open for check-in
+        if not session.is_checkin_open():
+            return jsonify({'error': 'Check-in window is closed'}), 400
+        
+        # Check if already in session
+        if user in session.users:
+            return jsonify({
+                'success': True,
+                'message': 'User already in session',
+                'user': user.to_dict()
+            })
+        
+        # Check capacity
+        if session.is_at_capacity():
+            return jsonify({'error': 'Session is at full capacity'}), 400
+        
+        # Add user to session
+        session.users.append(user)
+        db.session.commit()
+        
+        # Clear challenge
+        del pending_challenges[f"auth_{session_id}"]
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user.first_name} {user.last_name} added to session',
+            'user': user.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@webauthn_bp.route('/api/biometric/user/<int:user_id>/credentials', methods=['GET'])
+def get_user_biometrics(user_id):
+    """Get user's enrolled biometric devices"""
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    credentials = [{
+        'id': cred.id,
+        'device_name': cred.device_name,
+        'created_at': cred.created_at.isoformat(),
+        'last_used_at': cred.last_used_at.isoformat()
+    } for cred in user.webauthn_credentials]
+    
+    return jsonify({'success': True, 'credentials': credentials})
+
+
+@webauthn_bp.route('/api/biometric/user/<int:user_id>/credentials/<int:cred_id>', methods=['DELETE'])
+def remove_biometric(user_id, cred_id):
+    """Remove a biometric credential"""
+    credential = WebAuthnCredential.query.filter_by(
+        id=cred_id, user_id=user_id
+    ).first()
+    
+    if not credential:
+        return jsonify({'error': 'Credential not found'}), 404
+    
+    db.session.delete(credential)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Biometric removed'})
+
 
 
 def admin_required(view_func):
@@ -77,6 +491,40 @@ def admin_required(view_func):
             abort(403)
         return view_func(*args, **kwargs)
     return wrapped_view
+
+##################RBAC################################
+
+
+# Add this to your views.py
+from flask import render_template
+
+@views.route('/enroll-biometric/<int:user_id>')
+def enroll_biometric(user_id):
+    """Biometric enrollment page after registration or from profile"""
+    user = User.query.get_or_404(user_id)
+    
+    return render_template('biometric_enrollment.html',
+        user_id=user.id,
+        user_name=f"{user.first_name} {user.last_name}",
+        user_email=user.email,
+        next_url=url_for('views.login')
+    )
+
+def require_role(*roles):
+    """Decorator to check if user has required role(s)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('views.login'))
+            
+            if not any(current_user.has_role(role) for role in roles):
+                flash('You do not have permission to access this page.', category='error')
+                abort(403)  # Forbidden
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator   
 
 
 ######################################################
@@ -456,7 +904,12 @@ def login():
     if current_user.is_authenticated:
         if 'next' in session and session['next'] == url_for('views.user_checkin'):
             return handle_checkin_redirect()
-        return redirect(url_for('views.sessions'))
+        
+        # Role-based redirect
+        if current_user.has_role('Admin'):
+            return redirect(url_for('views.sessions'))
+        else:
+            return redirect(url_for('views.home'))
 
     if request.method == 'GET':
         return render_template("login.html")
@@ -487,9 +940,14 @@ def login():
             # Handle check-in redirect if coming from QR scan
             if 'next' in session and session['next'] == url_for('views.user_checkin'):
                 return handle_checkin_redirect()
-                
-            flash('Logged in successfully!', category='success')
-            return redirect(url_for('views.sessions'))
+            
+            # Role-based redirect after login
+            if user.has_role('Admin'):
+                flash('Logged in successfully!', category='success')
+                return redirect(url_for('views.sessions'))
+            else:
+                flash('Logged in successfully!', category='success')
+                return redirect(url_for('views.home'))
             
         else:
             flash('Invalid credentials', category='error')
@@ -641,6 +1099,7 @@ def datatable():
 # Route to delete user
 @views.route('/userdelete/<id>/', methods=['POST'])
 @admin_required
+@require_role('Admin')
 def userdelete(id):
     my_data = User.query.get(id)
     if my_data:
@@ -654,6 +1113,7 @@ def userdelete(id):
 # Route to delete session
 @views.route('/sessiondelete/<id>/', methods=['POST'])
 @admin_required
+@require_role('Admin')
 def sessiondelete(id):
     my_data = Session.query.get(id)
     if my_data:
@@ -669,6 +1129,7 @@ def sessiondelete(id):
 # Route to delete session
 @views.route('/itemdelete/<id>/', methods=['POST'])
 @admin_required
+@require_role('Admin')
 def itemdelete(id):
     my_data = Item.query.get(id)
     if my_data:
@@ -685,6 +1146,7 @@ def itemdelete(id):
 @views.route('/maintenancdelete/<id>/', methods=['POST'])
 @views.route('/maintenance/delete/<id>/', methods=['POST'])
 @admin_required
+@require_role('Admin')
 def maintenancdelete(id):
     my_data = Maintenance.query.get(id)
     if my_data:
@@ -980,6 +1442,7 @@ def addmaintenance():
 @views.route('/update_maintenance_data', methods=['POST'])
 @views.route('/api/maintenance/update', methods=['POST'])
 @admin_required
+@require_role('Admin')
 def update_maintenance_data():
     try:
         maintenance_id = request.form.get('maintenance_id') or request.form.get('record_id')
@@ -1153,49 +1616,50 @@ def update_item_data():
 @views.route('/get_users_data', methods=['POST','GET'])
 @admin_required
 def get_users_data():
-    # Define parameters for server-side processing
     draw = request.form.get('draw')
     start = int(request.form.get('start'))
     length = int(request.form.get('length'))
     search_value = request.form.get('search[value]','').strip().lower()
 
-    # Base query to get session data
-    base_query = User.query.with_entities(
+    # Subquery to get biometric count per user
+    from sqlalchemy import func as sa_func
+    biometric_subquery = db.session.query(
+        WebAuthnCredential.user_id,
+        sa_func.count(WebAuthnCredential.id).label('credential_count')
+    ).group_by(WebAuthnCredential.user_id).subquery()
+
+    # Base query with biometric count
+    base_query = db.session.query(
         User.id,
         User.username,
         User.first_name,
         User.last_name,
         User.date_of_birth,
         User.email,
-        User.phone_no
+        User.phone_no,
+        sa_func.coalesce(biometric_subquery.c.credential_count, 0).label('biometric_count')
+    ).outerjoin(
+        biometric_subquery, User.id == biometric_subquery.c.user_id
     )
 
     # Apply search filter
     if search_value:
-
         base_query = base_query.filter(
             or_(
-            User.username.ilike(f'%{search_value}%'),
-            User.first_name.ilike(f'%{search_value}%'),
-            User.last_name.ilike(f'%{search_value}%'),
-            User.phone_no.ilike(f'%{search_value}%'),
-            func.cast(User.date_of_birth, db.String).ilike(f'%{search_value}%')
+                User.username.ilike(f'%{search_value}%'),
+                User.first_name.ilike(f'%{search_value}%'),
+                User.last_name.ilike(f'%{search_value}%'),
+                User.phone_no.ilike(f'%{search_value}%'),
+                User.email.ilike(f'%{search_value}%'),
+                func.cast(User.date_of_birth, db.String).ilike(f'%{search_value}%')
             )
         )
 
-    # Get the total number of records before filtering
     total_records = User.query.count()
-
-    # Get the total number of filtered records
     total_filtered_records = base_query.count()
-
-    # Apply pagination
     query = base_query.order_by(User.id.asc()).offset(start).limit(length)
-
-    # Fetch filtered data
     items = query.all()
 
-    # Prepare data for DataTables response
     data = []
     for item in items:
         data.append({
@@ -1203,11 +1667,11 @@ def get_users_data():
             'username': item.username,
             'first_name': item.first_name,
             'last_name': item.last_name,
-            'date_of_birth': item.date_of_birth.strftime('%Y-%m-%d'),  # Format date if needed
+            'date_of_birth': item.date_of_birth.strftime('%Y-%m-%d') if item.date_of_birth else '',
             'email': item.email,
-            'phone_no':item.phone_no,
-            'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
-            'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
+            'phone_no': item.phone_no or '',
+            'has_biometric': item.biometric_count > 0,
+            'biometric_count': item.biometric_count,
         })
 
     response = {
@@ -2080,6 +2544,7 @@ def activity(id):
 @views.route('/item/<id>', methods=['GET'])
 @csrf.exempt
 @login_required 
+@require_role('Admin')
 def item(id):
     # Fetch the selected product details
     product = db.session.query(
@@ -2105,6 +2570,7 @@ def item(id):
 @views.route('/maintenance/history')
 @csrf.exempt
 @login_required
+@require_role('Admin')
 def maintenance_history():
     """Render the maintenance history page"""
     # Set context for the left navbar active state
@@ -2115,6 +2581,7 @@ def maintenance_history():
 
 @views.route('/api/maintenance/history', methods=['GET'])
 @login_required
+@require_role('Admin')
 def api_maintenance_history():
     """API endpoint for maintenance history data"""
     print("DEBUG: API endpoint called!")
@@ -2216,6 +2683,7 @@ def api_maintenance_history():
 @views.route('/get_product_maintenance/<product_id>/maintenance', methods=['GET', 'POST']) 
 @csrf.exempt   
 @login_required   
+@require_role('Admin')
 def get_product_maintenance(product_id):
     # Define parameters for server-side processing
     draw = request.form.get('draw')
@@ -2281,6 +2749,7 @@ def get_product_maintenance(product_id):
 @views.route('/userdetails/<id>')
 @csrf.exempt
 @login_required
+@require_role('Admin')
 def userdetails(id):
     user = User.query.get(id)
     if not user:
@@ -2543,6 +3012,7 @@ def user_checkin():
 @views.route('/sessiondetails/<int:id>')
 @csrf.exempt
 @login_required
+@require_role('Admin')
 def sessiondetails(id):
     session = Session.query.get(id)
     if not session:
@@ -2632,6 +3102,7 @@ def delete(id):
 @views.route('/sessions', methods=['GET', 'POST'])
 @csrf.exempt
 @login_required
+@require_role('Admin')
 def sessions():
     all_activity = db.session.query(
         Session.id,
@@ -2674,6 +3145,7 @@ def sessions():
 @views.route('/items', methods=['GET', 'POST'])
 @csrf.exempt
 @login_required
+@require_role('Admin')
 def items():
     all_item = Item.query.all()
     return render_template('item.html', user=current_user, items = all_item)
@@ -2682,6 +3154,7 @@ def items():
 
 @views.route('/manageusers', methods=['GET', 'POST'])
 @login_required
+@require_role('Admin')
 def manageusers():
     all_user = User.query.with_entities(
         User.id,
@@ -2981,6 +3454,7 @@ def register():
         gender = request.form.get("gender")
         phone_no = request.form.get("phone_no")
         home_address = request.form.get("home_address")
+        enroll_biometric = request.form.get("enroll_biometric")  # Will be 'yes'
 
         is_first_timer = request.form.get('is_first_timer') == 'on'  # Returns True/False
         date_joined = request.form.get("date_joined") or datetime.utcnow()
@@ -3044,7 +3518,12 @@ def register():
             else:
                 flash('Registration successful! However, we could not send a QR code to your email.', 'warning')
 
-            return redirect(url_for('views.login'))  # Adjust this to your actual login route
+            # Redirect to biometric enrollment
+            if enroll_biometric == 'yes':
+                return redirect(url_for('views.enroll_biometric', user_id=new_user.id))
+            else:
+                return redirect(url_for('views.login'))    
+
 
     return render_template("signup.html", user=current_user)
 
