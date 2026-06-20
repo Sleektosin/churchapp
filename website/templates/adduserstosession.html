@@ -53,7 +53,7 @@
             overflow-x: hidden;
         }
 
-        /* Main Content Area - Matching admin pages */
+        /* Main Content Area */
         .content-area {
             margin-left: 260px;
             min-height: 100vh;
@@ -142,6 +142,7 @@
             gap: 2rem;
             margin-top: 1rem;
             color: rgba(255, 255, 255, 0.9);
+            flex-wrap: wrap;
         }
 
         .session-meta-item {
@@ -236,6 +237,18 @@
             border-color: var(--primary);
             color: var(--primary);
             background: #f8fafc;
+        }
+
+        .btn-fingerprint {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: white;
+            box-shadow: 0 10px 20px -8px #7c3aed;
+        }
+
+        .btn-fingerprint:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -8px #7c3aed;
+            color: white;
         }
 
         .action-btn {
@@ -411,6 +424,21 @@
             padding: 1.5rem;
         }
 
+        /* Fingerprint Animation */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .fingerprint-icon-animated {
+            animation: pulse 2s infinite;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .session-meta {
@@ -425,6 +453,11 @@
             .action-buttons {
                 display: flex;
                 gap: 4px;
+            }
+            
+            .btn-modern {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -465,9 +498,15 @@
                             {% endif %}
                         </div>
                     </div>
-                    <button type="button" class="btn btn-modern btn-success-modern" data-bs-toggle="modal" data-bs-target="#addUsersModal">
-                        <i class="fas fa-qrcode me-2"></i>Scan QR Code
-                    </button>
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-3 flex-wrap">
+                        <button type="button" class="btn btn-modern btn-success-modern" data-bs-toggle="modal" data-bs-target="#addUsersModal">
+                            <i class="fas fa-qrcode me-2"></i>Scan QR Code
+                        </button>
+                        <button type="button" class="btn btn-modern btn-fingerprint" onclick="startFingerprintCheckin()" id="fingerprintCheckinBtn">
+                            <i class="fas fa-fingerprint me-2"></i>Scan Fingerprint
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -517,6 +556,35 @@
     </main>
 
     {% include "include/footer.html" %}
+
+    <!-- Fingerprint Check-in Modal -->
+    <div class="modal fade modal-modern" id="fingerprintModal" tabindex="-1" aria-labelledby="fingerprintModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fingerprintModalLabel">
+                        <i class="fas fa-fingerprint me-2"></i>Scan Fingerprint
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-5">
+                    <div id="fingerprintStatus">
+                        <div class="mb-4">
+                            <i class="fas fa-fingerprint fingerprint-icon-animated" style="font-size: 80px; color: #7c3aed;"></i>
+                        </div>
+                        <h4 class="mb-3">Place your finger on the scanner</h4>
+                        <p class="text-muted">Scan your fingerprint to check in to this session</p>
+                        <div id="fingerprintMessage" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-modern btn-outline-modern" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- QR Code Scanner Modal -->
     <div class="modal fade modal-modern" id="addUsersModal" tabindex="-1" aria-labelledby="addUsersModalLabel" aria-hidden="true">
@@ -572,17 +640,26 @@
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
     
-    <!-- Your existing scripts -->
+    <!-- Sidebar scripts -->
     <script src="{{url_for('static',filename='lib/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
     <script src="{{url_for('static',filename='javascript/custom.min.js')}}"></script>
 
     <script>
+        // ==========================================
+        // SESSION DATA
+        // ==========================================
+        const sessionId = '{{ session_data.id }}';
+        let fingerprintModal;
+
+        // ==========================================
+        // DATA TABLE INITIALIZATION
+        // ==========================================
         $(document).ready(function() {
-            // Get session ID from the data attribute
-            const sessionId = '{{ session_data.id }}';
+            // Initialize fingerprint modal
+            fingerprintModal = new bootstrap.Modal(document.getElementById('fingerprintModal'));
             
-            // Initialize DataTable with responsive extension
+            // Initialize DataTable
             $('#userTable').DataTable({
                 processing: true,
                 responsive: {
@@ -611,7 +688,7 @@
                 ajax: {
                     url: `/get_sessions_users/${sessionId}/users`,
                     type: "POST",
-                    "beforeSend": function(xhr) {
+                    beforeSend: function(xhr) {
                         xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
                     }
                 },
@@ -646,13 +723,13 @@
                     }
                 ],
                 columnDefs: [
-                    { responsivePriority: 1, targets: 1 }, // Username
-                    { responsivePriority: 2, targets: 2 }, // Email
-                    { responsivePriority: 3, targets: -1 }, // Action column
-                    { responsivePriority: 4, targets: 0 }, // User ID
-                    { responsivePriority: 5, targets: 3 }, // First Name
-                    { responsivePriority: 6, targets: 4 }, // Last Name
-                    { responsivePriority: 7, targets: 5 } // Added Date
+                    { responsivePriority: 1, targets: 1 },
+                    { responsivePriority: 2, targets: 2 },
+                    { responsivePriority: 3, targets: -1 },
+                    { responsivePriority: 4, targets: 0 },
+                    { responsivePriority: 5, targets: 3 },
+                    { responsivePriority: 6, targets: 4 },
+                    { responsivePriority: 7, targets: 5 }
                 ],
                 language: {
                     search: "_INPUT_",
@@ -665,10 +742,11 @@
             });
         });
 
-        // Function to handle the delete action
+        // ==========================================
+        // DELETE ROW FUNCTION
+        // ==========================================
         function deleteRow(userId) {
             const confirmation = confirm("Do you want to remove this user from this session?");
-            const sessionId = '{{ session_data.id }}';
             
             if (confirmation) {
                 const url = `/remove_user_from_session/${userId}/${sessionId}`;
@@ -695,7 +773,9 @@
             }
         }
 
-        // Toast notification function
+        // ==========================================
+        // TOAST NOTIFICATION
+        // ==========================================
         function showToast(message, type = 'info') {
             const toastId = 'toast-' + Date.now();
             const toastHtml = `
@@ -717,26 +797,158 @@
             }, 5000);
         }
 
-        // Add animation style
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
+        // ==========================================
+        // FINGERPRINT CHECK-IN FUNCTIONS
+        // ==========================================
+        async function startFingerprintCheckin() {
+            // Check WebAuthn support
+            if (!window.PublicKeyCredential) {
+                showToast('Fingerprint authentication not supported on this browser', 'error');
+                return;
             }
-        `;
-        document.head.appendChild(style);
+            
+            // Show modal
+            fingerprintModal.show();
+            resetFingerprintModal();
+            
+            try {
+                // Step 1: Get authentication options from server
+                console.log('📡 Requesting authentication options...');
+                const beginResponse = await fetch('/api/biometric/auth/begin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: parseInt(sessionId) })
+                });
+                
+                const beginData = await beginResponse.json();
+                console.log('Auth begin response:', beginData);
+                
+                if (!beginData.success) {
+                    showFingerprintMessage(beginData.error || 'No enrolled users found', 'error');
+                    return;
+                }
+                
+                // Step 2: Get credential (fingerprint scan happens here)
+                console.log('🔐 Requesting fingerprint scan...');
+                
+                const options = {
+                    challenge: base64ToArrayBuffer(beginData.options.challenge),
+                    timeout: beginData.options.timeout || 60000,
+                    rpId: beginData.options.rpId,
+                    allowCredentials: beginData.options.allowCredentials.map(cred => ({
+                        type: cred.type || 'public-key',
+                        id: base64ToArrayBuffer(cred.id),
+                    })),
+                    userVerification: 'required',
+                    
+                };
+                
+                const assertion = await navigator.credentials.get({ publicKey: options });
+                console.log('✅ Fingerprint verified!');
+                
+                // Step 3: Send assertion to server
+                console.log('📡 Sending verification to server...');
+                
+                const assertionData = {
+                    credential_id: assertion.id,
+                    authenticator_data: arrayBufferToBase64(assertion.response.authenticatorData),
+                    client_data_json: arrayBufferToBase64(assertion.response.clientDataJSON),
+                    signature: arrayBufferToBase64(assertion.response.signature),
+                    user_handle: assertion.response.userHandle ? arrayBufferToBase64(assertion.response.userHandle) : null,
+                };
+                
+                const completeResponse = await fetch(`/api/biometric/auth/complete/${sessionId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(assertionData)
+                });
+                
+                const result = await completeResponse.json();
+                console.log('Check-in result:', result);
+                
+                if (result.success) {
+                    if (result.already_checked_in) {
+                        showFingerprintMessage(result.message, 'warning');
+                    } else {
+                        showFingerprintMessage(result.message, 'success');
+                        showToast(result.message, 'success');
+                    }
+                    
+                    // Reload the table
+                    setTimeout(() => {
+                        $('#userTable').DataTable().ajax.reload();
+                        fingerprintModal.hide();
+                    }, 1500);
+                } else {
+                    showFingerprintMessage(result.error || 'Check-in failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Fingerprint check-in error:', error);
+                
+                if (error.name === 'NotAllowedError') {
+                    showFingerprintMessage('Fingerprint scan cancelled or not available', 'error');
+                } else if (error.name === 'SecurityError') {
+                    showFingerprintMessage('Security error. Check domain configuration.', 'error');
+                } else {
+                    showFingerprintMessage('Fingerprint not recognized. Have you enrolled?', 'error');
+                }
+            }
+        }
 
-        // QR Code Scanner - Preserved from original
-        // Initialize ZXing library
+        function showFingerprintMessage(message, type) {
+            const msgDiv = document.getElementById('fingerprintMessage');
+            const colors = {
+                success: { bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0', icon: 'fa-check-circle' },
+                error: { bg: '#fef2f2', text: '#991b1b', border: '#fecaca', icon: 'fa-exclamation-circle' },
+                warning: { bg: '#fffbeb', text: '#92400e', border: '#fcd34d', icon: 'fa-exclamation-triangle' }
+            };
+            
+            const c = colors[type] || colors.error;
+            
+            msgDiv.innerHTML = `
+                <div style="color: ${c.text}; padding: 12px 16px; border-radius: 8px; background: ${c.bg}; border: 1px solid ${c.border};">
+                    <i class="fas ${c.icon} me-2"></i>${message}
+                </div>
+            `;
+        }
+
+        function resetFingerprintModal() {
+            document.getElementById('fingerprintMessage').innerHTML = '';
+        }
+
+        // Reset modal when closed
+        document.getElementById('fingerprintModal').addEventListener('hidden.bs.modal', function() {
+            resetFingerprintModal();
+        });
+
+        // ==========================================
+        // HELPER FUNCTIONS
+        // ==========================================
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            bytes.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // ==========================================
+        // QR CODE SCANNER
+        // ==========================================
         const codeReader = new ZXing.BrowserQRCodeReader();
 
-        // Function to handle QR code scanning
         function scanQRCode() {
-            // Clear previous scanner
             $('#qrScanner').empty();
             
-            // Create video element
             const videoElement = document.createElement('video');
             videoElement.style.width = '100%';
             videoElement.style.maxWidth = '350px';
@@ -745,30 +957,24 @@
             videoElement.style.border = '2px solid #e2e8f0';
             document.getElementById('qrScanner').appendChild(videoElement);
 
-            // Add scanner frame overlay
             const frameDiv = document.createElement('div');
             frameDiv.className = 'scanner-frame';
             videoElement.parentElement.style.position = 'relative';
             videoElement.parentElement.appendChild(frameDiv);
 
-            // Add instruction text
             const instructionDiv = document.createElement('div');
             instructionDiv.className = 'scanner-instruction';
             instructionDiv.innerHTML = '<i class="fas fa-qrcode me-2"></i>Position QR code within the frame';
             document.getElementById('qrScanner').appendChild(instructionDiv);
 
-            // Start camera and scan for QR codes
             codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
                 if (result) {
                     console.log('Scanned QR code:', result.text);
-                    // Stop scanning
                     codeReader.reset();
-                    // Submit QR code for login
                     document.getElementById('qr_code').value = result.text;
                     document.getElementById('loginForm').submit();
                 } else if (error) {
                     console.error('Scanning error:', error);
-                    // Show error message
                     const errorDiv = document.getElementById('error');
                     if (errorDiv) {
                         errorDiv.style.display = 'flex';
@@ -778,12 +984,10 @@
             });
         }
 
-        // Start scanning when modal is opened
         $('#addUsersModal').on('shown.bs.modal', function() {
             scanQRCode();
         });
 
-        // Stop scanning when modal is closed
         $('#addUsersModal').on('hidden.bs.modal', function() {
             codeReader.reset();
             $('#qrScanner').empty();
