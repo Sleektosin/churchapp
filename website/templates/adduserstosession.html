@@ -933,7 +933,10 @@
         }
 
         function base64ToArrayBuffer(base64) {
-            const binary = atob(base64);
+            // Accept both base64url (-, _, no padding) and standard base64.
+            let normalized = base64.replace(/-/g, '+').replace(/_/g, '/');
+            while (normalized.length % 4) normalized += '=';
+            const binary = atob(normalized);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);

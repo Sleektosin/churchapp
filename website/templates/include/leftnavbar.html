@@ -199,7 +199,7 @@
 {% set is_analytics   = path.startswith(url_for('views.analytics')) %}
 {% set is_items       = path.startswith(url_for('views.items')) %}
 {% set is_maintenance = path.startswith(url_for('views.maintenance_history')) %}
-{% set is_inventories = false %}
+{% set is_inventories = path.startswith(url_for('views.inventories')) %}
 {% set is_inventory_section = is_items or is_maintenance or is_inventories %}
 
 <aside class="left-sidebar" id="mainSidebar" aria-label="Main navigation">
@@ -264,7 +264,7 @@
                             </a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link {% if is_inventories %}active{% endif %}">
+                            <a href="{{ url_for('views.inventories') }}" class="sidebar-link {% if is_inventories %}active{% endif %}">
                                 <i class="fa-solid fa-warehouse nav-icon"></i>
                                 <span class="link-label">Inventories</span>
                             </a>

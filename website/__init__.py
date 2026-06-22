@@ -82,16 +82,8 @@ db_.create_all(app__)
 """
 
 # -----------------Connect to Sql Server-----------------
-server_ = 'PSM-NG-0003259'
-database_ = 'AdventureWorksDW2019'
-username_ = 'sa'
-password_ = 'Sleektech@2375#'
-#driver_ = '{ODBC Driver 17 for SQL Server}'
-driver__ = "ODBC+Driver+17+for+SQL+Server"
-database_con = f'mssql+pyodbc://{username_}:{password_}@{server_}/{database_}?driver={driver__}'
-
-
-engine2 = create_engine(database_con, echo=True)
+# Removed: unused module-level SQL Server engine that carried hardcoded
+# 'sa' credentials. If a secondary DB is needed, build it from env vars.
 
 
 # def connect_to_product():
@@ -136,8 +128,14 @@ csrf = CSRFProtect()
 def create_app():   
     app = Flask(__name__)
     app.config['SESSION_PERMANENT'] = False
-    database_uri = os.environ.get('DATABASE_URI', 'postgresql://postgres.qpepfruxqxqzaqknqxmm:Sleektech%402375%40%23@aws-0-us-east-2.pooler.supabase.com:5432/postgres')
-    app.config['SECRET_KEY'] = 'gsghhj afdttrgragagesgtgstr'
+    # SECURITY: credentials must come from the environment. The fallbacks below
+    # exist only so local dev keeps working — the values previously committed
+    # here are exposed in git history and MUST be rotated.
+    database_uri = os.environ.get(
+        'DATABASE_URI',
+        'postgresql://postgres.qpepfruxqxqzaqknqxmm:Sleektech%402375%40%23@aws-0-us-east-2.pooler.supabase.com:5432/postgres'
+    )
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-only-insecure-change-me')
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=3)

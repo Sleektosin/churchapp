@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Inventory | Admin</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --secondary: #475569;
+        --muted: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --dark: #0f172a;
+        --border: #e2e8f0;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --shadow-sm: 0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04);
+        --shadow-md: 0 4px 12px rgba(15,23,42,.08);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: var(--dark); }
+
+    .content-area { margin-left: 260px; min-height: 100vh; background-color: #f1f5f9; display: flex; justify-content: center; }
+    .content-container { width: 100%; max-width: 1600px; padding: 30px; margin: 0 auto; }
+    @media (max-width: 1800px) { .content-container { max-width: 95%; } }
+    @media (max-width: 991.98px) {
+        .content-area { margin-left: 0; }
+        .content-container { padding: 100px 20px 20px; max-width: 100%; }
+    }
+
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .page-header h1 { font-size: 1.9rem; font-weight: 700; color: var(--dark); margin: 0; }
+    .page-header .breadcrumb { margin: 0; padding: 0; background: transparent; }
+    .page-header .breadcrumb-item a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .page-header .breadcrumb-item.active { color: var(--muted); }
+
+    /* KPI summary */
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.75rem; }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm); }
+    .kpi-card .kpi-icon { width: 42px; height: 42px; border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; margin-bottom: .75rem; }
+    .kpi-card .kpi-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+    .kpi-card .kpi-label { color: var(--secondary); font-size: .82rem; margin-top: .15rem; }
+    .ic-primary { background: rgba(79,70,229,.1); color: var(--primary); }
+    .ic-info { background: rgba(59,130,246,.1); color: var(--info); }
+    .ic-success { background: rgba(16,185,129,.1); color: var(--success); }
+    .ic-warning { background: rgba(245,158,11,.1); color: var(--warning); }
+    .ic-danger { background: rgba(239,68,68,.1); color: var(--danger); }
+
+    .modern-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; width: 100%; }
+    .card-header-modern { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 1.25rem 1.75rem; }
+    .card-header-modern h4 { color: #fff; font-weight: 700; margin: 0; font-size: 1.25rem; }
+    .card-header-modern p { color: rgba(255,255,255,.9); margin: .35rem 0 0; font-size: .9rem; }
+
+    /* Filter bar */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); background: #fff; }
+    .filter-bar .field { display: flex; flex-direction: column; gap: .35rem; }
+    .filter-bar label { font-size: .8rem; font-weight: 600; color: var(--secondary); }
+    .filter-bar .form-select, .filter-bar .form-control {
+        border: 2px solid var(--border); border-radius: 10px; padding: .5rem .75rem; font-size: .9rem; min-width: 160px;
+    }
+    .filter-bar .form-select:focus, .filter-bar .form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .btn-reset { border: 2px solid var(--border); background: #f8fafc; color: var(--secondary); border-radius: 10px; padding: .5rem .9rem; font-weight: 600; font-size: .9rem; }
+    .btn-reset:hover { border-color: var(--primary); color: var(--primary); }
+
+    table.table-modern { width: 100% !important; border-collapse: separate; border-spacing: 0; }
+    table.table-modern thead th { background: #f8fafc; color: var(--secondary); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; padding: .9rem 1rem; border: none; white-space: nowrap; }
+    table.table-modern tbody td { padding: .9rem 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+    table.table-modern tbody tr:hover { background: #f8fafc; }
+    .amount-column { font-weight: 600; color: var(--success); }
+
+    .badge-status { padding: .35rem .75rem; border-radius: 30px; font-weight: 600; font-size: .72rem; }
+    .bg-soft-success { background: rgba(16,185,129,.12); color: #047857; }
+    .bg-soft-warning { background: rgba(245,158,11,.14); color: #b45309; }
+    .bg-soft-danger { background: rgba(239,68,68,.12); color: #b91c1c; }
+
+    .dataTables_wrapper { padding: 1.25rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select {
+        border: 2px solid var(--border); border-radius: 10px; padding: .4rem .6rem; margin-left: .4rem;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .dataTables_paginate .paginate_button.current { background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important; border-color: var(--primary) !important; color: #fff !important; border-radius: 8px !important; }
+
+    @media (max-width: 768px) {
+        .content-container { padding: 90px 15px 15px; }
+        .filter-bar .form-select, .filter-bar .form-control { min-width: 100%; }
+        .filter-bar .field { width: 100%; }
+    }
+    </style>
+</head>
+<body>
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+
+    <main class="content-area">
+        <div class="content-container">
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-warehouse me-3" style="color: var(--primary);"></i>Inventory</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('views.home') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Inventory</li>
+                        </ol>
+                    </nav>
+                </div>
+                <a href="{{ url_for('views.items') }}" class="btn btn-primary" style="border-radius:10px;font-weight:600;">
+                    <i class="fas fa-box-open me-2"></i>Manage Assets
+                </a>
+            </div>
+
+            <!-- KPI summary -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon ic-primary"><i class="fas fa-boxes-stacked"></i></div>
+                    <div class="kpi-value">{{ '{:,}'.format(total_items) }}</div>
+                    <div class="kpi-label">Distinct Items</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon ic-info"><i class="fas fa-layer-group"></i></div>
+                    <div class="kpi-value">{{ '{:,}'.format(total_units) }}</div>
+                    <div class="kpi-label">Total Units</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon ic-success"><i class="fas fa-naira-sign"></i></div>
+                    <div class="kpi-value">&#8358;{{ '{:,.0f}'.format(total_value) }}</div>
+                    <div class="kpi-label">Total Value</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon ic-warning"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="kpi-value">{{ '{:,}'.format(low_stock) }}</div>
+                    <div class="kpi-label">Low Stock (&le;{{ low_stock_threshold }})</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon ic-danger"><i class="fas fa-circle-xmark"></i></div>
+                    <div class="kpi-value">{{ '{:,}'.format(out_of_stock) }}</div>
+                    <div class="kpi-label">Out of Stock</div>
+                </div>
+            </div>
+
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h4><i class="fas fa-clipboard-list me-2"></i>Inventory Records</h4>
+                    <p>All stock items with value and maintenance status</p>
+                </div>
+
+                <!-- Standard filters -->
+                <div class="filter-bar">
+                    <div class="field">
+                        <label for="filterCategory">Category</label>
+                        <select id="filterCategory" class="form-select">
+                            <option value="">All categories</option>
+                            {% for c in categories %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="filterStatus">Stock status</label>
+                        <select id="filterStatus" class="form-select">
+                            <option value="">All statuses</option>
+                            <option value="in">In Stock</option>
+                            <option value="low">Low Stock</option>
+                            <option value="out">Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="filterStart">Purchased after</label>
+                        <input type="date" id="filterStart" class="form-control">
+                    </div>
+                    <div class="field">
+                        <label for="filterEnd">Purchased before</label>
+                        <input type="date" id="filterEnd" class="form-control">
+                    </div>
+                    <div class="field">
+                        <button type="button" id="resetFilters" class="btn-reset">
+                            <i class="fas fa-rotate-left me-1"></i>Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="inventoryTable" class="table table-modern" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>Total Value</th>
+                                <th>Status</th>
+                                <th>Purchased</th>
+                                <th>Last Maintenance</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <script src="{{url_for('static',filename='javascript/sidebarmenu.js')}}"></script>
+
+    <script>
+        function money(v) {
+            return '₦' + parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        $(document).ready(function () {
+            const table = $('#inventoryTable').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [],
+                ajax: {
+                    url: "/get_inventories_data",
+                    type: "POST",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('X-CSRFToken', $('meta[name="csrf-token"]').attr('content'));
+                    },
+                    data: function (d) {
+                        d.category = $('#filterCategory').val();
+                        d.status = $('#filterStatus').val();
+                        d.start_date = $('#filterStart').val();
+                        d.end_date = $('#filterEnd').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: "name",
+                        render: function (data, type, row) {
+                            const sub = [row.manufacturer, row.model].filter(Boolean).join(' · ');
+                            return '<strong>' + (data || '') + '</strong>' +
+                                   (sub ? '<br><small class="text-muted">' + sub + '</small>' : '');
+                        }
+                    },
+                    { data: "category" },
+                    { data: "quantity" },
+                    { data: "unit_price", render: function (d) { return money(d); } },
+                    { data: "total_value", className: "amount-column", render: function (d) { return money(d); } },
+                    {
+                        data: "status_text",
+                        render: function (data, type, row) {
+                            const cls = { success: 'bg-soft-success', warning: 'bg-soft-warning', danger: 'bg-soft-danger' }[row.status_class] || 'bg-soft-success';
+                            return '<span class="badge-status ' + cls + '">' + data + '</span>';
+                        }
+                    },
+                    { data: "purchase_date" },
+                    { data: "last_maintenance" }
+                ],
+                language: {
+                    emptyTable: "No inventory records match the current filters",
+                    search: "",
+                    searchPlaceholder: "Search items..."
+                }
+            });
+
+            // Re-query the server whenever a standard filter changes
+            $('#filterCategory, #filterStatus, #filterStart, #filterEnd').on('change', function () {
+                table.ajax.reload();
+            });
+
+            $('#resetFilters').on('click', function () {
+                $('#filterCategory').val('');
+                $('#filterStatus').val('');
+                $('#filterStart').val('');
+                $('#filterEnd').val('');
+                table.ajax.reload();
+            });
+        });
+    </script>
+</body>
+</html>

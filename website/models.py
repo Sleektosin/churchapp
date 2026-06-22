@@ -95,6 +95,14 @@ class User(db.Model, UserMixin):
         """Check if user has enrolled biometric"""
         return len(self.webauthn_credentials) > 0 if hasattr(self, 'webauthn_credentials') else False
 
+    def can_use_biometric(self):
+        """Check if user has enrolled biometric"""
+        return len(self.webauthn_credentials) > 0
+
+    def get_biometric_credential_ids(self):
+        """Get all credential IDs for biometric auth"""
+        return [cred.credential_id for cred in self.webauthn_credentials]
+
 
 
 # Define the Session model
@@ -224,7 +232,7 @@ class Attendance(db.Model):
         """Calculate attendance duration in minutes"""
         if not self.check_out_time:
             return None
-        delta = self.check_out_time - self.check_in_time2
+        delta = self.check_out_time - self.check_in_time
         return int(delta.total_seconds() / 60)
     
     def was_on_time(self):
@@ -236,15 +244,7 @@ class Attendance(db.Model):
         return self.check_in_time <= session_start
     
     def __repr__(self):
-        return f'<Attendance {self.user.name} - {self.session.name}>'  
-
-    def can_use_biometric(self):
-        """Check if user has enrolled biometric"""
-        return len(self.webauthn_credentials) > 0
-
-    def get_biometric_credential_ids(self):
-        """Get all credential IDs for biometric auth"""
-        return [cred.credential_id for cred in self.webauthn_credentials]        
+        return f'<Attendance {self.user.name} - {self.session.name}>'
 
 
 # Define the association table for the many-to-many relationship

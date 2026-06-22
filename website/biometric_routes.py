@@ -22,6 +22,27 @@ biometric_bp = Blueprint('biometric', __name__)
 pending_registrations = {}
 
 
+# ------------------------------------------------------------------
+# Base64 helpers — WebAuthn credential IDs travel as base64url (no
+# padding) from the browser, but historically were stored here as
+# standard base64. These helpers normalise both so lookups never miss.
+# ------------------------------------------------------------------
+def b64_any_to_bytes(value):
+    """Decode standard OR url-safe base64, padded or not, into raw bytes."""
+    if isinstance(value, bytes):
+        return value
+    s = value.replace('-', '+').replace('_', '/')
+    s += '=' * (-len(s) % 4)  # restore padding
+    return base64.b64decode(s)
+
+
+def bytes_to_b64url(raw):
+    """Encode raw bytes to base64url WITHOUT padding (the WebAuthn wire format)."""
+    if isinstance(raw, str):
+        raw = b64_any_to_bytes(raw)
+    return base64.urlsafe_b64encode(raw).decode('utf-8').rstrip('=')
+
+
 # Test endpoint
 @biometric_bp.route('/api/biometric/ping', methods=['GET'])
 def ping():
@@ -301,15 +322,18 @@ def biometric_auth_begin():
         
         from webauthn import generate_authentication_options
         
-        # Build allowCredentials with proper base64 IDs
+        # Build allowCredentials in canonical base64url, and hint that these
+        # live on the built-in platform authenticator (the fingerprint sensor)
+        # via transports=['internal']. The transports hint is what stops Windows
+        # from showing the generic "Windows Security" security-key/phone picker
+        # and sends it straight to Windows Hello.
         allow_credentials = []
         for cred in all_credentials:
-            try:
-                base64.b64decode(cred.credential_id)
-                allow_credentials.append({'type': 'public-key', 'id': cred.credential_id})
-            except:
-                encoded = base64.b64encode(cred.credential_id.encode() if isinstance(cred.credential_id, str) else cred.credential_id).decode()
-                allow_credentials.append({'type': 'public-key', 'id': encoded})
+            allow_credentials.append({
+                'type': 'public-key',
+                'id': bytes_to_b64url(cred.credential_id),
+                'transports': ['internal'],
+            })
         
         authentication_options = generate_authentication_options(
             rp_id=RP_ID,
@@ -375,10 +399,25 @@ def biometric_auth_complete(session_id):
         print(f"  Stored session ID in challenge: {challenge_data.get('session_id')}")
         sys.stdout.flush()
         
-        # Find the credential in database
+        # Find the credential in database. The browser sends `credential_id` as
+        # base64url; stored values may be standard base64 (legacy) or base64url.
+        # Match on the decoded raw bytes so neither encoding can cause a miss.
         print(f"\n  🔎 Looking up credential in database...")
         stored_credential = WebAuthnCredential.query.filter_by(credential_id=credential_id).first()
-        
+
+        if not stored_credential:
+            try:
+                target_bytes = b64_any_to_bytes(credential_id)
+                for cred in WebAuthnCredential.query.all():
+                    try:
+                        if b64_any_to_bytes(cred.credential_id) == target_bytes:
+                            stored_credential = cred
+                            break
+                    except Exception:
+                        continue
+            except Exception as decode_err:
+                print(f"  ⚠️ Could not decode incoming credential_id: {decode_err}")
+
         if not stored_credential:
             print(f"  ❌ Credential NOT FOUND in database")
             print(f"  Searching for credential_id: {credential_id[:40]}...")

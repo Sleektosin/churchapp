@@ -3151,6 +3151,134 @@ def items():
     return render_template('item.html', user=current_user, items = all_item)
 
 
+# ============================================================
+# INVENTORY ("Inventories") — full stock view with standard filters
+# ============================================================
+INVENTORY_LOW_STOCK_THRESHOLD = 5
+
+
+@views.route('/inventories', methods=['GET'])
+@login_required
+@require_role('Admin')
+def inventories():
+    """Inventory overview page: summary KPIs + a server-side DataTable."""
+    items = Item.query.all()
+    total_items = len(items)
+    total_units = sum((i.quantity or 0) for i in items)
+    total_value = sum(float(i.amount or 0) * (i.quantity or 0) for i in items)
+    low_stock = sum(1 for i in items if 0 < (i.quantity or 0) <= INVENTORY_LOW_STOCK_THRESHOLD)
+    out_of_stock = sum(1 for i in items if (i.quantity or 0) <= 0)
+
+    categories = [
+        c[0] for c in db.session.query(Item.custodian_unit)
+        .filter(Item.custodian_unit.isnot(None))
+        .distinct().order_by(Item.custodian_unit).all() if c[0]
+    ]
+
+    return render_template(
+        'inventories.html',
+        user=current_user,
+        total_items=total_items,
+        total_units=total_units,
+        total_value=total_value,
+        low_stock=low_stock,
+        out_of_stock=out_of_stock,
+        categories=categories,
+        low_stock_threshold=INVENTORY_LOW_STOCK_THRESHOLD,
+    )
+
+
+@views.route('/get_inventories_data', methods=['POST', 'GET'])
+@admin_required
+def get_inventories_data():
+    """Server-side DataTables source for the Inventory page.
+
+    Supports the global search box plus standard filters: category,
+    stock status (in / low / out) and a purchase-date range.
+    """
+    draw = request.form.get('draw')
+    start = int(request.form.get('start', 0))
+    length = int(request.form.get('length', 10))
+    search_value = request.form.get('search[value]', '').strip().lower()
+    category = request.form.get('category', '').strip()
+    status = request.form.get('status', '').strip()
+    start_date = request.form.get('start_date', '').strip()
+    end_date = request.form.get('end_date', '').strip()
+
+    base_query = Item.query
+
+    if search_value:
+        base_query = base_query.filter(or_(
+            Item.name.ilike(f'%{search_value}%'),
+            Item.description.ilike(f'%{search_value}%'),
+            Item.manufacturer.ilike(f'%{search_value}%'),
+            Item.model.ilike(f'%{search_value}%'),
+            Item.custodian_unit.ilike(f'%{search_value}%'),
+        ))
+
+    if category:
+        base_query = base_query.filter(Item.custodian_unit == category)
+
+    if status == 'out':
+        base_query = base_query.filter(or_(Item.quantity.is_(None), Item.quantity <= 0))
+    elif status == 'low':
+        base_query = base_query.filter(Item.quantity > 0, Item.quantity <= INVENTORY_LOW_STOCK_THRESHOLD)
+    elif status == 'in':
+        base_query = base_query.filter(Item.quantity > INVENTORY_LOW_STOCK_THRESHOLD)
+
+    if start_date:
+        try:
+            base_query = base_query.filter(Item.date_of_purchase >= datetime.strptime(start_date, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            base_query = base_query.filter(Item.date_of_purchase <= datetime.strptime(end_date, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+
+    total_records = db.session.query(func.count(Item.id)).scalar()
+    total_filtered = base_query.count()
+
+    rows = base_query.order_by(Item.name.asc()).offset(start).limit(length).all()
+
+    data = []
+    for item in rows:
+        qty = item.quantity or 0
+        unit_price = float(item.amount) if item.amount else 0
+        if qty <= 0:
+            status_text, status_class = 'Out of Stock', 'danger'
+        elif qty <= INVENTORY_LOW_STOCK_THRESHOLD:
+            status_text, status_class = 'Low Stock', 'warning'
+        else:
+            status_text, status_class = 'In Stock', 'success'
+
+        latest = Maintenance.query.filter_by(item_id=item.id).order_by(Maintenance.date.desc()).first()
+        last_maintenance = latest.date.strftime('%Y-%m-%d') if latest and latest.date else 'Never'
+
+        data.append({
+            'id': item.id,
+            'name': item.name or '',
+            'category': item.custodian_unit or 'Uncategorized',
+            'manufacturer': item.manufacturer or '',
+            'model': item.model or '',
+            'purchase_date': item.date_of_purchase.strftime('%Y-%m-%d') if item.date_of_purchase else '',
+            'quantity': qty,
+            'unit_price': unit_price,
+            'total_value': unit_price * qty,
+            'status_text': status_text,
+            'status_class': status_class,
+            'last_maintenance': last_maintenance,
+        })
+
+    return jsonify({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered,
+        'data': data,
+    })
+
+
 
 @views.route('/manageusers', methods=['GET', 'POST'])
 @login_required
@@ -3877,6 +4005,161 @@ def get_dashboard_data():
             'error': str(e),
             'message': 'Failed to load analytics data'
         }), 500
+
+
+# ============================================================
+# PER-TAB ANALYTICS ENDPOINTS (attendance / inventory / maintenance)
+# Each tab lazy-loads only the charts + tables it needs, honouring the
+# same date filter as the main dashboard. KPI cards remain global and are
+# still served by /api/analytics/dashboard.
+# ============================================================
+
+def _parse_analytics_date_range():
+    """Parse start_date/end_date query args (mirrors the dashboard endpoint).
+
+    Returns (parsed_start, parsed_end, start_str, end_str). Falls back to the
+    last 30 days when params are missing or malformed.
+    """
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    parsed_start = None
+    parsed_end = None
+    if start_date:
+        try:
+            parsed_start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            parsed_end = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    if not parsed_start or not parsed_end:
+        parsed_end = datetime.now().date()
+        parsed_start = parsed_end - timedelta(days=30)
+
+    if parsed_start > parsed_end:
+        parsed_start, parsed_end = parsed_end, parsed_start
+
+    return parsed_start, parsed_end, parsed_start.strftime('%Y-%m-%d'), parsed_end.strftime('%Y-%m-%d')
+
+
+def _filtered_analytics_queries(parsed_start, parsed_end):
+    """Build the date-filtered base queries shared by the analytics endpoints."""
+    session_query = Session.query.filter(
+        Session.date >= parsed_start,
+        Session.date <= parsed_end
+    )
+    session_ids_in_range = [s.id for s in session_query.with_entities(Session.id).all()]
+
+    attendance_query = Attendance.query
+    if session_ids_in_range:
+        attendance_query = attendance_query.filter(Attendance.session_id.in_(session_ids_in_range))
+    else:
+        attendance_query = attendance_query.filter(False)
+
+    return {
+        'user_query': User.query,
+        'session_query': session_query,
+        'attendance_query': attendance_query,
+        'item_query': Item.query,
+        'maintenance_query': Maintenance.query,
+    }
+
+
+@views.route('/api/analytics/attendance')
+@login_required
+def get_attendance_analytics():
+    """Charts + tables for the Attendance tab (date-filtered)."""
+    try:
+        parsed_start, parsed_end, start_str, end_str = _parse_analytics_date_range()
+        q = _filtered_analytics_queries(parsed_start, parsed_end)
+
+        # Normalise session performance to the {labels, values} shape the chart expects
+        session_perf = get_session_performance_chart(q['session_query'], q['attendance_query'])
+        charts = {
+            'session_performance': {
+                'labels': session_perf.get('labels', []),
+                'values': session_perf.get('attendance', []),
+                'capacity': session_perf.get('capacity', []),
+            },
+            'checkin_methods': get_checkin_methods_chart(q['attendance_query']),
+        }
+        tables = {
+            'sessions': get_sessions_table(q['session_query'], q['attendance_query']),
+        }
+        return jsonify({
+            'success': True,
+            'charts': charts,
+            'tables': tables,
+            'meta': {'start_date': start_str, 'end_date': end_str},
+        })
+    except Exception as e:
+        print(f"ERROR in get_attendance_analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@views.route('/api/analytics/inventory')
+@login_required
+def get_inventory_analytics():
+    """Charts + tables for the Inventory tab (date-filtered)."""
+    try:
+        parsed_start, parsed_end, start_str, end_str = _parse_analytics_date_range()
+        q = _filtered_analytics_queries(parsed_start, parsed_end)
+
+        charts = {
+            'inventory_value': get_inventory_value_chart(q['item_query'], start_str, end_str),
+            'inventory_category': get_inventory_category_chart(q['item_query']),
+        }
+        tables = {
+            'high_value_items': get_high_value_items_table(q['item_query']),
+            'attention_items': get_attention_items_table(q['item_query'], q['maintenance_query']),
+        }
+        return jsonify({
+            'success': True,
+            'charts': charts,
+            'tables': tables,
+            'meta': {'start_date': start_str, 'end_date': end_str},
+        })
+    except Exception as e:
+        print(f"ERROR in get_inventory_analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@views.route('/api/analytics/maintenance')
+@login_required
+def get_maintenance_analytics():
+    """Charts + tables for the Maintenance tab (date-filtered)."""
+    try:
+        parsed_start, parsed_end, start_str, end_str = _parse_analytics_date_range()
+        q = _filtered_analytics_queries(parsed_start, parsed_end)
+
+        charts = {
+            'maintenance_cost': get_maintenance_cost_chart(q['maintenance_query'], start_str, end_str),
+            'maintenance_status': get_maintenance_status_chart(q['maintenance_query']),
+        }
+        tables = {
+            'recent_maintenance': get_recent_maintenance_table(q['maintenance_query']),
+            'upcoming_maintenance': get_upcoming_maintenance_table(q['maintenance_query']),
+        }
+        return jsonify({
+            'success': True,
+            'charts': charts,
+            'tables': tables,
+            'meta': {'start_date': start_str, 'end_date': end_str},
+        })
+    except Exception as e:
+        print(f"ERROR in get_maintenance_analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
     # app.py - Add these filter endpoints
 @views.route('/api/analytics/filters/sessions')
@@ -4928,9 +5211,13 @@ def get_maintenance_status_chart(maintenance_query):
             .order_by(Maintenance.date.desc())\
             .first()
         
-        if latest_maintenance:
-            days_since = (datetime.now() - latest_maintenance.date).days
-            
+        if latest_maintenance and latest_maintenance.date:
+            # Maintenance.date is a date; normalise to datetime before subtracting
+            maint_date = latest_maintenance.date
+            if not isinstance(maint_date, datetime):
+                maint_date = datetime.combine(maint_date, datetime.min.time())
+            days_since = (datetime.now() - maint_date).days
+
             if days_since <= 180:
                 status_counts['good'] += 1
             elif days_since <= 270:

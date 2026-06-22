@@ -27,11 +27,12 @@
     <!-- Custom Analytics Styles -->
     <style>
         :root {
+            /* Brand palette */
             --primary: #4f46e5;
             --primary-dark: #4338ca;
             --primary-light: #818cf8;
             --success: #10b981;
-            --success-dark: #0d9488;
+            --success-dark: #059669;
             --warning: #f59e0b;
             --warning-dark: #d97706;
             --danger: #ef4444;
@@ -40,8 +41,41 @@
             --info-dark: #2563eb;
             --purple: #8b5cf6;
             --pink: #ec4899;
-            --dark: #1e293b;
+
+            /* Neutral / text scale (slate) — fixes previously-undefined --secondary */
+            --dark: #0f172a;        /* primary text */
+            --secondary: #475569;   /* secondary text (AA on white) */
+            --muted: #64748b;       /* tertiary text (AA on white) */
+            --border: #e2e8f0;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --canvas: #f1f5f9;
             --light: #f8fafc;
+
+            /* Radius scale */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-pill: 999px;
+
+            /* Spacing scale (8pt grid) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+
+            /* Elevation — layered, subtle */
+            --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+
+            /* Interaction */
+            --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.35);
+            --transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -643,6 +677,137 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* =====================================================================
+           DESIGN-SYSTEM OVERHAUL LAYER
+           Refines the visual language (crisper radii, layered/subtle shadows)
+           and fixes accessibility defects. Loaded last so it overrides the
+           legacy rules above without editing every component.
+           ===================================================================== */
+
+        /* --- Crisper elevation & radii (less "blobby", Stripe/Linear-class) --- */
+        .modern-card,
+        .kpi-card,
+        .chart-container,
+        .filter-card {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+        .dashboard-header { border-radius: var(--radius-lg); }
+        .card-header-modern { border-radius: 0; }
+
+        .kpi-card:hover,
+        .chart-container:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .modern-card:hover { box-shadow: var(--shadow-md); }
+
+        /* --- Readable, AA-compliant secondary/muted text --- */
+        .kpi-label,
+        .timeline-item p,
+        .chart-header .form-select,
+        .text-muted { color: var(--secondary) !important; }
+        .timeline-item small { color: var(--muted); }
+
+        /* --- Honest KPI trends: neutral by default, semantic when classed --- */
+        .kpi-trend { color: var(--secondary); font-weight: 500; }
+        .kpi-trend.up { color: var(--success-dark); }
+        .kpi-trend.down { color: var(--danger-dark); }
+        .kpi-trend.flat { color: var(--muted); }
+
+        /* --- Universal, visible keyboard focus (WCAG 2.4.7) --- */
+        a:focus-visible,
+        button:focus-visible,
+        .filter-tag:focus-visible,
+        .header-btn:focus-visible,
+        .nav-link:focus-visible,
+        .form-control:focus-visible,
+        .form-select:focus-visible,
+        .page-link:focus-visible {
+            outline: 2px solid transparent;
+            box-shadow: var(--focus-ring);
+            border-radius: var(--radius-sm);
+        }
+        /* Keep focus ring visible on the dark gradient header buttons */
+        .header-btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7);
+        }
+
+        /* --- Quick-filter chips are now real buttons --- */
+        button.filter-tag {
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--secondary);
+            font-family: inherit;
+        }
+        button.filter-tag:hover {
+            background: #e2e8f0;
+            color: var(--dark);
+        }
+
+        /* --- Accessible skeleton shimmer for KPI values (replaces flash of 0) --- */
+        .kpi-value.is-loading {
+            color: transparent;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(100deg, #eef2f7 30%, #f8fafc 50%, #eef2f7 70%);
+            background-size: 200% 100%;
+            animation: kpi-shimmer 1.2s ease-in-out infinite;
+            min-width: 64px;
+        }
+        @keyframes kpi-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* --- Per-tab loading: chart spinner overlay + table skeleton rows --- */
+        .chart-loading-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: var(--radius-lg);
+            z-index: 5;
+        }
+        .chart-spinner {
+            width: 38px;
+            height: 38px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        .skeleton-line {
+            display: block;
+            height: 14px;
+            width: 100%;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(100deg, #eef2f7 30%, #f8fafc 50%, #eef2f7 70%);
+            background-size: 200% 100%;
+            animation: kpi-shimmer 1.2s ease-in-out infinite;
+        }
+
+        /* --- Respect reduced-motion preferences --- */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+            .kpi-card:hover,
+            .chart-container:hover,
+            .modern-card:hover,
+            .header-btn:hover,
+            .analytics-tabs .nav-link:hover,
+            .btn-primary-modern:hover {
+                transform: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -671,12 +836,12 @@
                     <p>Comprehensive insights for church management</p>
                 </div>
                 <div class="header-actions">
-                    <button class="header-btn" onclick="exportDashboard()">
-                        <i class="fas fa-download"></i>
+                    <button type="button" class="header-btn" onclick="exportDashboard()" aria-label="Export dashboard">
+                        <i class="fas fa-download" aria-hidden="true"></i>
                         <span class="d-none d-md-inline">Export</span>
                     </button>
-                    <button class="header-btn" onclick="refreshDashboard()" id="refreshBtn">
-                        <i class="fas fa-sync-alt"></i>
+                    <button type="button" class="header-btn" onclick="refreshDashboard()" id="refreshBtn" aria-label="Refresh dashboard">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
                         <span class="d-none d-md-inline">Refresh</span>
                     </button>
                 </div>
@@ -719,25 +884,25 @@
                         </div>
                         
                         <div class="col-12">
-                            <div class="d-flex flex-wrap gap-2">
-                                <span class="filter-tag" onclick="setQuickDateRange('today')">
-                                    <i class="fas fa-calendar-day"></i> Today
-                                </span>
-                                <span class="filter-tag" onclick="setQuickDateRange('week')">
-                                    <i class="fas fa-calendar-week"></i> This Week
-                                </span>
-                                <span class="filter-tag" onclick="setQuickDateRange('month')">
-                                    <i class="fas fa-calendar-alt"></i> This Month
-                                </span>
-                                <span class="filter-tag" onclick="setQuickDateRange('quarter')">
-                                    <i class="fas fa-calendar-check"></i> This Quarter
-                                </span>
-                                <span class="filter-tag" onclick="setQuickDateRange('year')">
-                                    <i class="fas fa-calendar"></i> This Year
-                                </span>
-                                <span class="filter-tag" onclick="setQuickDateRange('last30')">
-                                    <i class="fas fa-history"></i> Last 30 Days
-                                </span>
+                            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Quick date ranges">
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('today')">
+                                    <i class="fas fa-calendar-day" aria-hidden="true"></i> Today
+                                </button>
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('week')">
+                                    <i class="fas fa-calendar-week" aria-hidden="true"></i> This Week
+                                </button>
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('month')">
+                                    <i class="fas fa-calendar-alt" aria-hidden="true"></i> This Month
+                                </button>
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('quarter')">
+                                    <i class="fas fa-calendar-check" aria-hidden="true"></i> This Quarter
+                                </button>
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('year')">
+                                    <i class="fas fa-calendar" aria-hidden="true"></i> This Year
+                                </button>
+                                <button type="button" class="filter-tag" onclick="setQuickDateRange('last30')">
+                                    <i class="fas fa-history" aria-hidden="true"></i> Last 30 Days
+                                </button>
                             </div>
                         </div>
                         
@@ -757,10 +922,10 @@
                     <div class="kpi-icon primary">
                         <i class="fas fa-users"></i>
                     </div>
-                    <h3 class="kpi-value" id="totalMembers">0</h3>
+                    <h3 class="kpi-value is-loading" id="totalMembers">0</h3>
                     <p class="kpi-label">Total Members</p>
-                    <div class="kpi-trend" id="memberGrowth">
-                        <i class="fas fa-arrow-up"></i> 0 this month
+                    <div class="kpi-trend up" id="memberGrowth">
+                        <i class="fas fa-arrow-up" aria-hidden="true"></i> 0 this month
                     </div>
                 </div>
                 
@@ -768,7 +933,7 @@
                     <div class="kpi-icon success">
                         <i class="fas fa-calendar-check"></i>
                     </div>
-                    <h3 class="kpi-value" id="avgAttendance">0%</h3>
+                    <h3 class="kpi-value is-loading" id="avgAttendance">0%</h3>
                     <p class="kpi-label">Avg. Attendance</p>
                     <div class="kpi-trend" id="attendanceTrend">
                         <i class="fas fa-minus"></i> 0% change
@@ -779,7 +944,7 @@
                     <div class="kpi-icon warning">
                         <i class="fas fa-user-plus"></i>
                     </div>
-                    <h3 class="kpi-value" id="firstTimers">0</h3>
+                    <h3 class="kpi-value is-loading" id="firstTimers">0</h3>
                     <p class="kpi-label">First Timers</p>
                     <div class="kpi-trend" id="firstTimerRate">
                         0% of total
@@ -790,7 +955,7 @@
                     <div class="kpi-icon purple">
                         <i class="fas fa-box"></i>
                     </div>
-                    <h3 class="kpi-value" id="totalItems">0</h3>
+                    <h3 class="kpi-value is-loading" id="totalItems">0</h3>
                     <p class="kpi-label">Total Items</p>
                     <div class="kpi-trend" id="inventoryValue">
                         ₦0 value
@@ -801,7 +966,7 @@
                     <div class="kpi-icon pink">
                         <i class="fas fa-tools"></i>
                     </div>
-                    <h3 class="kpi-value" id="pendingMaintenance">0</h3>
+                    <h3 class="kpi-value is-loading" id="pendingMaintenance">0</h3>
                     <p class="kpi-label">Pending Maintenance</p>
                     <div class="kpi-trend" id="maintenanceCost">
                         ₦0 cost
@@ -812,7 +977,7 @@
                     <div class="kpi-icon info">
                         <i class="fas fa-calendar-alt"></i>
                     </div>
-                    <h3 class="kpi-value" id="activeSessions">0</h3>
+                    <h3 class="kpi-value is-loading" id="activeSessions">0</h3>
                     <p class="kpi-label">Active Sessions</p>
                     <div class="kpi-trend" id="sessionTrend">
                         0 upcoming
@@ -1315,9 +1480,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup manual controls
     setupManualControls();
-    
+
     // Setup chart resize handling
     setupChartResize();
+
+    // Setup per-tab lazy loading (attendance / inventory / maintenance)
+    setupTabLazyLoading();
 });
 
 // ============ DATE FUNCTIONS ============
@@ -1456,6 +1624,10 @@ async function loadDashboardData() {
         
         currentFilters = { start_date: startDate, end_date: endDate };
         updateActiveFiltersDisplay();
+
+        // Date range changed → invalidate cached tab data and refresh the
+        // currently-open non-overview tab so it reflects the new range.
+        resetTabCache();
         
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
@@ -1484,6 +1656,9 @@ async function loadDashboardData() {
     } finally {
         isLoading = false;
         showLoading(false);
+        // Never leave KPI skeletons shimmering indefinitely (e.g. on fetch error)
+        document.querySelectorAll('.kpi-value.is-loading')
+            .forEach(el => el.classList.remove('is-loading'));
     }
 }
 
@@ -1516,6 +1691,7 @@ function updateKPICards(kpis) {
     const update = (id, value, suffix = '') => {
         const el = document.getElementById(id);
         if (el && value !== undefined) {
+            el.classList.remove('is-loading');
             el.textContent = typeof value === 'number' ? value.toLocaleString() + suffix : value;
         }
     };
@@ -2319,6 +2495,351 @@ function resetActiveMembersPagination() {
     if (showLessBtn) {
         showLessBtn.remove();
     }
+}
+
+// ============================================================
+// PER-TAB LAZY LOADING (attendance / inventory / maintenance)
+// Each tab fetches from its own endpoint the first time it is opened,
+// then caches until the date filter changes.
+// ============================================================
+const tabEndpoints = {
+    '#attendance':  { url: '/api/analytics/attendance',  render: renderAttendanceTab,  loaded: false },
+    '#inventory':   { url: '/api/analytics/inventory',   render: renderInventoryTab,   loaded: false },
+    '#maintenance': { url: '/api/analytics/maintenance', render: renderMaintenanceTab, loaded: false },
+};
+
+function setupTabLazyLoading() {
+    document.querySelectorAll('#analyticsTabs button[data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', (e) => {
+            const target = e.target.getAttribute('data-bs-target');
+            loadTabData(target);
+        });
+    });
+}
+
+function resetTabCache() {
+    Object.values(tabEndpoints).forEach(t => { t.loaded = false; });
+    // If a non-overview tab is currently visible, refresh it immediately.
+    const active = document.querySelector('#analyticsTabs .nav-link.active');
+    if (active) {
+        const target = active.getAttribute('data-bs-target');
+        if (tabEndpoints[target]) loadTabData(target, true);
+    }
+}
+
+// Canvas + table-body ids per tab, used to paint loading skeletons/spinners.
+const tabSkeletonTargets = {
+    '#attendance':  { charts: ['sessionPerformanceChart', 'checkinMethodsChart'], tables: ['sessionsTableBody'] },
+    '#inventory':   { charts: ['inventoryValueChart', 'inventoryCategoryChart'], tables: ['highValueItemsTableBody', 'attentionItemsTableBody'] },
+    '#maintenance': { charts: ['maintenanceCostChart', 'maintenanceStatusChart'], tables: ['recentMaintenanceTableBody', 'upcomingMaintenanceTableBody'] },
+};
+
+function skeletonRows(rows, cols) {
+    let html = '';
+    for (let r = 0; r < rows; r++) {
+        html += '<tr>';
+        for (let c = 0; c < cols; c++) html += '<td><span class="skeleton-line"></span></td>';
+        html += '</tr>';
+    }
+    return html;
+}
+
+function showTabLoading(target) {
+    const t = tabSkeletonTargets[target];
+    if (!t) return;
+
+    // Spinner overlay on each distinct chart card
+    const containers = new Set();
+    t.charts.forEach(id => {
+        const cv = document.getElementById(id);
+        const cont = cv && cv.closest('.chart-container');
+        if (cont) containers.add(cont);
+    });
+    containers.forEach(cont => {
+        if (cont.querySelector('.chart-loading-overlay')) return;
+        cont.style.position = 'relative';
+        const ov = document.createElement('div');
+        ov.className = 'chart-loading-overlay';
+        ov.innerHTML = '<div class="chart-spinner" role="status" aria-label="Loading"></div>';
+        cont.appendChild(ov);
+    });
+
+    // Shimmer rows for each table (tear down any existing DataTable first)
+    t.tables.forEach(id => {
+        const tb = document.getElementById(id);
+        if (!tb) return;
+        const tableEl = tb.closest('table');
+        if (tableEl && window.jQuery && $.fn.dataTable && $.fn.dataTable.isDataTable(tableEl)) {
+            $(tableEl).DataTable().destroy();
+        }
+        tb.innerHTML = skeletonRows(4, 4);
+    });
+}
+
+function hideTabLoading(target) {
+    const t = tabSkeletonTargets[target];
+    if (!t) return;
+    t.charts.forEach(id => {
+        const cv = document.getElementById(id);
+        const cont = cv && cv.closest('.chart-container');
+        const ov = cont && cont.querySelector('.chart-loading-overlay');
+        if (ov) ov.remove();
+    });
+}
+
+async function loadTabData(target, force = false) {
+    const tab = tabEndpoints[target];
+    if (!tab) return;                       // overview / members handled by dashboard
+    if (tab.loaded && !force) return;       // already cached for current filters
+
+    const params = new URLSearchParams();
+    if (currentFilters.start_date) params.append('start_date', currentFilters.start_date);
+    if (currentFilters.end_date) params.append('end_date', currentFilters.end_date);
+
+    showTabLoading(target);
+    try {
+        const res = await fetch(`${tab.url}?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Server error');
+        tab.render(data);
+        tab.loaded = true;
+    } catch (err) {
+        console.error(`Error loading ${target} tab:`, err);
+        // Replace skeletons with explicit error states so nothing shimmers forever
+        const t = tabSkeletonTargets[target] || { charts: [], tables: [] };
+        t.tables.forEach(id => emptyRow(id, 'Failed to load data'));
+        t.charts.forEach(id => showEmptyChart(id, 'Failed to load'));
+        showToast(`Could not load ${target.replace('#', '')} data: ${err.message}`, 'error');
+    } finally {
+        hideTabLoading(target);
+        setTimeout(resizeAllCharts, 100);
+    }
+}
+
+// ---------- Tab renderers ----------
+function renderAttendanceTab(data) {
+    const c = data.charts || {};
+
+    if (c.session_performance && (c.session_performance.values || []).length) {
+        renderSessionPerformanceChart(c.session_performance);
+    } else {
+        showEmptyChart('sessionPerformanceChart', 'No session data');
+    }
+
+    if (c.checkin_methods && (c.checkin_methods.values || []).some(v => v > 0)) {
+        renderPieChart('checkinMethodsChart', c.checkin_methods,
+            c.checkin_methods.colors || ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']);
+        const v = c.checkin_methods.values || [];
+        setText('qrCount', v[0] || 0);
+        setText('adminCount', v[1] || 0);
+        setText('manualCount', v[2] || 0);
+        setText('selfCount', v[3] || 0);
+    } else {
+        showEmptyChart('checkinMethodsChart', 'No check-in data');
+    }
+
+    const sessions = (data.tables && data.tables.sessions) || [];
+    if (sessions.length) {
+        renderEnhancedTable('sessionsTableBody', sessions, (s) => `
+            <td>${s.date || ''}</td>
+            <td><strong>${s.name || ''}</strong><br><small class="text-muted">${s.location || 'No location'}</small></td>
+            <td>${attendanceBar(s.attendance, s.capacity)}</td>
+            <td>${s.capacity || 0}</td>
+        `);
+    } else {
+        emptyRow('sessionsTableBody', 'No sessions in this date range');
+    }
+}
+
+function renderInventoryTab(data) {
+    const c = data.charts || {};
+
+    if (c.inventory_value && (c.inventory_value.values || []).length) {
+        renderLineChart('inventoryValueChart', c.inventory_value, '#8b5cf6', { currency: true, label: 'Inventory Value' });
+    } else {
+        showEmptyChart('inventoryValueChart', 'No inventory value data');
+    }
+
+    if (c.inventory_category && (c.inventory_category.values || []).length) {
+        renderDonutChart('inventoryCategoryChart', c.inventory_category,
+            ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899', '#0ea5e9']);
+    } else {
+        showEmptyChart('inventoryCategoryChart', 'No category data');
+    }
+
+    const highValue = (data.tables && data.tables.high_value_items) || [];
+    if (highValue.length) {
+        renderEnhancedTable('highValueItemsTableBody', highValue, (it) => `
+            <td><strong>${it.name || ''}</strong></td>
+            <td>${it.category || 'N/A'}</td>
+            <td>₦${parseFloat(it.total_value || 0).toLocaleString()}</td>
+            <td><span class="badge bg-${it.maintenance_status_class || 'secondary'}">${it.maintenance_status_text || 'Unknown'}</span></td>
+        `);
+    } else {
+        emptyRow('highValueItemsTableBody', 'No items found');
+    }
+
+    const attention = (data.tables && data.tables.attention_items) || [];
+    if (attention.length) {
+        renderEnhancedTable('attentionItemsTableBody', attention, (it) => `
+            <td><strong>${it.name || ''}</strong></td>
+            <td>${it.last_maintenance || 'Never'}</td>
+            <td><span class="badge bg-${(typeof it.days_since === 'number' && it.days_since > 270) ? 'danger' : 'warning'}">${it.days_since}</span></td>
+            <td><span class="badge bg-${it.status_class || 'secondary'}">${it.status || it.priority || 'Normal'}</span></td>
+        `);
+    } else {
+        emptyRow('attentionItemsTableBody', 'No items need attention');
+    }
+}
+
+function renderMaintenanceTab(data) {
+    const c = data.charts || {};
+
+    if (c.maintenance_cost && (c.maintenance_cost.values || []).length) {
+        renderLineChart('maintenanceCostChart', c.maintenance_cost, '#ec4899', { currency: true, label: 'Maintenance Cost' });
+    } else {
+        showEmptyChart('maintenanceCostChart', 'No maintenance cost data');
+    }
+
+    if (c.maintenance_status && (c.maintenance_status.values || []).some(v => v > 0)) {
+        renderDonutChart('maintenanceStatusChart', c.maintenance_status,
+            c.maintenance_status.colors || ['#10b981', '#f59e0b', '#ef4444', '#6b7280']);
+    } else {
+        showEmptyChart('maintenanceStatusChart', 'No maintenance status data');
+    }
+
+    const recent = (data.tables && data.tables.recent_maintenance) || [];
+    if (recent.length) {
+        renderEnhancedTable('recentMaintenanceTableBody', recent, (m) => `
+            <td><strong>${m.item_name || ''}</strong></td>
+            <td>${m.date || ''}</td>
+            <td>₦${parseFloat(m.cost || 0).toLocaleString()}</td>
+            <td>${m.vendor || 'N/A'}</td>
+        `);
+    } else {
+        emptyRow('recentMaintenanceTableBody', 'No recent maintenance');
+    }
+
+    const upcoming = (data.tables && data.tables.upcoming_maintenance) || [];
+    if (upcoming.length) {
+        renderEnhancedTable('upcomingMaintenanceTableBody', upcoming, (m) => `
+            <td><strong>${m.name || ''}</strong></td>
+            <td>${m.next_due || ''}</td>
+            <td><span class="badge bg-${m.days_until <= 0 ? 'danger' : m.days_until <= 7 ? 'warning' : 'success'}">${m.days_until}</span></td>
+            <td><span class="badge bg-${m.priority_class || 'secondary'}">${m.priority_text || 'Normal'}</span></td>
+        `);
+    } else {
+        emptyRow('upcomingMaintenanceTableBody', 'No upcoming maintenance');
+    }
+}
+
+// ---------- Small render helpers ----------
+function renderLineChart(canvasId, data, color, opts = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const ctx = canvas.getContext('2d');
+    const currency = !!opts.currency;
+    try {
+        charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: opts.label || '',
+                    data: data.values || [],
+                    borderColor: color,
+                    backgroundColor: hexToRgba(color, 0.12),
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: currency ? { callbacks: { label: (c) => '₦' + Number(c.parsed.y).toLocaleString() } } : {}
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: currency ? { callback: (v) => '₦' + Number(v).toLocaleString() } : {}
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error rendering ' + canvasId, error);
+    }
+}
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function emptyRow(tbodyId, msg = 'No data available') {
+    const tb = document.getElementById(tbodyId);
+    if (!tb) return;
+    // If a DataTable was initialised on this table, tear it down before
+    // writing raw HTML so its internal state does not desync.
+    const tableEl = tb.closest('table');
+    if (tableEl && window.jQuery && $.fn.dataTable && $.fn.dataTable.isDataTable(tableEl)) {
+        $(tableEl).DataTable().destroy();
+    }
+    tb.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">${msg}</td></tr>`;
+}
+
+// Populate a table body, then (re)initialise a DataTable on it so every
+// analytics list gets search / sort / pagination consistently.
+// NOTE: `tableId` is the <tbody> id, so we must target its parent <table> —
+// initialising DataTables on a <tbody> throws "Non-table node initialisation".
+function renderEnhancedTable(tableId, data, rowTemplate, opts = {}) {
+    const tb = document.getElementById(tableId);
+    const tableEl = tb && tb.closest('table');
+    if (tableEl && window.jQuery && $.fn.dataTable && $.fn.dataTable.isDataTable(tableEl)) {
+        $(tableEl).DataTable().destroy();
+    }
+    updateTable(tableId, data, rowTemplate);
+    if (tableEl && window.jQuery && $.fn.dataTable) {
+        $(tableEl).DataTable(Object.assign({
+            pageLength: 5,
+            lengthChange: false,
+            searching: true,
+            info: true,
+            autoWidth: false,
+            order: [],
+            destroy: true,
+            language: { search: '', searchPlaceholder: 'Search...' }
+        }, opts));
+    }
+}
+
+function attendanceBar(attendance, capacity) {
+    const a = attendance || 0;
+    const cap = capacity || 1;
+    const occ = Math.round((a / cap) * 100);
+    const cls = occ > 80 ? 'bg-success' : occ > 50 ? 'bg-warning' : 'bg-danger';
+    return `<div class="d-flex align-items-center"><span class="me-2">${a}</span>` +
+           `<div class="progress-modern"><div class="progress-bar-modern ${cls}" style="width:${Math.min(occ, 100)}%"></div></div></div>`;
+}
+
+function hexToRgba(hex, alpha) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // ============ UTILITY FUNCTIONS ============
