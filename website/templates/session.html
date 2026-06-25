@@ -733,6 +733,35 @@
 
     <script>
         $(document).ready(function() {
+            // ---- Prevent scheduling a session in the past ----
+            (function () {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${yyyy}-${mm}-${dd}`;
+
+                // Block past dates in the picker for new sessions
+                const newDate = document.getElementById('activityDate');
+                if (newDate) newDate.setAttribute('min', todayStr);
+
+                const addForm = document.getElementById('addActivityForm');
+                if (addForm) {
+                    addForm.addEventListener('submit', function (e) {
+                        const val = newDate ? newDate.value : '';
+                        if (val && val < todayStr) {
+                            e.preventDefault();
+                            if (typeof showToast === 'function') {
+                                showToast('Session date cannot be in the past. Please choose today or a future date.', 'error');
+                            } else {
+                                alert('Session date cannot be in the past. Please choose today or a future date.');
+                            }
+                            newDate.focus();
+                        }
+                    });
+                }
+            })();
+
             // Initialize DataTable with responsive extension - SIMPLIFIED & FIXED
             var activityTable = $('#activityTable').DataTable({
                 processing: true,

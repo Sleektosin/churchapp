@@ -138,7 +138,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-only-insecure-change-me')
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=3)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 3600,
@@ -241,6 +241,31 @@ def create_app():
     @login_manager.user_loader
     def load_user(id):
         return User.query.get(int(id))
+
+    # ---------------- RBAC wiring ----------------
+    from .rbac import seed_roles, ensure_role_permissions_column, user_has_permission, user_has_role, Permission
+    from .models import Role
+
+    # Ensure the role schema/data is ready (migration must run before any Role query)
+    with app.app_context():
+        ensure_role_permissions_column(db)
+        seed_roles(db, Role)
+
+    # Expose permission helpers to all templates for UI gating
+    @app.context_processor
+    def inject_rbac_helpers():
+        from flask_login import current_user
+        return {
+            'has_permission': lambda perm: user_has_permission(current_user, perm),
+            'has_any_role': lambda *names: user_has_role(current_user, *names),
+            'Permission': Permission,
+        }
+
+    # Friendly 403 page for denied access
+    @app.errorhandler(403)
+    def forbidden(_e):
+        from flask import render_template
+        return render_template('403.html'), 403
 
     return app
 

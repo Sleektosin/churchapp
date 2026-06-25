@@ -14,7 +14,7 @@ from datetime import timedelta
 from unicodedata import category
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 import requests
-from .models import User, Session,session_users, Role,Item, Maintenance, Attendance,WebAuthnCredential 
+from .models import User, Session,session_users, Role,Item, Maintenance, Attendance,WebAuthnCredential, user_roles
 from website import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
@@ -23,6 +23,13 @@ import os
 from flask import send_from_directory, send_file,abort
 from sqlalchemy.ext.automap import automap_base
 from . import create_app, mail, api,csrf
+# Centralized RBAC (single source of truth for roles/permissions)
+from .rbac import (
+    admin_required,
+    roles_required as require_role,
+    permission_required,
+    Permission,
+)
 from flask_paginate import Pagination, get_page_args
 from flask_sqlalchemy import SQLAlchemy
 from json2html import json2html
@@ -483,22 +490,13 @@ def remove_biometric(user_id, cred_id):
 
 
 
-def admin_required(view_func):
-    @wraps(view_func)
-    @login_required
-    def wrapped_view(*args, **kwargs):
-        if not current_user.has_role('Admin'):
-            abort(403)
-        return view_func(*args, **kwargs)
-    return wrapped_view
-
 ##################RBAC################################
+# admin_required / require_role are imported from website.rbac (centralized).
 
-
-# Add this to your views.py
 from flask import render_template
 
 @views.route('/enroll-biometric/<int:user_id>')
+@admin_required
 def enroll_biometric(user_id):
     """Biometric enrollment page after registration or from profile"""
     user = User.query.get_or_404(user_id)
@@ -509,23 +507,6 @@ def enroll_biometric(user_id):
         user_email=user.email,
         next_url=url_for('views.login')
     )
-
-def require_role(*roles):
-    """Decorator to check if user has required role(s)"""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated:
-                return redirect(url_for('views.login'))
-            
-            if not any(current_user.has_role(role) for role in roles):
-                flash('You do not have permission to access this page.', category='error')
-                abort(403)  # Forbidden
-            
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator   
-
 
 ######################################################
 @api.route('/api', '/api/')
@@ -1019,6 +1000,7 @@ def count_female_users():
 
 @views.route('/analytics')
 @login_required
+@permission_required(Permission.VIEW_ANALYTICS)
 def analytics():
     user_count = count_registered_users()
     session_count = count_sessions()
@@ -1660,6 +1642,16 @@ def get_users_data():
     query = base_query.order_by(User.id.asc()).offset(start).limit(length)
     items = query.all()
 
+    # Roles for the users on this page (single query, avoids N+1)
+    page_user_ids = [item.id for item in items]
+    roles_map = {}
+    if page_user_ids:
+        role_rows = db.session.query(user_roles.c.user_id, Role.name) \
+            .join(Role, Role.id == user_roles.c.role_id) \
+            .filter(user_roles.c.user_id.in_(page_user_ids)).all()
+        for uid, rname in role_rows:
+            roles_map.setdefault(uid, []).append(rname)
+
     data = []
     for item in items:
         data.append({
@@ -1672,6 +1664,7 @@ def get_users_data():
             'phone_no': item.phone_no or '',
             'has_biometric': item.biometric_count > 0,
             'biometric_count': item.biometric_count,
+            'roles': roles_map.get(item.id, []),
         })
 
     response = {
@@ -2143,6 +2136,12 @@ def addsession():
             # Scheduling fields
             date_str = request.form.get("activitydate")
             date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
+
+            # Reject sessions scheduled in the past
+            if date and date < datetime.now().date():
+                flash("Session date cannot be in the past. Please choose today or a future date.", "error")
+                return redirect(url_for('views.sessions'))
+
             start_time_str = request.form.get("starttime")
             start_time = datetime.strptime(start_time_str, '%H:%M').time() if start_time_str else None
             end_time_str = request.form.get("endtime")
@@ -2570,7 +2569,7 @@ def item(id):
 @views.route('/maintenance/history')
 @csrf.exempt
 @login_required
-@require_role('Admin')
+@permission_required(Permission.MANAGE_MAINTENANCE)
 def maintenance_history():
     """Render the maintenance history page"""
     # Set context for the left navbar active state
@@ -2803,11 +2802,216 @@ def userdetails(id):
     user.first_timer_count = attendance_stats['first_timer_count']
     user.is_first_timer = attendance_stats['is_first_timer']
     
-    return render_template("userdetail.html", 
-                         user=user, 
+    all_roles = Role.query.order_by(Role.name).all()
+
+    return render_template("userdetail.html",
+                         user=user,
                          recent_sessions=recent_sessions,
                          qr_code_data=qr_code_data,
+                         all_roles=all_roles,
+                         user_role_names=[r.name for r in user.roles],
                          userdetails=True)
+
+@views.route('/admin/reset-user-email/<int:user_id>', methods=['POST'])
+@login_required
+@permission_required(Permission.RESET_EMAILS)
+def admin_reset_user_email(user_id):
+    """Allow an administrator to change a user's email from their profile."""
+    new_email = (request.form.get('new_email') or '').strip()
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    if not new_email or '@' not in new_email or len(new_email) < 4:
+        return jsonify({'success': False, 'error': 'Please provide a valid email address.'}), 400
+
+    existing = User.query.filter(User.email == new_email, User.id != user.id).first()
+    if existing:
+        return jsonify({'success': False, 'error': 'That email is already in use by another account.'}), 400
+
+    old_email = user.email
+    user.email = new_email
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Could not update email: {str(e)}'}), 500
+
+    print(f"Admin {current_user.username} changed email for user {user.id}: {old_email} -> {new_email}")
+    return jsonify({'success': True, 'message': 'Email updated successfully.', 'email': new_email})
+
+
+@views.route('/admin/reset-user-password/<int:user_id>', methods=['POST'])
+@login_required
+@permission_required(Permission.RESET_PASSWORDS)
+def admin_reset_user_password(user_id):
+    """Allow an administrator to set a new password for a user."""
+    new_password = request.form.get('new_password') or ''
+    confirm_password = request.form.get('confirm_password') or ''
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    if len(new_password) < 7:
+        return jsonify({'success': False, 'error': 'Password must be at least 7 characters.'}), 400
+    if confirm_password and new_password != confirm_password:
+        return jsonify({'success': False, 'error': "Passwords don't match."}), 400
+
+    user.password = generate_password_hash(new_password, method='sha256')
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Could not update password: {str(e)}'}), 500
+
+    print(f"Admin {current_user.username} reset password for user {user.id} ({user.username})")
+    return jsonify({'success': True, 'message': f"Password reset successfully for {user.username}."})
+
+
+@views.route('/admin/update-user-roles/<int:user_id>', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_USERS)
+def admin_update_user_roles(user_id):
+    """Assign / revoke roles for a user (RBAC management)."""
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'}), 404
+
+    # Collect selected role ids (sent as repeated 'role_ids' fields)
+    raw_ids = request.form.getlist('role_ids')
+    try:
+        role_ids = [int(rid) for rid in raw_ids if str(rid).strip()]
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Invalid role selection.'}), 400
+
+    selected_roles = Role.query.filter(Role.id.in_(role_ids)).all() if role_ids else []
+    selected_role_ids = {r.id for r in selected_roles}
+
+    admin_role = Role.query.filter_by(name='Admin').first()
+    removing_admin = admin_role and user.has_role('Admin') and admin_role.id not in selected_role_ids
+
+    # Guard 1: an admin cannot strip their own Admin role (avoid self lock-out)
+    if removing_admin and user.id == current_user.id:
+        return jsonify({'success': False, 'error': "You can't remove your own Admin role."}), 400
+
+    # Guard 2: never remove the last administrator in the system
+    if removing_admin:
+        remaining_admins = admin_role.users.filter(User.id != user.id).count()
+        if remaining_admins == 0:
+            return jsonify({'success': False, 'error': 'Cannot remove the last administrator.'}), 400
+
+    user.roles = selected_roles
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Could not update roles: {str(e)}'}), 500
+
+    role_names = [r.name for r in selected_roles]
+    print(f"Admin {current_user.username} set roles for user {user.id} ({user.username}): {role_names}")
+    return jsonify({'success': True, 'message': 'Roles updated successfully.', 'roles': role_names})
+
+
+# ============================================================
+# ROLES ADMINISTRATION (create / edit / delete roles)
+# ============================================================
+@views.route('/admin/roles')
+@login_required
+@permission_required(Permission.MANAGE_ROLES)
+def manage_roles():
+    from .rbac import (role_effective_permissions, PROTECTED_ROLE_NAMES,
+                       PERMISSION_LABELS, ALL_PERMISSIONS, ROLE_ADMIN)
+    roles = Role.query.order_by(Role.name).all()
+    roles_info = []
+    for r in roles:
+        eff = role_effective_permissions(r)
+        roles_info.append({
+            'id': r.id,
+            'name': r.name,
+            'description': r.description or '',
+            'user_count': r.users.count(),
+            'permissions': sorted(eff),
+            'permission_keys': list(eff),
+            'protected': r.name in PROTECTED_ROLE_NAMES,
+            'perms_locked': r.name == ROLE_ADMIN,
+        })
+    all_permissions = [{'key': k, 'label': PERMISSION_LABELS[k]} for k in ALL_PERMISSIONS]
+    return render_template('roles.html', roles_info=roles_info, all_permissions=all_permissions)
+
+
+@views.route('/admin/roles/create', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_ROLES)
+def create_role():
+    from .rbac import serialize_permissions
+    name = (request.form.get('name') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'error': 'Role name is required.'}), 400
+    if Role.query.filter(func.lower(Role.name) == name.lower()).first():
+        return jsonify({'success': False, 'error': 'A role with that name already exists.'}), 400
+
+    permissions = serialize_permissions(request.form.getlist('permissions'))
+    db.session.add(Role(name=name, description=description, permissions=permissions))
+    db.session.commit()
+    print(f"Admin {current_user.username} created role '{name}' with perms [{permissions}]")
+    return jsonify({'success': True, 'message': f'Role "{name}" created.'})
+
+
+@views.route('/admin/roles/update/<int:role_id>', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_ROLES)
+def update_role(role_id):
+    from .rbac import PROTECTED_ROLE_NAMES, serialize_permissions, ROLE_ADMIN
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({'success': False, 'error': 'Role not found.'}), 404
+
+    name = (request.form.get('name') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'error': 'Role name is required.'}), 400
+
+    # Core roles are keyed by name in the permission matrix, so they can't be renamed
+    if role.name in PROTECTED_ROLE_NAMES and name != role.name:
+        return jsonify({'success': False, 'error': f'The "{role.name}" role cannot be renamed.'}), 400
+
+    dupe = Role.query.filter(func.lower(Role.name) == name.lower(), Role.id != role.id).first()
+    if dupe:
+        return jsonify({'success': False, 'error': 'Another role already uses that name.'}), 400
+
+    role.name = name
+    role.description = description
+    # The Admin role always retains every permission; others are fully editable
+    if role.name != ROLE_ADMIN:
+        role.permissions = serialize_permissions(request.form.getlist('permissions'))
+    db.session.commit()
+    print(f"Admin {current_user.username} updated role '{role.name}' perms [{role.permissions}]")
+    return jsonify({'success': True, 'message': 'Role updated.'})
+
+
+@views.route('/admin/roles/delete/<int:role_id>', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_ROLES)
+def delete_role(role_id):
+    from .rbac import PROTECTED_ROLE_NAMES
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({'success': False, 'error': 'Role not found.'}), 404
+    if role.name in PROTECTED_ROLE_NAMES:
+        return jsonify({'success': False, 'error': f'The "{role.name}" role is a core role and cannot be deleted.'}), 400
+
+    name = role.name
+    # Detach the role from any users before deleting (clears association rows)
+    for u in role.users.all():
+        u.roles.remove(role)
+    db.session.delete(role)
+    db.session.commit()
+    print(f"Admin {current_user.username} deleted role '{name}'")
+    return jsonify({'success': True, 'message': f'Role "{name}" deleted.'})
+
 
 def get_user_attendance_stats(user_id):
     """Calculate attendance statistics for a user"""
@@ -3102,7 +3306,7 @@ def delete(id):
 @views.route('/sessions', methods=['GET', 'POST'])
 @csrf.exempt
 @login_required
-@require_role('Admin')
+@permission_required(Permission.MANAGE_SESSIONS)
 def sessions():
     all_activity = db.session.query(
         Session.id,
@@ -3145,7 +3349,7 @@ def sessions():
 @views.route('/items', methods=['GET', 'POST'])
 @csrf.exempt
 @login_required
-@require_role('Admin')
+@permission_required(Permission.MANAGE_INVENTORY)
 def items():
     all_item = Item.query.all()
     return render_template('item.html', user=current_user, items = all_item)
@@ -3159,7 +3363,7 @@ INVENTORY_LOW_STOCK_THRESHOLD = 5
 
 @views.route('/inventories', methods=['GET'])
 @login_required
-@require_role('Admin')
+@permission_required(Permission.MANAGE_INVENTORY)
 def inventories():
     """Inventory overview page: summary KPIs + a server-side DataTable."""
     items = Item.query.all()
@@ -3282,7 +3486,7 @@ def get_inventories_data():
 
 @views.route('/manageusers', methods=['GET', 'POST'])
 @login_required
-@require_role('Admin')
+@permission_required(Permission.MANAGE_USERS)
 def manageusers():
     all_user = User.query.with_entities(
         User.id,
@@ -3293,7 +3497,8 @@ def manageusers():
         User.email,
         User.phone_no
     )
-    return render_template('manageusers.html', user=current_user, users = all_user)
+    roles_list = [{'id': r.id, 'name': r.name} for r in Role.query.order_by(Role.name).all()]
+    return render_template('manageusers.html', user=current_user, users=all_user, roles_list=roles_list)
 
 
 
@@ -3338,34 +3543,139 @@ def createusers():
 
 
 
+RESET_CODE_TTL_MINUTES = 15
+
+
+def send_password_reset_email(user_email, username, code, retries=3, delay=3):
+    """Email a password-reset code to the user via SMTP."""
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587
+    smtp_user = 'tosinsleek01@gmail.com'
+    smtp_password = 'ugqm eupj ikts asom'
+
+    msg = EmailMessage()
+    msg['From'] = formataddr(('RCCG Power House Parish', smtp_user))
+    msg['To'] = user_email
+    msg['Subject'] = 'Your Password Reset Code'
+
+    text_body = (
+        f"Hello {username},\n\n"
+        f"Your password reset code is: {code}\n\n"
+        f"This code expires in {RESET_CODE_TTL_MINUTES} minutes. "
+        f"If you did not request a password reset, please ignore this email.\n"
+    )
+    html_body = f"""
+    <html><body style="font-family:Inter,Arial,sans-serif;color:#1e293b;">
+        <h2 style="color:#4a6bff;">Password Reset</h2>
+        <p>Hello {username},</p>
+        <p>Use the code below to reset your password:</p>
+        <p style="font-size:30px;font-weight:700;letter-spacing:6px;color:#1e293b;
+                  background:#f1f5f9;padding:14px 20px;border-radius:10px;display:inline-block;">
+            {code}
+        </p>
+        <p style="color:#64748b;">This code expires in {RESET_CODE_TTL_MINUTES} minutes.
+           If you did not request this, you can safely ignore this email.</p>
+    </body></html>
+    """
+    msg.set_content(text_body)
+    msg.add_alternative(html_body, subtype='html')
+
+    for attempt in range(retries):
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+            print(f'Password reset code sent to {user_email}')
+            return True
+        except smtplib.SMTPException as e:
+            print(f'Failed to send reset code to {user_email} (attempt {attempt + 1}): {e}')
+            time.sleep(delay)
+    return False
+
+
 @views.route('/forgotpassword', methods=['GET', 'POST'])
 def forgotpassword():
+    # Step 1 (GET): show the email-request form
     if request.method == 'GET':
-        return render_template('forgotpassword.html')
-    elif request.method == "POST":
-        email = request.form.get("email")
-        password1 = request.form.get("password1")
-        password2 = request.form.get("password2")      
+        return render_template('forgotpassword.html', step='request')
+
+    action = request.form.get('action', 'send_code')
+
+    # Step 2: verify the email exists and email a reset code
+    if action == 'send_code':
+        email = (request.form.get('email') or '').strip()
+
+        if len(email) < 4 or '@' not in email:
+            flash('Please enter a valid email address.', category='error')
+            return render_template('forgotpassword.html', step='request', email=email)
 
         user = User.query.filter_by(email=email).first()
-        if user:           
-            if len(email) < 4:
-                flash('Email must be greater than 3 characters.', category='error')
-            elif password1 != password2:
-                flash('Passwords don\'t match.', category='error')
-            elif len(password1) < 7:
-                flash('Passwords must be atleast 7 characters', category='error')
-            else:
-                # update user to database
-                password =generate_password_hash(password1, method='sha256')
-                user.password = password
-                db.session.add(user)
-                db.session.commit()
-                flash('Password Updated Successfuly!', category='success')
-                return redirect(url_for('views.login'))
-        else:
-            flash('Email address not found.', category='error')
-    return render_template("forgotpassword.html")
+        if not user:
+            # Requirement: confirm whether the email exists
+            flash('No account is registered with that email address.', category='error')
+            return render_template('forgotpassword.html', step='request', email=email)
+
+        code = generate_code()
+        session['reset_email'] = email
+        session['reset_code'] = code
+        session['reset_code_expires'] = (datetime.now() + timedelta(minutes=RESET_CODE_TTL_MINUTES)).isoformat()
+
+        if send_password_reset_email(email, user.username, code):
+            flash('A password reset code has been sent to your email.', category='success')
+            return render_template('forgotpassword.html', step='reset', email=email)
+
+        flash('We could not send the reset email right now. Please try again shortly.', category='error')
+        return render_template('forgotpassword.html', step='request', email=email)
+
+    # Step 3: validate the code and set the new password
+    if action == 'reset':
+        email = session.get('reset_email')
+        stored_code = session.get('reset_code')
+        expires_raw = session.get('reset_code_expires')
+        code = (request.form.get('code') or '').strip()
+        password1 = request.form.get('password1') or ''
+        password2 = request.form.get('password2') or ''
+
+        if not email or not stored_code or not expires_raw:
+            flash('Your reset session has expired. Please start again.', category='error')
+            return render_template('forgotpassword.html', step='request')
+
+        try:
+            expired = datetime.now() > datetime.fromisoformat(expires_raw)
+        except (ValueError, TypeError):
+            expired = True
+        if expired:
+            for key in ('reset_email', 'reset_code', 'reset_code_expires'):
+                session.pop(key, None)
+            flash('The reset code has expired. Please request a new one.', category='error')
+            return render_template('forgotpassword.html', step='request', email=email)
+
+        if code != stored_code:
+            flash('Invalid reset code. Please check it and try again.', category='error')
+            return render_template('forgotpassword.html', step='reset', email=email)
+        if password1 != password2:
+            flash("Passwords don't match.", category='error')
+            return render_template('forgotpassword.html', step='reset', email=email)
+        if len(password1) < 7:
+            flash('Password must be at least 7 characters.', category='error')
+            return render_template('forgotpassword.html', step='reset', email=email)
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('Account not found.', category='error')
+            return render_template('forgotpassword.html', step='request')
+
+        user.password = generate_password_hash(password1, method='sha256')
+        db.session.commit()
+
+        for key in ('reset_email', 'reset_code', 'reset_code_expires'):
+            session.pop(key, None)
+
+        flash('Password updated successfully! Please sign in.', category='success')
+        return redirect(url_for('views.login'))
+
+    return render_template('forgotpassword.html', step='request')
 
 
 # @views.route('/test')

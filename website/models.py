@@ -17,11 +17,14 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.String(255))
+    # Comma-separated permission keys (RBAC). NULL = use code-defined defaults.
+    permissions = db.Column(db.Text, nullable=True)
 
 
-    def __init__(self, name, description=None):
+    def __init__(self, name, description=None, permissions=None):
         self.name = name
         self.description = description
+        self.permissions = permissions
 
     def __repr__(self):
         return f'<Role {self.name}>'
@@ -57,6 +60,11 @@ class User(db.Model, UserMixin):
     def has_role(self, role_name):
         """Check if user has the specified role"""
         return any(role.name == role_name for role in self.roles)
+
+    def has_permission(self, permission):
+        """Check if any of the user's roles grants the given permission (RBAC)."""
+        from website.rbac import user_has_permission
+        return user_has_permission(self, permission)
 
 
     def __init__(self, username, email, password, qr_code, first_name, last_name, 

@@ -422,6 +422,42 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* Role assignment chips */
+        .role-chip {
+            position: relative;
+            display: block;
+            min-width: 180px;
+            cursor: pointer;
+            margin: 0;
+        }
+        .role-chip .role-checkbox {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .role-chip-body {
+            display: block;
+            padding: 0.9rem 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        .role-chip:hover .role-chip-body { border-color: #c7d2fe; }
+        .role-chip-name { font-weight: 600; color: var(--dark, #0f172a); display: flex; align-items: center; gap: 8px; }
+        .role-chip-desc { color: #64748b; display: block; margin-top: 4px; }
+        .role-tick { color: #cbd5e1; transition: color 0.2s ease; }
+        .role-chip .role-checkbox:checked + .role-chip-body {
+            border-color: var(--primary, #4f46e5);
+            background: rgba(79, 70, 229, 0.06);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+        .role-chip .role-checkbox:checked + .role-chip-body .role-tick { color: var(--primary, #4f46e5); }
+        .role-chip .role-checkbox:focus-visible + .role-chip-body {
+            outline: 2px solid var(--primary, #4f46e5);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -587,6 +623,131 @@
                                         {% endif %}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset Password (Admin) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header-modern">
+                            <h3><i class="fas fa-key me-2"></i>Reset Password</h3>
+                            <p>Set a new password for this user's account</p>
+                        </div>
+                        <div class="p-4">
+                            <form id="resetPasswordForm" onsubmit="return false;">
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label class="info-label" for="newPasswordInput">
+                                            <i class="fas fa-lock"></i><span>New Password</span>
+                                        </label>
+                                        <input type="password" class="form-control mt-2" id="newPasswordInput"
+                                               placeholder="At least 7 characters" minlength="7" required
+                                               style="border:2px solid #e2e8f0;border-radius:12px;padding:0.7rem 1rem;">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="info-label" for="confirmPasswordInput">
+                                            <i class="fas fa-lock"></i><span>Confirm Password</span>
+                                        </label>
+                                        <input type="password" class="form-control mt-2" id="confirmPasswordInput"
+                                               placeholder="Re-enter new password" minlength="7" required
+                                               style="border:2px solid #e2e8f0;border-radius:12px;padding:0.7rem 1rem;">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="submit" class="btn-modern btn-primary-modern w-100" id="resetPasswordBtn">
+                                            <i class="fas fa-save me-2"></i>Reset
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roles & Access (Admin) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header-modern">
+                            <h3><i class="fas fa-user-shield me-2"></i>Roles &amp; Access</h3>
+                            <p>Assign or revoke roles for this user</p>
+                        </div>
+                        <div class="p-4">
+                            <form id="rolesForm" onsubmit="return false;">
+                                <div class="d-flex flex-wrap gap-3" id="rolesContainer">
+                                    {% for role in all_roles %}
+                                    <label class="role-chip">
+                                        <input type="checkbox" class="role-checkbox" value="{{ role.id }}"
+                                               data-name="{{ role.name }}"
+                                               {% if role.name in user_role_names %}checked{% endif %}>
+                                        <span class="role-chip-body">
+                                            <span class="role-chip-name">
+                                                <i class="fas fa-check-circle role-tick"></i>{{ role.name }}
+                                            </span>
+                                            {% if role.description %}
+                                            <small class="role-chip-desc">{{ role.description }}</small>
+                                            {% endif %}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% if not all_roles %}
+                                <p class="text-muted mb-0">No roles are defined yet.</p>
+                                {% endif %}
+                                <button type="submit" class="btn-modern btn-primary-modern mt-3" id="saveRolesBtn">
+                                    <i class="fas fa-save me-2"></i>Save Roles
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account & Security (Admin) -->
+            <div class="row mt-4">
+                <div class="col-lg-6">
+                    <div class="modern-card h-100">
+                        <div class="card-header-modern">
+                            <h3><i class="fas fa-envelope-circle-check me-2"></i>Reset Email Address</h3>
+                            <p>Update the email address on this account</p>
+                        </div>
+                        <div class="p-4">
+                            <form id="resetEmailForm" onsubmit="return false;">
+                                <label class="info-label" for="newEmailInput">
+                                    <i class="fas fa-envelope"></i><span>New Email Address</span>
+                                </label>
+                                <input type="email" class="form-control mt-2" id="newEmailInput"
+                                       value="{{ user.email or '' }}" placeholder="name@example.com" required
+                                       style="border:2px solid #e2e8f0;border-radius:12px;padding:0.7rem 1rem;">
+                                <button type="submit" class="btn-modern btn-primary-modern mt-3" id="resetEmailBtn">
+                                    <i class="fas fa-save me-2"></i>Update Email
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="modern-card h-100">
+                        <div class="card-header-modern d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3><i class="fas fa-fingerprint me-2"></i>Fingerprint Devices</h3>
+                                <p>Registered biometric devices for this user</p>
+                            </div>
+                            <a href="{{ url_for('views.enroll_biometric', user_id=user.id) }}"
+                               class="btn-modern btn-outline-modern" style="white-space:nowrap;">
+                                <i class="fas fa-plus me-1"></i>Enroll
+                            </a>
+                        </div>
+                        <div class="p-4">
+                            <div id="biometricDevicesList">
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading devices...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -769,6 +930,229 @@
             });
         });
     });
+
+    // ==========================================
+    // Admin: Reset user's email
+    // ==========================================
+    const USER_ID = {{ user.id }};
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    document.getElementById('resetEmailForm')?.addEventListener('submit', function () {
+        const input = document.getElementById('newEmailInput');
+        const btn = document.getElementById('resetEmailBtn');
+        const newEmail = (input.value || '').trim();
+
+        if (!newEmail || newEmail.indexOf('@') === -1) {
+            showToast('Please enter a valid email address.', 'error');
+            return;
+        }
+
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+
+        const formData = new URLSearchParams();
+        formData.append('new_email', newEmail);
+
+        fetch(`/admin/reset-user-email/${USER_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF_TOKEN },
+            body: formData.toString()
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Email updated successfully.', 'success');
+                // Reflect the new email in the Personal Information card
+                const emailCells = document.querySelectorAll('.info-value');
+                emailCells.forEach(cell => {
+                    if (cell.textContent.trim().includes('@')) cell.textContent = data.email;
+                });
+            } else {
+                showToast(data.error || 'Failed to update email.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Email reset error:', err);
+            showToast('A network error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        });
+    });
+
+    // ==========================================
+    // Admin: Assign / revoke roles
+    // ==========================================
+    document.getElementById('rolesForm')?.addEventListener('submit', function () {
+        const btn = document.getElementById('saveRolesBtn');
+        const checked = Array.from(document.querySelectorAll('.role-checkbox:checked'));
+
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+        const body = new URLSearchParams();
+        checked.forEach(cb => body.append('role_ids', cb.value));
+
+        fetch(`/admin/update-user-roles/${USER_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF_TOKEN },
+            body: body.toString()
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Roles updated.', 'success');
+            } else {
+                showToast(data.error || 'Failed to update roles.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Role update error:', err);
+            showToast('A network error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        });
+    });
+
+    // ==========================================
+    // Admin: Reset user's password
+    // ==========================================
+    document.getElementById('resetPasswordForm')?.addEventListener('submit', function () {
+        const pw = document.getElementById('newPasswordInput');
+        const confirm = document.getElementById('confirmPasswordInput');
+        const btn = document.getElementById('resetPasswordBtn');
+
+        if ((pw.value || '').length < 7) {
+            showToast('Password must be at least 7 characters.', 'error');
+            return;
+        }
+        if (pw.value !== confirm.value) {
+            showToast("Passwords don't match.", 'error');
+            return;
+        }
+
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Resetting...';
+
+        const formData = new URLSearchParams();
+        formData.append('new_password', pw.value);
+        formData.append('confirm_password', confirm.value);
+
+        fetch(`/admin/reset-user-password/${USER_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF_TOKEN },
+            body: formData.toString()
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Password reset successfully.', 'success');
+                pw.value = '';
+                confirm.value = '';
+            } else {
+                showToast(data.error || 'Failed to reset password.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Password reset error:', err);
+            showToast('A network error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        });
+    });
+
+    // ==========================================
+    // Admin: List & de-enroll fingerprint devices
+    // ==========================================
+    function loadBiometricDevices() {
+        const container = document.getElementById('biometricDevicesList');
+        if (!container) return;
+
+        fetch(`/api/biometric/status/${USER_ID}`)
+            .then(r => r.json())
+            .then(data => {
+                const devices = data.devices || [];
+                if (!data.has_biometric || devices.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-fingerprint fa-2x mb-2 d-block" style="opacity:.4;"></i>
+                            No fingerprint devices enrolled for this user.
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = devices.map(d => {
+                    const enrolled = d.created_at ? new Date(d.created_at).toLocaleDateString() : '—';
+                    return `
+                        <div class="d-flex align-items-center justify-content-between p-3 mb-2"
+                             style="border:1px solid #e2e8f0;border-radius:12px;" data-cred-id="${d.id}">
+                            <div class="d-flex align-items-center" style="gap:12px;">
+                                <i class="fas fa-mobile-screen-button" style="color:#4f46e5;font-size:1.3rem;"></i>
+                                <div>
+                                    <div style="font-weight:600;">${d.device_name || 'Unknown Device'}</div>
+                                    <small class="text-muted">Enrolled ${enrolled}</small>
+                                </div>
+                            </div>
+                            <button class="btn-modern btn-outline-modern btn-remove-device"
+                                    data-cred-id="${d.id}" data-device="${d.device_name || 'this device'}"
+                                    style="color:#ef4444;border-color:#fecaca;">
+                                <i class="fas fa-trash-alt me-1"></i>Remove
+                            </button>
+                        </div>`;
+                }).join('');
+
+                container.querySelectorAll('.btn-remove-device').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        removeBiometricDevice(this.getAttribute('data-cred-id'), this.getAttribute('data-device'), this);
+                    });
+                });
+            })
+            .catch(err => {
+                console.error('Biometric load error:', err);
+                container.innerHTML = '<div class="text-center text-danger py-3">Could not load devices.</div>';
+            });
+    }
+
+    function removeBiometricDevice(credId, deviceName, btn) {
+        if (!confirm(`Remove the fingerprint for "${deviceName}"? The user will need to re-enroll to use it again.`)) {
+            return;
+        }
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        fetch(`/api/biometric/remove/${USER_ID}/${credId}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': CSRF_TOKEN }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Fingerprint removed.', 'success');
+                loadBiometricDevices();
+            } else {
+                showToast(data.error || 'Failed to remove fingerprint.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        })
+        .catch(err => {
+            console.error('Biometric remove error:', err);
+            showToast('A network error occurred. Please try again.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = original;
+        });
+    }
+
+    loadBiometricDevices();
 
     console.log("User details page loaded");
     </script>

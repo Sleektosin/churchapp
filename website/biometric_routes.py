@@ -15,8 +15,23 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
+from functools import wraps
+from flask import abort, redirect, url_for
+from flask_login import login_required, current_user
+
 # Create the Blueprint
 biometric_bp = Blueprint('biometric', __name__)
+
+
+def admin_required(view_func):
+    """Restrict a biometric-management endpoint to authenticated admins."""
+    @wraps(view_func)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not current_user.has_role('Admin'):
+            abort(403)
+        return view_func(*args, **kwargs)
+    return wrapped
 
 # Store challenges temporarily (use Redis in production)
 pending_registrations = {}
@@ -255,6 +270,7 @@ def complete_enrollment():
 
 
 @biometric_bp.route('/api/biometric/status/<int:user_id>', methods=['GET'])
+@admin_required
 def check_biometric_status(user_id):
     """Check if user has biometric enrolled"""
     user = User.query.get(user_id)
@@ -277,6 +293,7 @@ def check_biometric_status(user_id):
 
 
 @biometric_bp.route('/api/biometric/remove/<int:user_id>/<int:credential_id>', methods=['DELETE'])
+@admin_required
 def remove_biometric(user_id, credential_id):
     """Remove a biometric credential"""
     credential = WebAuthnCredential.query.filter_by(

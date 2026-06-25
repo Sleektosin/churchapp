@@ -196,6 +196,7 @@
 {% set is_home        = (path == url_for('views.home')) %}
 {% set is_sessions    = path.startswith(url_for('views.sessions')) %}
 {% set is_users       = path.startswith(url_for('views.manageusers')) %}
+{% set is_roles       = path.startswith(url_for('views.manage_roles')) %}
 {% set is_analytics   = path.startswith(url_for('views.analytics')) %}
 {% set is_items       = path.startswith(url_for('views.items')) %}
 {% set is_maintenance = path.startswith(url_for('views.maintenance_history')) %}
@@ -208,7 +209,7 @@
 
             <p class="nav-label">Main Menu</p>
 
-            {% if current_user.has_role('Admin') or current_user.has_role('User') or current_user.has_role('Guest') %}
+            {% if has_permission(Permission.VIEW_DASHBOARD) %}
             <li class="sidebar-item">
                 <a class="sidebar-link {% if is_home %}active{% endif %}" href="{{ url_for('views.home') }}">
                     <i class="fa-solid fa-house nav-icon"></i>
@@ -217,7 +218,7 @@
             </li>
             {% endif %}
 
-            {% if current_user.has_role('Admin') %}
+            {% if has_permission(Permission.MANAGE_SESSIONS) %}
             <li class="sidebar-item">
                 <a class="sidebar-link {% if is_sessions %}active{% endif %}" href="{{ url_for('views.sessions') }}">
                     <i class="fa-solid fa-chart-line nav-icon"></i>
@@ -226,8 +227,9 @@
             </li>
             {% endif %}
 
-            {% if current_user.has_role('Admin') %}
+            {% if has_permission(Permission.MANAGE_USERS) or has_permission(Permission.MANAGE_ROLES) %}
             <p class="nav-label">Administration</p>
+            {% if has_permission(Permission.MANAGE_USERS) %}
             <li class="sidebar-item">
                 <a class="sidebar-link {% if is_users %}active{% endif %}" href="{{ url_for('views.manageusers') }}">
                     <i class="fa-solid fa-users-gear nav-icon"></i>
@@ -235,10 +237,23 @@
                 </a>
             </li>
             {% endif %}
+            {% if has_permission(Permission.MANAGE_ROLES) %}
+            <li class="sidebar-item">
+                <a class="sidebar-link {% if is_roles %}active{% endif %}" href="{{ url_for('views.manage_roles') }}">
+                    <i class="fa-solid fa-user-shield nav-icon"></i>
+                    <span class="link-label">Roles</span>
+                </a>
+            </li>
+            {% endif %}
+            {% endif %}
 
-            {% if current_user.has_role('Admin') %}
+            {% set can_inventory = has_permission(Permission.MANAGE_INVENTORY) %}
+            {% set can_maintenance = has_permission(Permission.MANAGE_MAINTENANCE) %}
+            {% set can_analytics = has_permission(Permission.VIEW_ANALYTICS) %}
+            {% if can_inventory or can_maintenance or can_analytics %}
             <p class="nav-label">Resources</p>
 
+            {% if can_inventory or can_maintenance %}
             <li class="sidebar-item">
                 <a class="sidebar-link {% if is_inventory_section %}parent-active{% endif %}"
                    id="inventoryToggle"
@@ -251,34 +266,43 @@
                 </a>
                 <div id="inventorySub" class="inventory-collapse {% if not is_inventory_section %}collapsed{% endif %}">
                     <ul class="first-level">
+                        {% if can_inventory %}
                         <li class="sidebar-item">
                             <a href="{{ url_for('views.items') }}" class="sidebar-link {% if is_items %}active{% endif %}">
                                 <i class="fa-solid fa-box-open nav-icon"></i>
                                 <span class="link-label">Items</span>
                             </a>
                         </li>
+                        {% endif %}
+                        {% if can_maintenance %}
                         <li class="sidebar-item">
                             <a href="{{ url_for('views.maintenance_history') }}" class="sidebar-link {% if is_maintenance %}active{% endif %}">
                                 <i class="fa-solid fa-screwdriver-wrench nav-icon"></i>
                                 <span class="link-label">Maintenance</span>
                             </a>
                         </li>
+                        {% endif %}
+                        {% if can_inventory %}
                         <li class="sidebar-item">
                             <a href="{{ url_for('views.inventories') }}" class="sidebar-link {% if is_inventories %}active{% endif %}">
                                 <i class="fa-solid fa-warehouse nav-icon"></i>
                                 <span class="link-label">Inventories</span>
                             </a>
                         </li>
+                        {% endif %}
                     </ul>
                 </div>
             </li>
+            {% endif %}
 
+            {% if can_analytics %}
             <li class="sidebar-item">
                 <a href="{{ url_for('views.analytics') }}" class="sidebar-link {% if is_analytics %}active{% endif %}">
                     <i class="fa-solid fa-chart-pie nav-icon"></i>
                     <span class="link-label">Analytics</span>
                 </a>
             </li>
+            {% endif %}
             {% endif %}
 
         </ul>

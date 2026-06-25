@@ -139,6 +139,23 @@
         .form-check-label { margin-left: 0.5em; font-weight: normal; }
         [data-bs-toggle="tooltip"] { cursor: pointer; }
         .biometric-cell { min-width: 140px; }
+        .roles-cell { min-width: 180px; }
+        .role-badge {
+            background: rgba(79, 70, 229, 0.1);
+            color: #4f46e5;
+            border-radius: 30px;
+            padding: 0.2rem 0.65rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .role-option {
+            display: flex; align-items: flex-start; gap: 10px;
+            border: 2px solid #e2e8f0; border-radius: 12px; padding: 0.7rem 0.9rem; cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .role-option:hover { border-color: #c7d2fe; }
+        .role-option input { margin-top: 3px; }
     </style>
 </head>
 
@@ -204,6 +221,7 @@
                                         <th>ID</th>
                                         <th>Full Name</th>
                                         <th>Email</th>
+                                        <th>Roles</th>
                                         <th class="text-center biometric-cell">Biometric</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
@@ -310,6 +328,53 @@
         </div>
     </div>
 
+    <!-- Manage Fingerprint Devices Modal -->
+    <div class="modal fade" id="biometricModal" tabindex="-1" aria-labelledby="biometricModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="biometricModalLabel">
+                        <i class="fas fa-fingerprint text-purple me-2"></i>Fingerprint Devices
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" id="biometricModalUser"></p>
+                    <div id="biometricModalList">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading devices...
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Roles Modal -->
+    <div class="modal fade" id="userRolesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user-shield me-2"></i>Edit Roles</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" id="userRolesModalName"></p>
+                    <div class="d-flex flex-column gap-2" id="userRolesOptions"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveUserRolesBtn" onclick="submitUserRoles()">
+                        <i class="fas fa-save me-2"></i>Save Roles
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -360,6 +425,28 @@
                     { data: "email" },
                     {
                         data: null,
+                        className: "roles-cell",
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            const roles = data.roles || [];
+                            const userId = data.Id;
+                            const nameEsc = `${data.first_name || ''} ${data.last_name || ''}`.trim().replace(/'/g, "\\'");
+                            const badges = roles.length
+                                ? roles.map(r => `<span class="role-badge">${r}</span>`).join(' ')
+                                : '<span class="text-muted small">No roles</span>';
+                            return `<div class="d-flex align-items-center gap-2 flex-wrap">
+                                        ${badges}
+                                        <button type="button" class="btn-add-device" title="Edit Roles"
+                                                data-user-id="${userId}" data-user-name="${nameEsc}"
+                                                data-roles="${roles.join('|')}" onclick="openRolesModal(this)">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    </div>`;
+                        }
+                    },
+                    {
+                        data: null,
                         className: "text-center biometric-cell",
                         render: function(data, type, row) {
                             const userId = data.Id;
@@ -367,11 +454,16 @@
                             
                             if (data.has_biometric) {
                                 const count = data.biometric_count || 1;
+                                const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim().replace(/'/g, "\\'");
                                 return `
                                     <div class="d-flex align-items-center justify-content-center gap-2">
                                         <span class="badge-biometric badge-enrolled">
                                             <i class="fas fa-check-circle me-1"></i>Enrolled (${count})
                                         </span>
+                                        <button type="button" class="btn-add-device" title="Manage / Remove Devices"
+                                                onclick="openBiometricModal(${userId}, '${fullName}')">
+                                            <i class="fas fa-gear"></i>
+                                        </button>
                                         <a href="${enrollUrl}" class="btn-add-device" title="Add Another Device" data-bs-toggle="tooltip">
                                             <i class="fas fa-plus"></i>
                                         </a>
@@ -414,11 +506,12 @@
                     }
                 ],
                 columnDefs: [
-                    { responsivePriority: 1, targets: 1 },
-                    { responsivePriority: 2, targets: 2 },
-                    { responsivePriority: 3, targets: 3 },
-                    { responsivePriority: 4, targets: 4 },
-                    { responsivePriority: 5, targets: 0 }
+                    { responsivePriority: 1, targets: 1 },   // Full Name
+                    { responsivePriority: 2, targets: 5 },   // Actions
+                    { responsivePriority: 3, targets: 2 },   // Email
+                    { responsivePriority: 4, targets: 4 },   // Biometric
+                    { responsivePriority: 5, targets: 3 },   // Roles
+                    { responsivePriority: 6, targets: 0 }    // ID
                 ],
                 language: {
                     search: "_INPUT_",
@@ -555,6 +648,144 @@
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
+        }
+
+        // ==========================================
+        // Manage / de-enroll fingerprint devices
+        // ==========================================
+        let biometricModalUserId = null;
+
+        function openBiometricModal(userId, userName) {
+            biometricModalUserId = userId;
+            document.getElementById('biometricModalUser').textContent =
+                'Enrolled devices for ' + (userName || 'this user');
+            document.getElementById('biometricModalList').innerHTML =
+                '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading devices...</div>';
+            const modal = new bootstrap.Modal(document.getElementById('biometricModal'));
+            modal.show();
+            loadBiometricDevices(userId);
+        }
+
+        function loadBiometricDevices(userId) {
+            fetch('/api/biometric/status/' + userId)
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('biometricModalList');
+                    const devices = data.devices || [];
+                    if (!data.has_biometric || devices.length === 0) {
+                        container.innerHTML =
+                            '<div class="text-center text-muted py-3">' +
+                            '<i class="fas fa-fingerprint fa-2x mb-2 d-block" style="opacity:.4;"></i>' +
+                            'No fingerprint devices enrolled.</div>';
+                        return;
+                    }
+                    container.innerHTML = devices.map(function (d) {
+                        const enrolled = d.created_at ? new Date(d.created_at).toLocaleDateString() : '—';
+                        const name = (d.device_name || 'Unknown Device').replace(/'/g, "\\'");
+                        return '' +
+                            '<div class="d-flex align-items-center justify-content-between p-2 mb-2" ' +
+                            '     style="border:1px solid #e2e8f0;border-radius:10px;">' +
+                            '  <div class="d-flex align-items-center" style="gap:10px;">' +
+                            '    <i class="fas fa-mobile-screen-button text-purple"></i>' +
+                            '    <div><div style="font-weight:600;">' + (d.device_name || 'Unknown Device') + '</div>' +
+                            '    <small class="text-muted">Enrolled ' + enrolled + '</small></div>' +
+                            '  </div>' +
+                            '  <button class="btn btn-sm btn-outline-danger" onclick="removeBiometricDevice(' + d.id + ", '" + name + "')\">" +
+                            '    <i class="fas fa-trash-alt me-1"></i>Remove</button>' +
+                            '</div>';
+                    }).join('');
+                })
+                .catch(function (err) {
+                    console.error('Biometric load error:', err);
+                    document.getElementById('biometricModalList').innerHTML =
+                        '<div class="text-center text-danger py-3">Could not load devices.</div>';
+                });
+        }
+
+        function removeBiometricDevice(credId, deviceName) {
+            if (!confirm('Remove the fingerprint for "' + deviceName + '"? The user will need to re-enroll to use it again.')) {
+                return;
+            }
+            fetch('/api/biometric/remove/' + biometricModalUserId + '/' + credId, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') }
+            })
+            .then(r => r.json())
+            .then(function (data) {
+                if (data.success) {
+                    showFlashMessage(data.message || 'Fingerprint removed.', 'success');
+                    loadBiometricDevices(biometricModalUserId);   // refresh modal list
+                    $('#userTable').DataTable().ajax.reload(null, false);  // refresh enrolled count
+                } else {
+                    showFlashMessage(data.error || 'Failed to remove fingerprint.', 'error');
+                }
+            })
+            .catch(function (err) {
+                console.error('Biometric remove error:', err);
+                showFlashMessage('A network error occurred. Please try again.', 'error');
+            });
+        }
+
+        // ==========================================
+        // Quick-edit user roles
+        // ==========================================
+        const ALL_ROLES = {{ roles_list|tojson }};
+        let rolesModalUserId = null;
+
+        function openRolesModal(btn) {
+            rolesModalUserId = btn.getAttribute('data-user-id');
+            const userName = btn.getAttribute('data-user-name') || 'this user';
+            const current = (btn.getAttribute('data-roles') || '').split('|').filter(Boolean);
+
+            document.getElementById('userRolesModalName').textContent = 'Roles for ' + userName;
+
+            const container = document.getElementById('userRolesOptions');
+            if (!ALL_ROLES.length) {
+                container.innerHTML = '<p class="text-muted mb-0">No roles are defined. Create one on the Roles page.</p>';
+            } else {
+                container.innerHTML = ALL_ROLES.map(function (r) {
+                    const checked = current.indexOf(r.name) !== -1 ? 'checked' : '';
+                    return '<label class="role-option">' +
+                        '<input type="checkbox" class="user-role-checkbox" value="' + r.id + '" ' + checked + '>' +
+                        '<span><strong>' + r.name + '</strong></span></label>';
+                }).join('');
+            }
+            new bootstrap.Modal(document.getElementById('userRolesModal')).show();
+        }
+
+        function submitUserRoles() {
+            const btn = document.getElementById('saveUserRolesBtn');
+            const checked = Array.from(document.querySelectorAll('.user-role-checkbox:checked'));
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+            const body = new URLSearchParams();
+            checked.forEach(function (cb) { body.append('role_ids', cb.value); });
+
+            fetch('/admin/update-user-roles/' + rolesModalUserId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') },
+                body: body.toString()
+            })
+            .then(r => r.json())
+            .then(function (data) {
+                if (data.success) {
+                    showFlashMessage(data.message || 'Roles updated.', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('userRolesModal')).hide();
+                    $('#userTable').DataTable().ajax.reload(null, false);
+                } else {
+                    showFlashMessage(data.error || 'Failed to update roles.', 'error');
+                }
+            })
+            .catch(function (err) {
+                console.error('Role update error:', err);
+                showFlashMessage('A network error occurred. Please try again.', 'error');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            });
         }
     </script>
 </body>

@@ -359,3 +359,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+<!-- Idle auto-logout: signs the user out client-side after inactivity.
+     Kept in sync with the server-side PERMANENT_SESSION_LIFETIME. -->
+<script>
+(function () {
+    // Minutes of inactivity before auto-logout (matches server session lifetime)
+    var IDLE_LIMIT_MINUTES = 30;
+    var WARN_BEFORE_SECONDS = 30;
+
+    var logoutUrl = "{{ url_for('views.logout') }}";
+    var idleMs = IDLE_LIMIT_MINUTES * 60 * 1000;
+    var warnMs = idleMs - (WARN_BEFORE_SECONDS * 1000);
+    var idleTimer, warnTimer;
+
+    function logoutNow() {
+        window.location.href = logoutUrl;
+    }
+
+    function showWarning() {
+        // Lightweight, dependency-free warning banner
+        if (document.getElementById('idleWarningBar')) return;
+        var bar = document.createElement('div');
+        bar.id = 'idleWarningBar';
+        bar.setAttribute('role', 'alert');
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:20000;background:#f59e0b;' +
+            'color:#1e293b;font-weight:600;text-align:center;padding:10px 16px;font-family:Inter,Arial,sans-serif;' +
+            'box-shadow:0 2px 10px rgba(0,0,0,.15);';
+        bar.textContent = 'You will be signed out shortly due to inactivity. Move your mouse or press a key to stay signed in.';
+        document.body.appendChild(bar);
+    }
+
+    function clearWarning() {
+        var bar = document.getElementById('idleWarningBar');
+        if (bar) bar.remove();
+    }
+
+    function resetTimers() {
+        clearTimeout(idleTimer);
+        clearTimeout(warnTimer);
+        clearWarning();
+        warnTimer = setTimeout(showWarning, warnMs);
+        idleTimer = setTimeout(logoutNow, idleMs);
+    }
+
+    var activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(function (evt) {
+        window.addEventListener(evt, resetTimers, { passive: true });
+    });
+
+    resetTimers();
+})();
+</script>
