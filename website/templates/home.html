@@ -502,6 +502,37 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
+        /* Live Section */
+        .live-dot {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            background: #ef4444; margin-right: 6px; animation: livePulse 1.5s infinite;
+        }
+        @keyframes livePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.6); }
+            70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+        .live-embed-card {
+            background: #fff; border-radius: 16px; overflow: hidden; height: 100%;
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,.15);
+        }
+        .live-embed-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.25rem; background: var(--dark); color: #fff; font-weight: 600;
+        }
+        .live-badge {
+            background: rgba(239,68,68,.15); color: #fca5a5;
+            padding: .25rem .7rem; border-radius: 30px; font-size: .8rem;
+        }
+        .live-side-card {
+            background: #fff; border-radius: 16px; padding: 1.75rem; text-align: center;
+            box-shadow: 0 15px 30px -12px rgba(0,0,0,.12);
+        }
+        .live-side-icon {
+            width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 1rem;
+            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem;
+        }
+
         /* Responsive */
         @media (max-width: 991.98px) {
             .hero-title {
@@ -541,6 +572,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#live">Live</a></li>
                     <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
                     <li class="nav-item"><a class="nav-link" href="#events">Events</a></li>
@@ -601,6 +633,58 @@
                                 <h5 class="mb-0">Kubwa, Abuja</h5>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Section -->
+    <section class="section-padding bg-light" id="live">
+        <div class="container">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <span class="hero-badge bg-danger bg-opacity-10 text-danger">
+                    <span class="live-dot"></span> Live Sessions
+                </span>
+                <h2 class="section-title">Watch Our <span class="text-primary">Live Services</span></h2>
+                <div class="title-decoration"></div>
+                <p class="section-subtitle">Can't make it in person? Join our services live on Facebook &amp; Instagram.</p>
+            </div>
+            <div class="row g-4 align-items-stretch">
+                <div class="col-lg-8" data-aos="fade-up">
+                    <div class="live-embed-card">
+                        <div class="live-embed-header">
+                            <span class="live-badge"><span class="live-dot"></span> LIVE / RECENT</span>
+                            <span><i class="fab fa-facebook me-2"></i>Facebook Feed</span>
+                        </div>
+                        <iframe title="Facebook live feed"
+                            src="https://www.facebook.com/plugins/page.php?href={{ facebook_page_url|urlencode }}&tabs=timeline&width=720&height=560&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
+                            style="border:none;overflow:hidden;width:100%;height:560px;display:block;"
+                            scrolling="no" frameborder="0" allowfullscreen="true"
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                    </div>
+                </div>
+                <div class="col-lg-4 d-flex flex-column gap-4" data-aos="fade-left">
+                    <div class="live-side-card">
+                        <div class="live-side-icon" style="background:linear-gradient(135deg,#1877F2,#0d5fc4);">
+                            <i class="fab fa-facebook-f"></i>
+                        </div>
+                        <h5>Facebook Live</h5>
+                        <p class="text-muted">Follow our page and get notified the moment we go live.</p>
+                        <a href="{{ facebook_page_url }}" target="_blank" rel="noopener" class="btn btn-modern btn-primary-modern w-100">
+                            <i class="fab fa-facebook-f me-2"></i>Open Facebook
+                        </a>
+                    </div>
+                    <div class="live-side-card">
+                        <div class="live-side-icon" style="background:linear-gradient(135deg,#E1306C,#C13584);">
+                            <i class="fab fa-instagram"></i>
+                        </div>
+                        <h5>Instagram Live</h5>
+                        <p class="text-muted">Catch our stories and live broadcasts on Instagram.</p>
+                        <a href="{{ instagram_url }}" target="_blank" rel="noopener" class="btn btn-modern w-100"
+                           style="background:linear-gradient(135deg,#E1306C,#C13584);color:#fff;">
+                            <i class="fab fa-instagram me-2"></i>Open Instagram
+                        </a>
                     </div>
                 </div>
             </div>

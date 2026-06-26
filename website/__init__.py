@@ -140,12 +140,20 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 3600,
-    'pool_timeout': 30,
-    'max_overflow': 50,
-    'pool_size': 20
-}
+        'pool_pre_ping': True,      # validate connections before use (drops stale ones)
+        'pool_recycle': 1800,       # recycle connections well under the pooler idle timeout
+        'pool_timeout': 30,
+        'max_overflow': 10,         # keep total connections modest against the Supabase pooler
+        'pool_size': 5,
+        'connect_args': {
+            # TCP keepalives so idle connections aren't silently dropped by the pooler
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+            'connect_timeout': 10,
+        },
+    }
     csrf.init_app(app) # Initialize CSRF protection
     # app.config['SQLALCHEMY_BINDS'] = {
     #     'bind_name_1': 'mssql+pyodbc://sa:Sleektech@2375#@DESKTOP-ORK9FHS/AdventureWorksDW2019?driver=ODBC+Driver+17+for+SQL+Server',}
@@ -205,9 +213,10 @@ def create_app():
     # Add teardown handler
     @app.teardown_appcontext
     def shutdown_session(exception=None):
+        # Return the connection to the pool. Do NOT dispose the engine here:
+        # disposing on every request destroyed the whole pool, causing constant
+        # reconnects (slow) and dropped connections against the Supabase pooler.
         db.session.remove()
-        engine = db.get_engine(app)
-        engine.dispose()  # Cleanup connection pool
 
     from .views import views
     #from .biometric_routes import biometric_bp   
@@ -237,6 +246,19 @@ def create_app():
     login_manager = LoginManager()
     login_manager.login_view = 'views.login'
     login_manager.init_app(app)
+
+    # Anonymous users must safely answer has_role / has_permission (used in
+    # templates like the public home page) without raising AttributeError.
+    from flask_login import AnonymousUserMixin
+
+    class _AnonymousUser(AnonymousUserMixin):
+        def has_role(self, role_name):
+            return False
+
+        def has_permission(self, permission):
+            return False
+
+    login_manager.anonymous_user = _AnonymousUser
 
     @login_manager.user_loader
     def load_user(id):

@@ -466,7 +466,14 @@ def biometric_auth_complete(session_id):
         
         print(f"  ✅ Session found: {session_obj.name}")
         sys.stdout.flush()
-        
+
+        # Block adding users once the session is completed
+        if (session_obj.status or '').lower() == 'completed':
+            return jsonify({
+                'success': False,
+                'error': 'This session is completed. Users can no longer be added.'
+            }), 400
+
         # Check if already checked in
         existing = Attendance.query.filter_by(user_id=user.id, session_id=session_id).first()
         
@@ -495,7 +502,8 @@ def biometric_auth_complete(session_id):
             user_id=user.id,
             session_id=session_id,
             check_in_time=datetime.utcnow(),
-            status='present'
+            status='present',
+            check_in_method='biometric'
         )
         db.session.add(new_attendance)
         stored_credential.last_used_at = datetime.utcnow()

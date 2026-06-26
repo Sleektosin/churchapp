@@ -260,6 +260,14 @@
             </a>
 
             <div class="header-right">
+                <button type="button" class="header-icon-btn header-back-btn" id="backButton"
+                        data-home="{{ url_for('views.home') }}" aria-label="Go back to previous page" title="Back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <a class="header-icon-btn" href="{{ url_for('views.home') }}" aria-label="Home" title="Home">
+                    <i class="fa-solid fa-house"></i>
+                </a>
+
                 <a class="header-icon-btn" href="javascript:void(0)" id="sidebarToggle" aria-label="Toggle sidebar">
                     <i class="fa-solid fa-bars-staggered"></i>
                 </a>
@@ -301,6 +309,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Back button: return to the previous page, or Home if there's no history.
+    var backButton = document.getElementById('backButton');
+    if (backButton) {
+        backButton.addEventListener('click', function () {
+            if (window.history.length > 1 && document.referrer) {
+                window.history.back();
+            } else {
+                window.location.href = backButton.getAttribute('data-home');
+            }
+        });
+    }
+
     var toggle  = document.getElementById('sidebarToggle');
     var sidebar = document.getElementById('mainSidebar');
     var overlay = document.getElementById('sidebarOverlay');

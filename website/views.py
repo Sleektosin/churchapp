@@ -757,6 +757,11 @@ def addUsersToSession_handler(id):
         flash('Session not found.', 'error')
         return render_template('adduserstosession.html', user=current_user, session_data=session)
 
+    # Block adding users once the session is completed
+    if (session.status or '').lower() == 'completed':
+        flash('This session is completed. Users can no longer be added.', 'error')
+        return render_template('adduserstosession.html', user=current_user, session_data=session)
+
     returned_qr_code = request.form.get('qr_code')
     email = extract_user_info(returned_qr_code)
     user = User.query.filter_by(email=email).first()
@@ -774,10 +779,10 @@ def addUsersToSession_handler(id):
     if existing_attendance:
         # Update existing record instead of creating new one
         existing_attendance.status = 'present'
-        existing_attendance.check_in_method = 'qr_scan'
+        existing_attendance.check_in_method = 'user_barcode'
         existing_attendance.check_in_time = datetime.utcnow()
         existing_attendance.updated_at = datetime.utcnow()
-        
+
         db.session.commit()
         flash('User attendance updated successfully!', 'success')
     else:
@@ -787,7 +792,7 @@ def addUsersToSession_handler(id):
                 user_id=user.id,
                 session_id=session.id,
                 status='present',
-                check_in_method='qr_scan',
+                check_in_method='user_barcode',
                 check_in_time=datetime.utcnow(),
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
@@ -1027,7 +1032,14 @@ def analytics():
 
 @views.route('/home')
 def home():
-    return render_template("home.html", user=current_user)
+    facebook_page_url = os.environ.get('FACEBOOK_PAGE_URL', 'https://www.facebook.com/RCCGPowerHouseParish')
+    instagram_url = os.environ.get('INSTAGRAM_URL', 'https://www.instagram.com/')
+    return render_template(
+        "home.html",
+        user=current_user,
+        facebook_page_url=facebook_page_url,
+        instagram_url=instagram_url,
+    )
 
 
 # @views.route('/product')
@@ -1161,6 +1173,25 @@ def remove_user_from_session(userId, sessionId):
     else:
         return 'User or session not found', 404
 
+# Human-readable labels for how a user was added to a session
+CHECKIN_METHOD_LABELS = {
+    'biometric': 'Biometric',
+    'user_barcode': 'User Barcode',
+    'session_qr': 'Session QR',
+    # legacy / other values
+    'qr_scan': 'QR Scan',
+    'admin_add': 'Admin Added',
+    'manual': 'Manual Entry',
+    'self_checkin': 'Self Check-in',
+}
+
+
+def checkin_method_label(method):
+    if not method:
+        return 'Unknown'
+    return CHECKIN_METHOD_LABELS.get(method, method.replace('_', ' ').title())
+
+
 @views.route('/get_sessions_users/<session_id>/users', methods=['POST','GET'])
 def get_sessions_users(session_id):
     # Define parameters for server-side processing
@@ -1176,7 +1207,8 @@ def get_sessions_users(session_id):
         User.email,
         User.first_name,
         User.last_name,
-        Attendance.check_in_time.label('added_date')
+        Attendance.check_in_time.label('added_date'),
+        Attendance.check_in_method.label('check_in_method')
         ).join(Attendance, Attendance.user_id == User.id)\
          .filter(Attendance.session_id == session_id)
 
@@ -1230,6 +1262,8 @@ def get_sessions_users(session_id):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'added_date': added_date_str,
+            'check_in_method': user.check_in_method or '',
+            'check_in_method_label': checkin_method_label(user.check_in_method),
             'update_button': '<button class="btn btn-primary btn-sm">Update</button>',
             'delete_button': '<button class="btn btn-danger btn-sm">Delete</button>',
         })
@@ -3107,7 +3141,12 @@ def scan_session(qr_code):
         if not session_obj:
             flash('Invalid QR code', 'error')
             return redirect(url_for('views.sessions'))
-            
+
+        # Block check-in once the session is completed
+        if (session_obj.status or '').lower() == 'completed':
+            flash('This session is completed. Check-in is closed.', 'warning')
+            return redirect(url_for('views.sessiondetails', id=session_obj.id))
+
         # Check session timing
         now = datetime.now()
         if session_obj.start_time:
@@ -3150,7 +3189,12 @@ def user_checkin():
         return redirect(url_for('views.sessions'))
     
     current_session = Session.query.get(session_id)
-    
+
+    # Block self check-in once the session is completed
+    if current_session and (current_session.status or '').lower() == 'completed':
+        flash('This session is completed. Check-in is closed.', 'error')
+        return redirect(url_for('views.sessions'))
+
     if request.method == 'POST':
         user_identifier = request.form.get('user_qr', '').strip()  # Get and clean input
         
@@ -3199,6 +3243,8 @@ def user_checkin():
             new_attendance = Attendance(
                 session_id=session_id,
                 user_id=user.id,
+                status='present',
+                check_in_method='session_qr',
                 check_in_time=datetime.now()
             )
             db.session.add(new_attendance)
@@ -5614,9 +5660,9 @@ def get_active_members_table(user_query, attendance_query):
         ).all()
     
     table_data = []
+    total_sessions = Session.query.count()  # compute once, not per member
     for member in active_members:
         # Calculate attendance rate (if we have total sessions)
-        total_sessions = Session.query.count()
         attendance_rate = round((member.attendance_count / total_sessions * 100), 1) if total_sessions > 0 else 0
         
         table_data.append({
@@ -5998,6 +6044,10 @@ def calculate_filtered_kpis(user_query, session_query, attendance_query, item_qu
     total_sessions = session_query.count()
     upcoming_sessions = session_query.filter(Session.date >= datetime.now().date()).count()
     completed_sessions = session_query.filter(Session.date < datetime.now().date()).count()
+    # Active = distinct sessions in the selected range that are not completed/cancelled
+    active_sessions = session_query.filter(
+        or_(Session.status.is_(None), Session.status.notin_(['completed', 'cancelled']))
+    ).count()
     
     # Attendance calculations
     total_attendances = attendance_query.count()
@@ -6016,30 +6066,29 @@ def calculate_filtered_kpis(user_query, session_query, attendance_query, item_qu
     # Inventory metrics
     total_items = item_query.count()
     
-    # Calculate total inventory value
-    inventory_value_result = db.session.query(
-        func.sum(Item.amount * Item.quantity)
-    ).filter(Item.id.in_([item.id for item in item_query.all()])).scalar()
+    # Calculate total inventory value (single SQL aggregate, no row loading)
+    inventory_value_result = item_query.with_entities(
+        func.coalesce(func.sum(Item.amount * Item.quantity), 0)
+    ).scalar()
     inventory_value = float(inventory_value_result) if inventory_value_result else 0.0
-    
-    # Items needing maintenance
+
+    # Items needing maintenance: items with NO maintenance in the last 6 months.
+    # Single correlated subquery instead of one query per item (was N+1).
     six_months_ago = datetime.now() - timedelta(days=180)
-    items_needing_maintenance = 0
-    for item in item_query.all():
-        recent_maintenance = Maintenance.query.filter(
-            Maintenance.item_id == item.id,
-            Maintenance.date >= six_months_ago
-        ).first()
-        if not recent_maintenance:
-            items_needing_maintenance += 1
-    
+    recent_maint_item_ids = db.session.query(Maintenance.item_id).filter(
+        Maintenance.date >= six_months_ago
+    ).distinct()
+    items_needing_maintenance = item_query.filter(
+        ~Item.id.in_(recent_maint_item_ids)
+    ).count()
+
     # Maintenance metrics
     total_maintenance_records = maintenance_query.count()
-    
-    # Calculate total maintenance cost
-    maintenance_cost_result = db.session.query(
-        func.sum(Maintenance.amount)
-    ).filter(Maintenance.id.in_([m.id for m in maintenance_query.all()])).scalar()
+
+    # Calculate total maintenance cost (single SQL aggregate)
+    maintenance_cost_result = maintenance_query.with_entities(
+        func.coalesce(func.sum(Maintenance.amount), 0)
+    ).scalar()
     maintenance_cost = float(maintenance_cost_result) if maintenance_cost_result else 0.0
     
     # Average maintenance cost per item
@@ -6102,9 +6151,10 @@ def calculate_filtered_kpis(user_query, session_query, attendance_query, item_qu
         
         # Session KPIs
         'session_count': total_sessions,
+        'total_sessions': total_sessions,
         'upcoming_sessions': upcoming_sessions,
         'completed_sessions': completed_sessions,
-        'active_sessions': upcoming_sessions,  # Alias for consistency
+        'active_sessions': active_sessions,
         
         # Attendance KPIs
         'total_attendances': total_attendances,

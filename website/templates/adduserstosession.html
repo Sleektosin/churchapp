@@ -542,6 +542,7 @@
                                     <th>First Name</th>
                                     <th>Last Name</th>
                                     <th>Added Date/Time</th>
+                                    <th>Added Via</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -698,13 +699,28 @@
                     { data: "email" },
                     { data: "first_name" },
                     { data: "last_name" },
-                    { 
+                    {
                         data: "added_date",
                         render: function(data) {
                             if (data) {
                                 return new Date(data).toLocaleString();
                             }
                             return 'N/A';
+                        }
+                    },
+                    {
+                        data: "check_in_method_label",
+                        render: function(data, type, row) {
+                            const method = row.check_in_method || '';
+                            const styles = {
+                                biometric:    { bg: '#ede9fe', color: '#5b21b6', icon: 'fa-fingerprint' },
+                                user_barcode: { bg: '#dbeafe', color: '#1e40af', icon: 'fa-barcode' },
+                                session_qr:   { bg: '#dcfce7', color: '#166534', icon: 'fa-qrcode' }
+                            };
+                            const s = styles[method] || { bg: '#f1f5f9', color: '#475569', icon: 'fa-circle-info' };
+                            return `<span class="badge-modern" style="background:${s.bg};color:${s.color};">
+                                        <i class="fas ${s.icon} me-1"></i>${data || 'Unknown'}
+                                    </span>`;
                         }
                     },
                     {

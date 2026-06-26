@@ -1701,14 +1701,19 @@ function updateKPICards(kpis) {
     update('firstTimers', kpis.first_timers);
     update('totalItems', kpis.total_items);
     update('pendingMaintenance', kpis.pending_maintenance);
-    update('activeSessions', kpis.total_sessions);
-    
+    // Active sessions = distinct sessions still active in the selected range
+    update('activeSessions', kpis.active_sessions != null ? kpis.active_sessions : 0);
+
     // Update trend texts
     if (document.getElementById('memberGrowth')) {
-        document.getElementById('memberGrowth').innerHTML = `<i class="fas fa-arrow-up"></i> ${kpis.new_members_this_month || 0} this month`;
+        document.getElementById('memberGrowth').innerHTML = `<i class="fas fa-arrow-up"></i> ${kpis.new_members || kpis.new_members_this_month || 0} this month`;
+    }
+    if (document.getElementById('sessionTrend')) {
+        document.getElementById('sessionTrend').textContent = `${kpis.upcoming_sessions || 0} upcoming`;
     }
     if (document.getElementById('inventoryValue')) {
-        document.getElementById('inventoryValue').innerHTML = `₦${(kpis.total_inventory_value || 0).toLocaleString()} value`;
+        const invVal = kpis.inventory_value != null ? kpis.inventory_value : (kpis.total_inventory_value || 0);
+        document.getElementById('inventoryValue').innerHTML = `₦${Number(invVal).toLocaleString()} value`;
     }
 }
 
@@ -2098,10 +2103,9 @@ function renderMaintenanceTimeline(data) {
 function updateAllTables(tableData) {
     console.log("Updating tables with data:", tableData);
     
-    // First Timers Table
+    // First Timers Table (DataTable, like the other analytics sections)
     if (tableData.first_timers && tableData.first_timers.length > 0) {
-        console.log("Loading first timers:", tableData.first_timers.length);
-        updateTable('firstTimersTableBody', tableData.first_timers, (user) => `
+        renderEnhancedTable('firstTimersTableBody', tableData.first_timers, (user) => `
             <td>
                 <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
                 <small class="text-muted">${user.email || ''}</small>
@@ -2111,38 +2115,34 @@ function updateAllTables(tableData) {
             <td><span class="badge ${getUserStatusClass(user.attendance_count)}">${getUserStatusText(user.attendance_count)}</span></td>
         `);
     } else {
-        document.getElementById('firstTimersTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No first timers data available</td></tr>';
+        emptyRow('firstTimersTableBody', 'No first timers data available');
     }
 
-    // ACTIVE MEMBERS TABLE - WITH PAGINATION
+    // Most Active Members Table (DataTable). The legacy bespoke pagination
+    // controls are retired in favour of DataTables paging/search.
+    ['activeMembersPagination', 'activeMembersViewAll'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    const activeShowing = document.getElementById('activeMembersShowing');
+    if (activeShowing) activeShowing.textContent = '';
+
     if (tableData.active_members && tableData.active_members.length > 0) {
-        console.log("Loading active members for pagination:", tableData.active_members.length);
-        
-        // Store all members for pagination
-        allActiveMembers = tableData.active_members.map(member => ({
-            name: member.name || '',
-            email: member.email || '',
-            attendance_count: member.attendance_count || 0,
-            attendance_rate: member.attendance_rate || '0%',
-            last_active: member.last_active || 'Never'
-        }));
-        
-        // Reset to first page when new data loads
-        currentPage = 1;
-        
-        // Update pagination display
-        updateActiveMembersPagination();
+        renderEnhancedTable('activeMembersTableBody', tableData.active_members, (member) => {
+            const rate = parseFloat(member.attendance_rate) || 0;
+            let engagementClass = 'secondary', engagementText = 'Low';
+            if (rate >= 50) { engagementClass = 'success'; engagementText = 'High'; }
+            else if (rate >= 20) { engagementClass = 'warning'; engagementText = 'Medium'; }
+            return `
+                <td><strong>${member.name || ''}</strong><br><small class="text-muted">${member.email || ''}</small></td>
+                <td><span class="badge bg-primary">${member.attendance_count || 0}</span></td>
+                <td>${member.last_active || 'Never'}</td>
+                <td><div class="d-flex align-items-center"><span class="me-2">${member.attendance_rate || '0%'}</span>
+                    <span class="badge bg-${engagementClass}">${engagementText}</span></div></td>
+            `;
+        });
     } else {
-        const tbody = document.getElementById('activeMembersTableBody');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active members data available</td></tr>';
-        }
-        const paginationContainer = document.getElementById('activeMembersPagination');
-        if (paginationContainer) paginationContainer.style.display = 'none';
-        const viewAllLink = document.getElementById('activeMembersViewAll');
-        if (viewAllLink) viewAllLink.style.display = 'none';
-        const showingElement = document.getElementById('activeMembersShowing');
-        if (showingElement) showingElement.textContent = 'Showing 0 members';
+        emptyRow('activeMembersTableBody', 'No active members data available');
     }
     
     // Sessions Table
@@ -2513,6 +2513,11 @@ function setupTabLazyLoading() {
         btn.addEventListener('shown.bs.tab', (e) => {
             const target = e.target.getAttribute('data-bs-target');
             loadTabData(target);
+            // Tables (e.g. on the Members tab) initialised while hidden need their
+            // column widths recalculated once the tab becomes visible.
+            if (window.jQuery && $.fn.dataTable) {
+                setTimeout(() => $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust(), 60);
+            }
         });
     });
 }
