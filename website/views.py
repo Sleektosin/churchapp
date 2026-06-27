@@ -1030,16 +1030,53 @@ def analytics():
                          default_end_date=today.strftime('%Y-%m-%d'))
 
 
+def get_facebook_live_permalink():
+    """Return the permalink of a currently-LIVE Facebook video for the page,
+    or None if nothing is live / not configured.
+
+    Requires FACEBOOK_PAGE_ID and FACEBOOK_ACCESS_TOKEN (a Page access token).
+    Without them we simply fall back to the page timeline (recent posts).
+    """
+    page_id = os.environ.get('FACEBOOK_PAGE_ID')
+    token = os.environ.get('FACEBOOK_ACCESS_TOKEN')
+    if not page_id or not token:
+        return None
+    try:
+        resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{page_id}/live_videos',
+            params={'fields': 'status,permalink_url', 'access_token': token, 'limit': 5},
+            timeout=6,
+        )
+        for video in (resp.json() or {}).get('data', []):
+            if video.get('status') == 'LIVE' and video.get('permalink_url'):
+                permalink = video['permalink_url']
+                if permalink.startswith('/'):
+                    permalink = 'https://www.facebook.com' + permalink
+                return permalink
+    except Exception as e:
+        print(f'[FB] live check failed: {e}')
+    return None
+
+
 @views.route('/home')
 def home():
-    facebook_page_url = os.environ.get('FACEBOOK_PAGE_URL', 'https://www.facebook.com/RCCGPowerHouseParish')
+    facebook_page_url = os.environ.get('FACEBOOK_PAGE_URL', 'https://facebook.com/rccgpowerhousekubwamedia')
     instagram_url = os.environ.get('INSTAGRAM_URL', 'https://www.instagram.com/')
     return render_template(
         "home.html",
         user=current_user,
         facebook_page_url=facebook_page_url,
         instagram_url=instagram_url,
+        fb_live_permalink=get_facebook_live_permalink(),
     )
+
+
+@views.route('/api/facebook/live-status')
+def facebook_live_status():
+    """Lightweight JSON endpoint the home page polls to auto-switch to the
+    live stream the moment the church goes live (and back to posts after)."""
+    permalink = get_facebook_live_permalink()
+    return jsonify({'live': bool(permalink), 'permalink': permalink or ''})
 
 
 # @views.route('/product')

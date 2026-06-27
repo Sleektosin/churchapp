@@ -532,6 +532,15 @@
             width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 1rem;
             display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem;
         }
+        /* Facebook frame: live video uses a responsive 16:9 box; posts use a
+           fixed-height, full-width scroll area. Both fit the container width. */
+        .fb-frame { width: 100%; background: #000; }
+        .fb-frame.is-posts { background: #f0f2f5; }
+        .fb-video-ratio { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+        .fb-video-ratio iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .fb-frame .fb-timeline { width: 100%; height: 600px; border: 0; display: block; }
+        .live-badge.is-live { background: #ef4444; color: #fff; }
+        .live-badge.is-live .live-dot { background: #fff; }
 
         /* Responsive */
         @media (max-width: 991.98px) {
@@ -652,16 +661,17 @@
             </div>
             <div class="row g-4 align-items-stretch">
                 <div class="col-lg-8" data-aos="fade-up">
-                    <div class="live-embed-card">
+                    <div class="live-embed-card"
+                         data-page-url="{{ facebook_page_url }}"
+                         data-live-permalink="{{ fb_live_permalink or '' }}">
                         <div class="live-embed-header">
-                            <span class="live-badge"><span class="live-dot"></span> LIVE / RECENT</span>
-                            <span><i class="fab fa-facebook me-2"></i>Facebook Feed</span>
+                            <span class="live-badge" id="liveStatusBadge">
+                                <span class="live-dot"></span> <span id="liveStatusText">Recent Posts</span>
+                            </span>
+                            <span><i class="fab fa-facebook me-2"></i>Facebook</span>
                         </div>
-                        <iframe title="Facebook live feed"
-                            src="https://www.facebook.com/plugins/page.php?href={{ facebook_page_url|urlencode }}&tabs=timeline&width=720&height=560&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
-                            style="border:none;overflow:hidden;width:100%;height:560px;display:block;"
-                            scrolling="no" frameborder="0" allowfullscreen="true"
-                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                        <!-- The live stream (when live) or recent posts (otherwise) render here, in-app -->
+                        <div id="fbLiveFrame" class="fb-frame"></div>
                     </div>
                 </div>
                 <div class="col-lg-4 d-flex flex-column gap-4" data-aos="fade-left">
@@ -1092,6 +1102,70 @@
                 this.reset();
             });
         }
+
+        // ===== Facebook live / posts — render in-app and auto-switch =====
+        (function () {
+            const card = document.querySelector('.live-embed-card');
+            const frame = document.getElementById('fbLiveFrame');
+            if (!card || !frame) return;
+
+            const pageUrl = card.getAttribute('data-page-url') || '';
+            const initialLive = card.getAttribute('data-live-permalink') || '';
+            let currentMode = null;   // 'live' | 'posts'
+
+            function timelineSrc() {
+                // Facebook page plugin adapts to the container (caps at 500px wide)
+                const w = Math.min(Math.max(frame.clientWidth || 500, 180), 500);
+                return 'https://www.facebook.com/plugins/page.php?href=' + encodeURIComponent(pageUrl) +
+                       '&tabs=timeline&width=' + w + '&height=600&small_header=true' +
+                       '&adapt_container_width=true&hide_cover=false&show_facepile=true';
+            }
+            function liveSrc(permalink) {
+                return 'https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(permalink) +
+                       '&show_text=false&autoplay=true&width=720&height=400';
+            }
+            function setBadge(isLive) {
+                const badge = document.getElementById('liveStatusBadge');
+                const text = document.getElementById('liveStatusText');
+                if (text) text.textContent = isLive ? 'LIVE NOW' : 'Recent Posts';
+                if (badge) badge.classList.toggle('is-live', isLive);
+            }
+            function renderLive(permalink) {
+                if (currentMode === 'live') return;
+                currentMode = 'live';
+                frame.classList.remove('is-posts');
+                frame.innerHTML =
+                    '<div class="fb-video-ratio"><iframe title="Facebook live stream" src="' + liveSrc(permalink) +
+                    '" scrolling="no" frameborder="0" allowfullscreen="true" ' +
+                    'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>';
+                setBadge(true);
+            }
+            function renderPosts() {
+                if (currentMode === 'posts') return;
+                currentMode = 'posts';
+                frame.classList.add('is-posts');
+                frame.innerHTML =
+                    '<iframe class="fb-timeline" title="Facebook recent posts" src="' + timelineSrc() +
+                    '" scrolling="no" frameborder="0" allowfullscreen="true" ' +
+                    'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>';
+                setBadge(false);
+            }
+
+            // Initial render based on the status the server already resolved
+            if (initialLive) { renderLive(initialLive); } else { renderPosts(); }
+
+            // Poll so the live stream starts automatically the moment we go live
+            // (and reverts to recent posts when the broadcast ends).
+            async function poll() {
+                try {
+                    const res = await fetch('/api/facebook/live-status', { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.live && data.permalink) { renderLive(data.permalink); }
+                    else { renderPosts(); }
+                } catch (e) { /* keep current frame on error */ }
+            }
+            setInterval(poll, 60000);
+        })();
     </script>
 </body>
 </html>
