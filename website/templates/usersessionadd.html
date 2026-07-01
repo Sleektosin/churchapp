@@ -74,19 +74,22 @@
 
     <div class="card">
         <div class="card-body">
-            <h3 class="card-title">User Details</h3>
+            <h3 class="card-title">Your Check-In</h3>
             <p><strong>Name:</strong> {{ user.username }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Check-In Time:</strong> {{ attendance.check_in_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            <p><strong>Session:</strong> {{ session.name }}</p>
+            <p><strong>Check-In Time:</strong> {{ checkin_time_str or attendance.check_in_time.strftime('%Y-%m-%d %I:%M %p') }}</p>
         </div>
     </div>
 
+    {# Admin / usher-only details and actions. Regular members who self check-in
+       should only see their own confirmation. #}
+    {% if current_user.is_authenticated and current_user.has_role('Admin') %}
     <div class="card mt-3">
         <div class="card-body">
             <h3 class="card-title">Session Details</h3>
             <p><strong>Session Name:</strong> {{ session.name }}</p>
-            <p><strong>Start Time:</strong> {{ session.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-            <p><strong>End Time:</strong> {{ session.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            <p><strong>Start Time:</strong> {{ session.start_time.strftime('%I:%M %p') }} WAT</p>
+            <p><strong>End Time:</strong> {{ session.end_time.strftime('%I:%M %p') }} WAT</p>
             {% set today = datetime.now().date() %}
             {% set start_datetime = datetime.combine(today, session.start_time) %}
             {% set end_datetime = datetime.combine(today, session.end_time) %}
@@ -96,5 +99,11 @@
 
     <a href="{{ url_for('views.user_checkin') }}" class="btn btn-primary mt-3">Check In Another User</a>
     <a href="{{ url_for('views.sessiondetails', id=session.id) }}" class="btn btn-secondary mt-3">View Session Details</a>
+    {% else %}
+    <div class="alert alert-success mt-3">
+        <i class="fas fa-check-circle me-2"></i>You're checked in. You may now close this page.
+    </div>
+    <a href="{{ url_for('views.home') }}" class="btn btn-primary mt-2">Back to Home</a>
+    {% endif %}
 </div>
 {% endblock %}

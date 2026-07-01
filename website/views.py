@@ -1196,19 +1196,30 @@ def maintenancdelete(id):
 def remove_user_from_session(userId, sessionId):
     user = User.query.get(userId)
     session = Session.query.get(sessionId)
-    
-    if user and session:
-        try:
-            # Remove the user from the session
-            session.users.remove(user)
-            db.session.commit()
-            return 'User removed from session successfully', 200
-        except Exception as e:
-            print('Error removing user from session:', e)
-            db.session.rollback()
-            return 'Error removing user from session', 500
-    else:
+
+    if not user or not session:
         return 'User or session not found', 404
+
+    try:
+        # Attendance is the source of truth for who is in a session (users are
+        # added via check-in), so removal must delete the Attendance record.
+        deleted = Attendance.query.filter_by(
+            user_id=user.id, session_id=session.id
+        ).delete(synchronize_session=False)
+
+        # Also detach the legacy many-to-many association if present.
+        if user in session.users:
+            session.users.remove(user)
+
+        db.session.commit()
+
+        if deleted == 0:
+            return 'User was not in this session', 404
+        return 'User removed from session successfully', 200
+    except Exception as e:
+        print('Error removing user from session:', e)
+        db.session.rollback()
+        return 'Error removing user from session', 500
 
 # Human-readable labels for how a user was added to a session
 CHECKIN_METHOD_LABELS = {
@@ -3168,13 +3179,55 @@ def get_user_stats_optimized(user_id):
 
 
 
+# ------------------------------------------------------------------
+# Timezone helpers — sessions are scheduled in West Africa Time (WAT).
+# The server may run in UTC (e.g. Render), so we always compare against
+# the current WAT wall-clock instead of the server clock.
+# ------------------------------------------------------------------
+WAT_TZ = pytz.timezone('Africa/Lagos')
+
+
+def wat_now():
+    """Current West Africa Time as a naive datetime (matches how session
+    date/start_time are stored)."""
+    return datetime.now(WAT_TZ).replace(tzinfo=None)
+
+
+def to_wat_str(dt, fmt='%Y-%m-%d %I:%M %p'):
+    """Format a stored (UTC) datetime as a West Africa Time string."""
+    if not dt:
+        return ''
+    aware = pytz.utc.localize(dt) if dt.tzinfo is None else dt
+    return aware.astimezone(WAT_TZ).strftime(fmt) + ' WAT'
+
+
+def compute_checkin_window(session_obj):
+    """Return the self check-in window for a session, expressed in WAT."""
+    if not session_obj or not session_obj.start_time or not session_obj.date:
+        return None
+    start_dt = datetime.combine(session_obj.date, session_obj.start_time)
+    opens = start_dt - timedelta(minutes=session_obj.checkin_opens_minutes or 0)
+    closes = start_dt + timedelta(minutes=session_obj.checkin_closes_minutes or 0)
+    now = wat_now()
+    return {
+        'opens': opens,
+        'closes': closes,
+        'opens_str': opens.strftime('%I:%M %p'),
+        'closes_str': closes.strftime('%I:%M %p'),
+        'date_str': session_obj.date.strftime('%b %d, %Y'),
+        'is_open': opens <= now <= closes,
+        'not_yet': now < opens,
+        'ended': now > closes,
+    }
+
+
 @views.route('/scan-session/<qr_code>')
 @csrf.exempt
 def scan_session(qr_code):
     try:
         # Get session from database
         session_obj = Session.query.filter_by(qr_code=qr_code).first()  # Renamed to avoid conflict
-        
+
         if not session_obj:
             flash('Invalid QR code', 'error')
             return redirect(url_for('views.sessions'))
@@ -3184,18 +3237,18 @@ def scan_session(qr_code):
             flash('This session is completed. Check-in is closed.', 'warning')
             return redirect(url_for('views.sessiondetails', id=session_obj.id))
 
-        # Check session timing
-        now = datetime.now()
+        # Check session timing in WAT (not the server clock)
+        now = wat_now()
         if session_obj.start_time:
             start_dt = datetime.combine(session_obj.date, session_obj.start_time)
             opens = start_dt - timedelta(minutes=session_obj.checkin_opens_minutes)
             closes = start_dt + timedelta(minutes=session_obj.checkin_closes_minutes)
-            
+
             if now < opens:
-                flash(f'Check-in opens at {opens.strftime("%I:%M %p")}', 'warning')
+                flash(f'Self check-in opens at {opens.strftime("%I:%M %p")} WAT on {session_obj.date.strftime("%b %d, %Y")}.', 'warning')
                 return redirect(url_for('views.sessiondetails', id=session_obj.id))
             elif now > closes:
-                flash('Check-in period has ended', 'warning')
+                flash(f'Self check-in closed at {closes.strftime("%I:%M %p")} WAT.', 'warning')
                 return redirect(url_for('views.sessiondetails', id=session_obj.id))
         
         # Store in Flask session (not SQLAlchemy session)
@@ -3238,7 +3291,7 @@ def user_checkin():
         # Check if input is empty
         if not user_identifier:
             flash('Please scan a QR code or enter an email', 'error')
-            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
+            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta, checkin_window=compute_checkin_window(current_session))
         
         # Extract email if the input is in "Username: ... Email: ..." format
         if user_identifier.startswith('Username:') and 'Email:' in user_identifier:
@@ -3259,7 +3312,7 @@ def user_checkin():
         
         if not user:
             flash('Invalid QR code or email address', 'error')
-            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
+            return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta, checkin_window=compute_checkin_window(current_session))
         
         # Check for existing attendance
         existing_attendance = Attendance.query.filter_by(
@@ -3269,11 +3322,12 @@ def user_checkin():
         
         if existing_attendance:
             flash(f'{user.username} is already checked in for this session', 'warning')
-            return render_template('usersessionadd.html', 
-                                session=current_session, 
-                                user=user, 
+            return render_template('usersessionadd.html',
+                                session=current_session,
+                                user=user,
                                 attendance=existing_attendance,
-                                datetime=datetime, 
+                                checkin_time_str=to_wat_str(existing_attendance.check_in_time),
+                                datetime=datetime,
                                 timedelta=timedelta)
         else:
             # Create new attendance record
@@ -3282,16 +3336,17 @@ def user_checkin():
                 user_id=user.id,
                 status='present',
                 check_in_method='session_qr',
-                check_in_time=datetime.now()
+                check_in_time=datetime.utcnow()
             )
             db.session.add(new_attendance)
             db.session.commit()
             flash(f'Successfully checked in {user.username}', 'success')
-            return render_template('usersessionadd.html', 
-                                session=current_session, 
-                                user=user, 
+            return render_template('usersessionadd.html',
+                                session=current_session,
+                                user=user,
                                 attendance=new_attendance,
-                                datetime=datetime, 
+                                checkin_time_str=to_wat_str(new_attendance.check_in_time),
+                                datetime=datetime,
                                 timedelta=timedelta)
     
     return render_template('checkin.html', session=current_session, datetime=datetime, timedelta=timedelta)
@@ -3328,7 +3383,7 @@ def sessiondetails(id):
             checkin_window = {
                 'opens': opens_time,
                 'closes': closes_time,
-                'is_active': datetime.now() >= opens_time and datetime.now() <= closes_time,
+                'is_active': opens_time <= wat_now() <= closes_time,
                 'opens_relative': f"{session.checkin_opens_minutes} mins before",
                 'closes_relative': f"{session.checkin_closes_minutes} mins after"
             }

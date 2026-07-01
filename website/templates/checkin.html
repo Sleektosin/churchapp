@@ -142,16 +142,39 @@
                                 
                                 <div class="session-details">
                                     <p><strong>Date:</strong> {{ session.date.strftime('%b %d, %Y') }}</p>
-                                    <p><strong>Time:</strong> 
-                                        {{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }}
+                                    <p><strong>Time:</strong>
+                                        {{ session.start_time.strftime('%I:%M %p') }} - {{ session.end_time.strftime('%I:%M %p') }} WAT
                                     </p>
                                     <p><strong>Location:</strong> {{ session.location }}</p>
                                     <hr>
-                                    <p class="text-success">
-                                        <i class="fas fa-clock me-2"></i>
-                                        Check-in open until: 
-                                        {{ (datetime.combine(session.date, session.start_time) + timedelta(minutes=session.checkin_closes_minutes)).strftime('%I:%M %p') }}
+                                    {% if checkin_window %}
+                                    <p class="mb-1">
+                                        <i class="fas fa-clock me-2 text-primary"></i>
+                                        <strong>Self check-in window (WAT):</strong>
                                     </p>
+                                    <p class="mb-2">
+                                        Opens <strong>{{ checkin_window.opens_str }}</strong>
+                                        &middot; Closes <strong>{{ checkin_window.closes_str }}</strong>
+                                    </p>
+                                    {% if checkin_window.not_yet %}
+                                        <div class="alert alert-warning mb-0">
+                                            <i class="fas fa-hourglass-half me-2"></i>
+                                            Self check-in opens at <strong>{{ checkin_window.opens_str }} WAT</strong>. Please come back then.
+                                        </div>
+                                    {% elif checkin_window.ended %}
+                                        <div class="alert alert-secondary mb-0">
+                                            <i class="fas fa-lock me-2"></i>
+                                            Self check-in closed at <strong>{{ checkin_window.closes_str }} WAT</strong>.
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            Self check-in is <strong>open now</strong> — scan your code or enter your email.
+                                        </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <p class="text-muted mb-0"><i class="fas fa-clock me-2"></i>Check-in timing is open.</p>
+                                    {% endif %}
                                 </div>
                                 
                                 <hr>
