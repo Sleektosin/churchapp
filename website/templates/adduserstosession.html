@@ -577,6 +577,8 @@
                         <p class="text-muted">Scan your fingerprint to check in to this session</p>
                         <div id="fingerprintMessage" class="mt-3"></div>
                     </div>
+                    <!-- Fallback: find or register the member, then enrol + check in -->
+                    <div id="fingerprintFallback" style="display:none;"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-modern btn-outline-modern" data-bs-dismiss="modal">
@@ -840,7 +842,8 @@
                 console.log('Auth begin response:', beginData);
                 
                 if (!beginData.success) {
-                    showFingerprintMessage(beginData.error || 'No enrolled users found', 'error');
+                    // Nobody is enrolled yet (or none matched) — offer the find/register fallback
+                    openFallback('No matching fingerprint on file.');
                     return;
                 }
                 
@@ -896,41 +899,236 @@
                         fingerprintModal.hide();
                     }, 1500);
                 } else {
-                    showFingerprintMessage(result.error || 'Check-in failed', 'error');
+                    // Fingerprint scanned but not on file — go straight to find/register
+                    openFallback(result.error || 'Fingerprint not recognised.');
                 }
-                
+
             } catch (error) {
                 console.error('Fingerprint check-in error:', error);
-                
-                if (error.name === 'NotAllowedError') {
-                    showFingerprintMessage('Fingerprint scan cancelled or not available', 'error');
-                } else if (error.name === 'SecurityError') {
+
+                if (error.name === 'SecurityError') {
                     showFingerprintMessage('Security error. Check domain configuration.', 'error');
+                } else if (error.name === 'NotAllowedError') {
+                    // Cancelled or no matching credential on this device — offer the fallback
+                    showFingerprintMessage('No matching fingerprint. You can find or register the member instead.', 'error', true);
                 } else {
-                    showFingerprintMessage('Fingerprint not recognized. Have you enrolled?', 'error');
+                    openFallback('Fingerprint not recognised.');
                 }
             }
         }
 
-        function showFingerprintMessage(message, type) {
+        function showFingerprintMessage(message, type, offerFallback) {
             const msgDiv = document.getElementById('fingerprintMessage');
             const colors = {
                 success: { bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0', icon: 'fa-check-circle' },
                 error: { bg: '#fef2f2', text: '#991b1b', border: '#fecaca', icon: 'fa-exclamation-circle' },
                 warning: { bg: '#fffbeb', text: '#92400e', border: '#fcd34d', icon: 'fa-exclamation-triangle' }
             };
-            
+
             const c = colors[type] || colors.error;
-            
-            msgDiv.innerHTML = `
+
+            let html = `
                 <div style="color: ${c.text}; padding: 12px 16px; border-radius: 8px; background: ${c.bg}; border: 1px solid ${c.border};">
                     <i class="fas ${c.icon} me-2"></i>${message}
-                </div>
-            `;
+                </div>`;
+            if (offerFallback) {
+                html += `<button type="button" class="btn btn-sm btn-outline-primary mt-3" onclick="openFallback('Fingerprint not recognised.')">
+                            <i class="fas fa-user-plus me-1"></i>Find or register member
+                         </button>`;
+            }
+            msgDiv.innerHTML = html;
         }
 
         function resetFingerprintModal() {
-            document.getElementById('fingerprintMessage').innerHTML = '';
+            const fb = document.getElementById('fingerprintFallback');
+            if (fb) { fb.style.display = 'none'; fb.innerHTML = ''; }
+            const status = document.getElementById('fingerprintStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.innerHTML = `
+                    <div class="mb-4">
+                        <i class="fas fa-fingerprint fingerprint-icon-animated" style="font-size: 80px; color: #7c3aed;"></i>
+                    </div>
+                    <h4 class="mb-3">Place your finger on the scanner</h4>
+                    <p class="text-muted">Scan your fingerprint to check in to this session</p>
+                    <div id="fingerprintMessage" class="mt-3"></div>`;
+            }
+        }
+
+        // ==========================================
+        // FALLBACK: find / register member, enrol fingerprint, check in
+        // ==========================================
+        function fbVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+        function fbGetDeviceName() {
+            const ua = navigator.userAgent;
+            if (/iPhone/.test(ua)) return 'iPhone';
+            if (/iPad/.test(ua)) return 'iPad';
+            if (/Android/.test(ua)) return 'Android Device';
+            if (/Windows NT/.test(ua)) return 'Windows PC';
+            if (/Macintosh/.test(ua)) return 'Mac';
+            return 'Unknown Device';
+        }
+
+        function openFallback(introMsg) {
+            document.getElementById('fingerprintStatus').style.display = 'none';
+            const fb = document.getElementById('fingerprintFallback');
+            fb.style.display = 'block';
+            fb.innerHTML = `
+                <div class="text-start">
+                    <p class="text-muted mb-3"><i class="fas fa-info-circle me-1 text-primary"></i>
+                        ${introMsg || 'Fingerprint not recognised.'} Find the member, or register a new one, then capture the fingerprint.</p>
+                    <div class="input-group mb-2">
+                        <input type="text" id="fbSearch" class="form-control" placeholder="Member email or username"
+                               autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();fbLookup();}">
+                        <button class="btn btn-primary" type="button" onclick="fbLookup()">
+                            <i class="fas fa-search me-1"></i>Find
+                        </button>
+                    </div>
+                    <div id="fbResult"></div>
+                </div>`;
+            setTimeout(() => { const el = document.getElementById('fbSearch'); if (el) el.focus(); }, 200);
+        }
+
+        async function fbLookup() {
+            const term = fbVal('fbSearch');
+            const result = document.getElementById('fbResult');
+            if (!term) { result.innerHTML = '<div class="text-danger small">Enter an email or username.</div>'; return; }
+            result.innerHTML = '<div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Searching...</div>';
+            try {
+                const res = await fetch('/api/users/lookup?term=' + encodeURIComponent(term));
+                const data = await res.json();
+                if (data.success && data.user) {
+                    const u = data.user;
+                    const name = (`${u.first_name || ''} ${u.last_name || ''}`).trim() || u.username;
+                    const safeName = name.replace(/'/g, "\\'");
+                    result.innerHTML = `
+                        <div class="alert alert-success py-2 mb-2">
+                            <i class="fas fa-user-check me-1"></i>Found: <strong>${name}</strong>
+                            ${u.email ? '<br><small class="text-muted">' + u.email + '</small>' : ''}
+                        </div>
+                        <button class="btn btn-modern btn-fingerprint w-100" onclick="enrollAndCheckin(${u.id}, '${safeName}')">
+                            <i class="fas fa-fingerprint me-2"></i>Capture Fingerprint &amp; Check In
+                        </button>`;
+                } else {
+                    renderRegisterForm(term);
+                }
+            } catch (e) {
+                result.innerHTML = '<div class="text-danger small">Lookup failed. Please try again.</div>';
+            }
+        }
+
+        function renderRegisterForm(prefill) {
+            const emailGuess = (prefill && prefill.includes('@')) ? prefill : '';
+            document.getElementById('fbResult').innerHTML = `
+                <div class="alert alert-warning py-2"><i class="fas fa-user-plus me-1"></i>No member found. Register a new member:</div>
+                <div class="row g-2 text-start">
+                    <div class="col-6"><input id="regFirst" class="form-control" placeholder="First name *"></div>
+                    <div class="col-6"><input id="regLast" class="form-control" placeholder="Last name *"></div>
+                    <div class="col-12"><input id="regEmail" class="form-control" placeholder="Email" value="${emailGuess}"></div>
+                    <div class="col-6"><input id="regPhone" class="form-control" placeholder="Phone (optional)"></div>
+                    <div class="col-6">
+                        <select id="regGender" class="form-select">
+                            <option value="">Gender</option><option value="Male">Male</option><option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-modern btn-fingerprint w-100 mt-2" onclick="registerEnrollCheckin()">
+                    <i class="fas fa-user-plus me-2"></i>Register, Capture Fingerprint &amp; Check In
+                </button>`;
+        }
+
+        function fbShowError(msg) {
+            const r = document.getElementById('fbResult');
+            if (r) r.insertAdjacentHTML('afterbegin', `<div class="alert alert-danger py-2">${msg}</div>`);
+        }
+
+        async function registerEnrollCheckin() {
+            const first = fbVal('regFirst'), last = fbVal('regLast');
+            if (!first || !last) { fbShowError('First and last name are required.'); return; }
+            const payload = { first_name: first, last_name: last, email: fbVal('regEmail'), phone_no: fbVal('regPhone'), gender: fbVal('regGender') };
+            try {
+                const res = await fetch('/api/users/quick-register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.success) { fbShowError(data.error || 'Registration failed.'); return; }
+                await enrollAndCheckin(data.user_id, data.name);
+            } catch (e) {
+                fbShowError('Registration failed. Please try again.');
+            }
+        }
+
+        async function enrollAndCheckin(userId, name) {
+            const result = document.getElementById('fbResult');
+            result.innerHTML = '<div class="text-muted small"><i class="fas fa-fingerprint me-1"></i>Place finger on the scanner to enrol...</div>';
+            try {
+                // 1) Begin enrolment
+                const beginRes = await fetch('/api/biometric/register/begin', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: parseInt(userId) })
+                });
+                const beginData = await beginRes.json();
+                if (!beginData.success) throw new Error(beginData.error || 'Could not start enrolment');
+
+                const o = beginData.options;
+                const publicKey = {
+                    rp: o.rp,
+                    user: { id: base64ToArrayBuffer(o.user.id), name: o.user.name, displayName: o.user.displayName },
+                    challenge: base64ToArrayBuffer(o.challenge),
+                    pubKeyCredParams: o.pubKeyCredParams,
+                    timeout: o.timeout,
+                    authenticatorSelection: o.authenticatorSelection || { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'required' },
+                    attestation: o.attestation || 'none',
+                    excludeCredentials: (o.excludeCredentials || []).map(c => ({ type: c.type || 'public-key', id: base64ToArrayBuffer(c.id) }))
+                };
+                const credential = await navigator.credentials.create({ publicKey });
+
+                // 2) Complete enrolment
+                const completeRes = await fetch('/api/biometric/register/complete', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: parseInt(userId),
+                        id: credential.id,
+                        rawId: arrayBufferToBase64(credential.rawId),
+                        response: {
+                            attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+                            clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+                        },
+                        type: credential.type,
+                        device_name: fbGetDeviceName()
+                    })
+                });
+                const completeData = await completeRes.json();
+                if (!completeData.success) throw new Error(completeData.error || 'Enrolment failed');
+
+                // 3) Check the member into this session
+                const addRes = await fetch(`/api/session/${sessionId}/add-user/${userId}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }
+                });
+                const addData = await addRes.json();
+                if (addData.success) {
+                    fbDone(addData.already_checked_in ? addData.message : `${name} enrolled and checked in!`);
+                    setTimeout(() => { $('#userTable').DataTable().ajax.reload(); fingerprintModal.hide(); }, 1600);
+                } else {
+                    fbShowError(addData.error || 'Could not check in.');
+                }
+            } catch (e) {
+                console.error('Enrol + check-in error:', e);
+                fbShowError(e.name === 'NotAllowedError' ? 'Fingerprint capture was cancelled or unavailable.' : (e.message || 'Enrolment failed.'));
+            }
+        }
+
+        function fbDone(msg) {
+            const fb = document.getElementById('fingerprintFallback');
+            if (fb) { fb.style.display = 'none'; }
+            const status = document.getElementById('fingerprintStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.innerHTML = `
+                    <div class="mb-3"><i class="fas fa-check-circle" style="font-size: 70px; color: #10b981;"></i></div>
+                    <h4>${msg}</h4>`;
+            }
+            showToast(msg, 'success');
         }
 
         // Reset modal when closed

@@ -177,6 +177,118 @@ def lookup_user():
         }), 500
 
 
+# ------------------------------------------------------------------
+# Fingerprint check-in fallback: when a scanned fingerprint is not
+# recognised, the operator can look up an existing member (and enrol
+# their fingerprint) or register a brand-new member, then check them in.
+# These endpoints share the open posture of the existing biometric /
+# addUsersToSession kiosk endpoints (CSRF-exempt). Put the kiosk behind
+# authentication if you want to restrict who can register members.
+# ------------------------------------------------------------------
+@views.route('/api/users/quick-register', methods=['POST'])
+@csrf.exempt
+@login_required
+@permission_required(Permission.MANAGE_SESSIONS)
+def quick_register_user():
+    """Create a minimal member record on the fly (used by the fingerprint
+    check-in fallback). Returns the new user's id."""
+    import secrets
+    data = request.get_json(silent=True) or request.form
+    first_name = (data.get('first_name') or '').strip()
+    last_name = (data.get('last_name') or '').strip()
+    email = (data.get('email') or '').strip()
+    phone_no = (data.get('phone_no') or '').strip()
+    gender = (data.get('gender') or '').strip()
+
+    if not first_name or not last_name:
+        return jsonify({'success': False, 'error': 'First name and last name are required.'}), 400
+
+    if email and User.query.filter(User.email.ilike(email)).first():
+        return jsonify({'success': False, 'error': 'A member with that email already exists.'}), 400
+
+    # Build a unique username
+    base = (email.split('@')[0] if email else f'{first_name}.{last_name}').lower()
+    base = re.sub(r'[^a-z0-9._]', '', base) or 'member'
+    username = base
+    suffix = 1
+    while User.query.filter_by(username=username).first():
+        username = f'{base}{suffix}'
+        suffix += 1
+
+    # QR code (same format used elsewhere)
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    qr.add_data(f'Username: {username}\nEmail: {email}')
+    qr.make(fit=True)
+    buffer = BytesIO()
+    qr.make_image(fill_color='black', back_color='white').save(buffer)
+    qr_code_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    try:
+        new_user = User(
+            username=username, email=email or None,
+            password=generate_password_hash(secrets.token_urlsafe(9), method='sha256'),
+            qr_code=qr_code_base64, first_name=first_name, last_name=last_name,
+            date_of_birth=None, gender=gender or None, phone_no=phone_no or None,
+            home_address=None, is_first_timer=True, date_joined=datetime.utcnow(),
+        )
+        default_role = Role.query.filter_by(name='User').first()
+        if default_role:
+            new_user.roles.append(default_role)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'success': True, 'user_id': new_user.id, 'name': f'{first_name} {last_name}'})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'That email or username is already in use.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Could not register member: {str(e)}'}), 500
+
+
+@views.route('/api/session/<int:session_id>/add-user/<int:user_id>', methods=['POST'])
+@csrf.exempt
+@login_required
+@permission_required(Permission.MANAGE_SESSIONS)
+def add_user_to_session_direct(session_id, user_id):
+    """Check a known member into a session (used right after enrolling their
+    fingerprint in the fallback flow). Recorded as a biometric check-in."""
+    session_obj = Session.query.get(session_id)
+    user = User.query.get(user_id)
+    if not session_obj or not user:
+        return jsonify({'success': False, 'error': 'Session or member not found'}), 404
+
+    if (session_obj.status or '').lower() == 'completed':
+        return jsonify({'success': False, 'error': 'This session is completed. Check-in is closed.'}), 400
+
+    existing = Attendance.query.filter_by(user_id=user.id, session_id=session_id).first()
+    if existing:
+        return jsonify({
+            'success': True, 'already_checked_in': True,
+            'message': f'{user.first_name} {user.last_name} is already checked in!',
+            'user': user.to_dict(),
+        })
+
+    if session_obj.max_capacity:
+        current_count = Attendance.query.filter_by(session_id=session_id).count()
+        if current_count >= session_obj.max_capacity:
+            return jsonify({'success': False, 'error': 'Session is at full capacity'}), 400
+
+    try:
+        db.session.add(Attendance(
+            user_id=user.id, session_id=session_id, status='present',
+            check_in_method='biometric', check_in_time=datetime.utcnow(),
+        ))
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'{user.first_name} {user.last_name} checked in successfully!',
+            'user': user.to_dict(),
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Could not check in member: {str(e)}'}), 500
+
+
 # In-memory challenge storage (use Redis in production)
 pending_challenges = {}
 
@@ -749,8 +861,10 @@ def barcodelogin():
 
 
 
-@views.route('/addUsersToSession/<id>', methods=['GET', 'POST'])  
+@views.route('/addUsersToSession/<id>', methods=['GET', 'POST'])
 @csrf.exempt
+@login_required
+@permission_required(Permission.MANAGE_SESSIONS)
 def addUsersToSession_handler(id):
     session = Session.query.get(id)
     if not session:
