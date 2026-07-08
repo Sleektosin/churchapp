@@ -238,6 +238,29 @@ def ensure_role_permissions_column(db):
             print(f'[RBAC] role id sequence realign skipped: {exc}')
 
 
+def realign_id_sequences(db, tables):
+    """Realign Postgres id sequences to MAX(id) for the given tables.
+
+    Some tables in this database have sequences that drifted behind their
+    max(id) (e.g. from bulk imports), which makes new INSERTs fail with a
+    duplicate-primary-key error. Running this at startup keeps registration,
+    check-in, etc. reliable. No-op on non-Postgres backends.
+    """
+    from sqlalchemy import text
+    if db.engine.dialect.name != 'postgresql':
+        return
+    for table in tables:
+        q = '"%s"' % table  # quote (some names like "user" are reserved words)
+        try:
+            with db.engine.begin() as conn:
+                conn.execute(text(
+                    "SELECT setval(pg_get_serial_sequence(:t, 'id'), "
+                    "GREATEST((SELECT COALESCE(MAX(id), 1) FROM %s), 1))" % q
+                ), {'t': q})
+        except Exception as exc:  # pragma: no cover - never block startup
+            print(f'[DB] sequence realign skipped for {table}: {exc}')
+
+
 def seed_roles(db, role_model):
     """Idempotently ensure the default roles exist in the database."""
     try:

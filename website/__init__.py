@@ -265,13 +265,20 @@ def create_app():
         return User.query.get(int(id))
 
     # ---------------- RBAC wiring ----------------
-    from .rbac import seed_roles, ensure_role_permissions_column, user_has_permission, user_has_role, Permission
+    from .rbac import (seed_roles, ensure_role_permissions_column, realign_id_sequences,
+                       user_has_permission, user_has_role, Permission)
     from .models import Role
 
     # Ensure the role schema/data is ready (migration must run before any Role query)
     with app.app_context():
         ensure_role_permissions_column(db)
         seed_roles(db, Role)
+        # Keep id sequences aligned so new inserts (registration, check-in, etc.)
+        # never collide with an existing primary key.
+        realign_id_sequences(db, [
+            'user', 'role', 'session', 'attendances',
+            'item', 'maintenance', 'inventory', 'webauthn_credential',
+        ])
 
     # Expose permission helpers to all templates for UI gating
     @app.context_processor
