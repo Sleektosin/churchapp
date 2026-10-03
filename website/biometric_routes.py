@@ -7,10 +7,12 @@ import json
 from datetime import datetime
 
 # Import webauthn library
-from webauthn import generate_registration_options, verify_registration_response
+from webauthn import generate_registration_options, verify_registration_response, verify_authentication_response
 from webauthn.helpers.structs import (
     RegistrationCredential,
     AuthenticatorAttestationResponse,
+    AuthenticationCredential,
+    AuthenticatorAssertionResponse,
     AuthenticatorSelectionCriteria,
     UserVerificationRequirement,
 )
@@ -388,7 +390,7 @@ def biometric_auth_complete(session_id):
     
     try:
         data = request.json
-        credential_id = data.get('credential_id')
+        credential_id = data.get('credential_id') or data.get('id')
         
         print(f"\n" + "="*50)
         print(f"🔍 AUTH COMPLETE DEBUG")
@@ -450,6 +452,30 @@ def biometric_auth_complete(session_id):
                 'success': False,
                 'error': 'Fingerprint not recognized. Have you enrolled?'
             }), 404
+
+        response_data = data.get('response') or {}
+        authentication_credential = AuthenticationCredential(
+            id=data.get('id'),
+            raw_id=b64_any_to_bytes(data.get('rawId', '')),
+            response=AuthenticatorAssertionResponse(
+                authenticator_data=b64_any_to_bytes(response_data.get('authenticatorData', '')),
+                client_data_json=b64_any_to_bytes(response_data.get('clientDataJSON', '')),
+                signature=b64_any_to_bytes(response_data.get('signature', '')),
+                user_handle=b64_any_to_bytes(response_data['userHandle']) if response_data.get('userHandle') else None,
+            ),
+            type='public-key',
+        )
+        stored_public_key = json.loads(stored_credential.public_key)
+        public_key_value = stored_public_key.get('public_key') if isinstance(stored_public_key, dict) else stored_public_key
+        verification = verify_authentication_response(
+            credential=authentication_credential,
+            expected_challenge=challenge_data['challenge'],
+            expected_rp_id=RP_ID,
+            expected_origin=ORIGIN,
+            credential_public_key=b64_any_to_bytes(public_key_value) if isinstance(public_key_value, str) else bytes(public_key_value),
+            credential_current_sign_count=stored_credential.sign_count or 0,
+        )
+        pending_registrations.pop(f"auth_{session_id}", None)
         
         user = stored_credential.user
         print(f"  ✅ Found user: {user.first_name} {user.last_name} (ID: {user.id})")
@@ -468,7 +494,7 @@ def biometric_auth_complete(session_id):
         sys.stdout.flush()
 
         # Block adding users once the session is completed
-        if (session_obj.status or '').lower() == 'completed':
+        if (session_obj.status or '').lower() in {'completed', 'cancelled'}:
             return jsonify({
                 'success': False,
                 'error': 'This session is completed. Users can no longer be added.'
@@ -507,11 +533,8 @@ def biometric_auth_complete(session_id):
         )
         db.session.add(new_attendance)
         stored_credential.last_used_at = datetime.utcnow()
-        stored_credential.sign_count = (stored_credential.sign_count or 0) + 1
+        stored_credential.sign_count = verification.new_sign_count
         db.session.commit()
-        
-        # Clear challenge
-        del pending_registrations[f"auth_{session_id}"]
         
         print(f"  🎉 SUCCESS! {user.first_name} {user.last_name} checked in!")
         print(f"="*50 + "\n")

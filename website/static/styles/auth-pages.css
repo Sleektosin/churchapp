@@ -1,0 +1,281 @@
+:root {
+    --primary: #183451;
+    --primary-dark: #132b40;
+    --primary-light: #54718a;
+    --primary-soft: #f6f0e5;
+    --success: #27816f;
+    --success-dark: #1f6c5d;
+    --warning: #b98938;
+    --danger: #c74747;
+    --danger-soft: #fbebea;
+    --info: #3b82a0;
+    --dark: #183451;
+    --light: #f7f8f6;
+    --gray: #687783;
+    --gray-light: #dce2df;
+    --gray-soft: #f1f3f1;
+    --primary-color: #183451;
+    --secondary-color: #f7f8f6;
+    --text-color: #183451;
+    --text-light: #687783;
+    --success-color: #27816f;
+    --danger-color: #c74747;
+    --border-color: #dce2df;
+    --shadow: 0 18px 44px rgba(24, 52, 81, 0.12);
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7f5 0%, #e9eeea 100%);
+    color: #183451;
+}
+
+body.register-page {
+    align-items: flex-start;
+    padding: 24px 20px;
+}
+
+.login-wrapper,
+.register-wrapper,
+.password-container {
+    max-width: 1120px;
+}
+
+.login-card,
+.register-card,
+.password-card {
+    border: 1px solid #dce2df;
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(24, 52, 81, 0.12);
+}
+
+.login-card {
+    min-height: 620px;
+}
+
+.register-card {
+    min-height: 680px;
+}
+
+.password-card {
+    min-height: 500px;
+}
+
+.login-image-col,
+.register-image-col {
+    flex-basis: 42%;
+    background: #183451;
+}
+
+.password-image-col {
+    flex-basis: 42%;
+}
+
+.login-form-col,
+.register-form-col,
+.password-form-col {
+    flex-basis: 58%;
+    background: #fff;
+}
+
+.register-form-col {
+    max-height: none;
+    overflow: visible;
+}
+
+.image-overlay {
+    background: linear-gradient(145deg, rgba(24, 52, 81, 0.88), rgba(19, 43, 64, 0.93));
+}
+
+.image-overlay h3 {
+    color: #fff;
+}
+
+.feature-item {
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.brand h2,
+.logo h1 {
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.welcome-text h1,
+.password-form-col h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand h2,
+.logo h1,
+.welcome-text h1,
+.password-form-col h2 {
+    color: #183451;
+}
+
+.password-form-col .logo {
+    text-align: left;
+}
+
+.brand h2 i,
+.logo h1 i,
+.section-title,
+.section-title i {
+    color: #a8792e;
+}
+
+.brand p,
+.welcome-text p,
+.logo p {
+    color: #687783;
+}
+
+.form-floating-modern .form-control,
+.form-floating-modern .form-select,
+.password-form-col .form-control {
+    height: 56px;
+    border: 1px solid #dce2df;
+    border-radius: 8px;
+    background: #f7f8f6;
+    color: #183451;
+}
+
+.form-floating-modern .form-control:focus,
+.form-floating-modern .form-select:focus,
+.password-form-col .form-control:focus {
+    border-color: #b98938;
+    box-shadow: 0 0 0 3px rgba(185, 137, 56, 0.16);
+    background: #fff;
+}
+
+.form-floating-modern .form-label {
+    color: #687783;
+}
+
+.form-floating-modern .form-control:focus ~ .form-label,
+.form-floating-modern .form-control:not(:placeholder-shown) ~ .form-label,
+.form-floating-modern .form-select:focus ~ .form-label,
+.form-floating-modern .form-select:not([value=""]):valid ~ .form-label {
+    color: #8a6429;
+}
+
+.btn-login,
+.btn-register,
+.btn-password {
+    min-height: 52px;
+    height: auto;
+    border: 1px solid #b98938;
+    border-radius: 8px;
+    background: #b98938;
+    color: #183451;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.btn-login:hover,
+.btn-register:hover,
+.btn-password:hover {
+    border-color: #a8792e;
+    background: #a8792e;
+    color: #132b40;
+    box-shadow: 0 8px 18px rgba(24, 52, 81, 0.14);
+}
+
+.btn-login::before,
+.btn-register::before {
+    display: none;
+}
+
+.login-links,
+.register-links {
+    border-color: #e5e9e6;
+}
+
+.login-links a,
+.register-links a,
+.password-links a {
+    color: #183451;
+}
+
+.login-links a:hover,
+.register-links a:hover,
+.password-links a:hover {
+    color: #8a6429;
+}
+
+.alert-modern,
+.password-form-col .alert {
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+.checkbox-modern,
+.register-form-col .biometric-option-card {
+    border-radius: 8px;
+    background: #f7f8f6;
+    border-color: #dce2df;
+    box-shadow: none;
+}
+
+.register-form-col .biometric-icon-wrapper {
+    border-radius: 8px;
+    background: #183451;
+    box-shadow: none;
+}
+
+.biometric-text strong {
+    color: #183451;
+}
+
+.password-strength {
+    color: #687783;
+}
+
+@media (max-width: 992px) {
+    .login-card,
+    .register-card,
+    .password-card {
+        min-height: 0;
+    }
+
+    .login-image-col,
+    .register-image-col,
+    .password-image-col {
+        flex-basis: auto;
+    }
+
+    .login-form-col,
+    .register-form-col,
+    .password-form-col {
+        flex-basis: auto;
+    }
+}
+
+@media (max-width: 576px) {
+    body.register-page {
+        padding: 12px;
+    }
+}
+
+@media (max-height: 760px) {
+    body.login-page {
+        align-items: flex-start;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

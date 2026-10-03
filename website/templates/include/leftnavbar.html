@@ -20,7 +20,7 @@
         width: var(--sidebar-width);
         background: var(--sidebar-bg);
         border-right: 1px solid rgba(0,0,0,0.05);
-        height: calc(100vh - 70px);
+        height: calc(100vh - 60px);
         position: fixed;
         top: 60px;
         left: 0;
@@ -193,7 +193,7 @@
 </style>
 
 {% set path = request.path %}
-{% set is_home        = (path == url_for('views.home')) %}
+{% set is_home        = (path == url_for('views.dashboard')) %}
 {% set is_sessions    = path.startswith(url_for('views.sessions')) %}
 {% set is_users       = path.startswith(url_for('views.manageusers')) %}
 {% set is_roles       = path.startswith(url_for('views.manage_roles')) %}
@@ -211,9 +211,9 @@
 
             {% if has_permission(Permission.VIEW_DASHBOARD) %}
             <li class="sidebar-item">
-                <a class="sidebar-link {% if is_home %}active{% endif %}" href="{{ url_for('views.home') }}">
+                <a class="sidebar-link {% if is_home %}active{% endif %}" href="{{ url_for('views.dashboard') }}">
                     <i class="fa-solid fa-house nav-icon"></i>
-                    <span class="link-label">Home</span>
+                    <span class="link-label">Dashboard</span>
                 </a>
             </li>
             {% endif %}
@@ -221,8 +221,8 @@
             {% if has_permission(Permission.MANAGE_SESSIONS) %}
             <li class="sidebar-item">
                 <a class="sidebar-link {% if is_sessions %}active{% endif %}" href="{{ url_for('views.sessions') }}">
-                    <i class="fa-solid fa-chart-line nav-icon"></i>
-                    <span class="link-label">Sessions</span>
+                    <i class="fa-solid fa-calendar-days nav-icon"></i>
+                    <span class="link-label">Services &amp; Events</span>
                 </a>
             </li>
             {% endif %}

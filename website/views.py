@@ -988,7 +988,7 @@ def logging_handler():
     if user:
         flash('Logged in successfully!', category='success')
         login_user(user, remember=True)
-        return redirect(url_for('views.sessions'))
+        return redirect(url_for('views.dashboard'))
     else:
         # Show error message on failed login
         return render_template('login.html', error='Invalid QR code. Please try again.')
@@ -1007,7 +1007,7 @@ def login():
         
         # Role-based redirect
         if current_user.has_role('Admin'):
-            return redirect(url_for('views.sessions'))
+            return redirect(url_for('views.dashboard'))
         else:
             return redirect(url_for('views.home'))
 
@@ -1044,9 +1044,8 @@ def login():
             # Role-based redirect after login
             if user.has_role('Admin'):
                 flash('Logged in successfully!', category='success')
-                return redirect(url_for('views.sessions'))
+                return redirect(url_for('views.dashboard'))
             else:
-                flash('Logged in successfully!', category='success')
                 return redirect(url_for('views.home'))
             
         else:
@@ -1182,6 +1181,36 @@ def home():
         facebook_page_url=facebook_page_url,
         instagram_url=instagram_url,
         fb_live_permalink=get_facebook_live_permalink(),
+    )
+
+
+@views.route('/dashboard')
+@login_required
+@permission_required(Permission.VIEW_DASHBOARD)
+def dashboard():
+    today = datetime.now().date()
+    today_sessions = Session.query.filter(Session.date == today).order_by(Session.start_time.asc()).all()
+    next_session = Session.query.filter(
+        Session.date >= today,
+        Session.status.ilike('scheduled')
+    ).order_by(Session.date.asc(), Session.start_time.asc()).first()
+    current_session = next((item for item in today_sessions if (item.status or '').lower() == 'active'), None)
+    featured_session = current_session or next_session
+    attendance_count = Attendance.query.filter_by(session_id=featured_session.id, status='present').count() if featured_session else 0
+
+    return render_template(
+        'admin_dashboard.html',
+        user=current_user,
+        today=today,
+        today_sessions=today_sessions,
+        featured_session=featured_session,
+        current_session=current_session,
+        attendance_count=attendance_count,
+        first_time_visitors=User.query.filter(
+            User.is_first_timer.is_(True),
+            func.date(User.date_joined) == today,
+        ).count(),
+        maintenance_count=Maintenance.query.count(),
     )
 
 
@@ -2082,6 +2111,7 @@ def get_sessions_data():
     start = int(request.form.get('start'))
     length = int(request.form.get('length'))
     search_value = request.form.get('search[value]', '').strip().lower()
+    status_filter = request.form.get('columns[6][search][value]', '').strip().lower()
 
     # Base query to get session data with attendance count from Attendance model
     base_query = db.session.query(
@@ -2115,6 +2145,9 @@ def get_sessions_data():
                 Session.status.ilike(f'%{search_value}%')
             )
         )
+
+    if status_filter:
+        base_query = base_query.filter(Session.status.ilike(f'%{status_filter}%'))
 
     # Get the total number of records before filtering
     total_records = db.session.query(func.count(Session.id)).scalar()
@@ -3963,7 +3996,6 @@ def prevalidate():
         if code == session.get('validation_code'):
             session['user'] = session.pop('pending_user')
             session.pop('validation_code', None)  # remove used code
-            flash('Logged in successfully!', category='success')
             login_user(session['user'], remember=True)
             return redirect(url_for('views.sessions'))
         else:

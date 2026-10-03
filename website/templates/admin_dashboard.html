@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | RCCG PowerHouse Parish</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .admin-dashboard { margin-left: 260px; min-height: calc(100vh - 60px); padding: 30px clamp(16px, 3vw, 42px); }
+        .dashboard-inner { max-width: 1440px; margin: 0 auto; }
+        .dashboard-heading { display: flex; justify-content: space-between; align-items: end; gap: 1rem; margin-bottom: 1.5rem; }
+        .dashboard-heading h1 { color: #183451; font-size: 1.85rem; font-weight: 700; margin: 0; }
+        .dashboard-heading p { margin: .35rem 0 0; color: #687783; }
+        .dashboard-flash { border-left: 4px solid #b98938; background: #f6f0e5; color: #183451; }
+        .attention-panel { padding: 1.5rem; background: #183451; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.25rem; }
+        .attention-panel h2 { font-size: 1.3rem; margin: 0 0 .35rem; }
+        .attention-panel p { margin: 0; color: rgba(255,255,255,.78); }
+        .attention-panel .btn { background: #b98938; border-color: #b98938; color: #172b3d; font-weight: 700; min-height: 48px; white-space: nowrap; }
+        .dashboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+        .dashboard-metric, .dashboard-section { background: #fff; border: 1px solid #e2e5e2; border-radius: 12px; box-shadow: 0 4px 18px rgba(24,52,81,.06); }
+        .dashboard-metric { padding: 1.15rem; }
+        .dashboard-metric .metric-label { display: flex; align-items: center; gap: .65rem; color: #687783; font-size: .9rem; }
+        .dashboard-metric .metric-label i { color: #b98938; }
+        .dashboard-metric strong { display: block; color: #183451; font-size: 1.8rem; margin-top: .55rem; }
+        .dashboard-lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .8fr); gap: 1.25rem; }
+        .dashboard-section { padding: 1.25rem; }
+        .dashboard-section h2 { color: #183451; font-size: 1.05rem; margin: 0 0 1rem; }
+        .service-summary { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+        .service-summary h3 { font-size: 1.1rem; margin: 0; }
+        .service-summary p { color: #687783; margin: .4rem 0 0; }
+        .status-pill { display: inline-flex; border-radius: 999px; padding: .35rem .7rem; font-weight: 700; text-transform: capitalize; background: #f6f0e5; color: #835c20; }
+        .dashboard-links { display: grid; gap: .55rem; }
+        .dashboard-links a { min-height: 48px; display: flex; align-items: center; justify-content: space-between; color: #183451; text-decoration: none; padding: .7rem .8rem; border: 1px solid #e2e5e2; border-radius: 8px; }
+        .dashboard-links a:hover { border-color: #b98938; background: #fffdf8; }
+        .dashboard-links i { color: #b98938; }
+        @media (max-width: 991.98px) { .admin-dashboard { margin-left: 0; padding: 100px 20px 20px; } }
+        @media (max-width: 760px) { .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dashboard-lower { grid-template-columns: 1fr; } .attention-panel { align-items: stretch; flex-direction: column; } }
+        @media (max-width: 420px) { .dashboard-metrics { grid-template-columns: 1fr 1fr; gap: .6rem; } .dashboard-metric { padding: .85rem; } .dashboard-metric strong { font-size: 1.45rem; } .dashboard-heading { align-items: start; flex-direction: column; } }
+    </style>
+</head>
+<body>
+    {% include "include/header.html" %}
+    {% include "include/leftnavbar.html" %}
+    <main class="admin-dashboard">
+        <div class="dashboard-inner">
+            <header class="dashboard-heading">
+                <div><h1>Good day, {{ current_user.first_name or current_user.username }}</h1><p>{% if has_permission(Permission.MANAGE_SESSIONS) %}Here is what needs attention at the church today.{% elif has_permission(Permission.MANAGE_USERS) %}Review today's attendance and support member care.{% else %}Here is your church operations overview for today.{% endif %}</p></div>
+                <span class="text-muted">{{ today.strftime('%A, %B %d') }}</span>
+            </header>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert dashboard-flash alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endwith %}
+            <section class="attention-panel" aria-labelledby="attentionTitle">
+                <div><h2 id="attentionTitle">{% if current_session %}{{ current_session.name }} is underway{% elif featured_session %}Next up: {{ featured_session.name }}{% else %}No service created for this week{% endif %}</h2>
+                    {% if featured_session %}<p>{% if featured_session.date %}{{ featured_session.date.strftime('%A, %B %d') }}{% endif %}{% if featured_session.start_time %} · {{ featured_session.start_time.strftime('%I:%M %p') }}{% endif %}{% if featured_session.location %} · {{ featured_session.location }}{% endif %}</p>{% else %}<p>Set up the next gathering and prepare volunteer check-in.</p>{% endif %}
+                </div>
+                {% if has_permission(Permission.MANAGE_SESSIONS) %}{% if current_session %}<a class="btn" href="{{ url_for('views.addUsersToSession_handler', id=current_session.id) }}"><i class="fas fa-user-check me-2"></i>Start Sunday Service Check-in</a>
+                {% elif featured_session %}<a class="btn" href="{{ url_for('views.sessiondetails', id=featured_session.id) }}"><i class="fas fa-calendar-check me-2"></i>Prepare this service</a>
+                {% else %}<a class="btn" href="{{ url_for('views.sessions') }}"><i class="fas fa-plus me-2"></i>Create service</a>{% endif %}{% elif has_permission(Permission.MANAGE_USERS) %}<a class="btn" href="{{ url_for('views.manageusers') }}"><i class="fas fa-magnifying-glass me-2"></i>Look up a member</a>{% elif has_permission(Permission.VIEW_ANALYTICS) %}<a class="btn" href="{{ url_for('views.analytics') }}"><i class="fas fa-chart-pie me-2"></i>View analytics</a>{% endif %}
+            </section>
+            <section class="dashboard-metrics" aria-label="Church operations at a glance">
+                <article class="dashboard-metric"><div class="metric-label"><i class="fas fa-users" aria-hidden="true"></i>Attendance in featured service</div><strong>{{ attendance_count }}</strong></article>
+                <article class="dashboard-metric"><div class="metric-label"><i class="fas fa-user-plus" aria-hidden="true"></i>First-time visitors today</div><strong>{{ first_time_visitors }}</strong></article>
+                <article class="dashboard-metric"><div class="metric-label"><i class="fas fa-calendar-days" aria-hidden="true"></i>Services today</div><strong>{{ today_sessions|length }}</strong></article>
+                <article class="dashboard-metric"><div class="metric-label"><i class="fas fa-screwdriver-wrench" aria-hidden="true"></i>Maintenance records</div><strong>{{ maintenance_count }}</strong></article>
+            </section>
+            <div class="dashboard-lower">
+                <section class="dashboard-section">
+                    <h2>Service status</h2>
+                    {% if featured_session %}<div class="service-summary"><div><h3>{{ featured_session.name }}</h3><p>{{ featured_session.description or 'No service notes added.' }}</p></div><span class="status-pill">{{ featured_session.status or 'Scheduled' }}</span></div>
+                    <hr>{% if has_permission(Permission.MANAGE_SESSIONS) %}<a class="btn btn-outline-primary" href="{{ url_for('views.sessiondetails', id=featured_session.id) }}">View service details</a>{% else %}<p class="text-muted mb-0">Service details are available to authorised service coordinators.</p>{% endif %}
+                    {% else %}<div class="empty-state"><i class="fas fa-calendar-plus d-block"></i><h3 class="h6 text-dark">No upcoming service</h3><p>Create an event to prepare attendance and volunteers.</p><a class="btn btn-primary" href="{{ url_for('views.sessions') }}">Create service</a></div>{% endif %}
+                </section>
+                <section class="dashboard-section">
+                    <h2>Quick access</h2>
+                    <nav class="dashboard-links" aria-label="Operational shortcuts">
+                        {% if has_permission(Permission.MANAGE_SESSIONS) %}<a href="{{ url_for('views.sessions') }}"><span>Services &amp; Events</span><i class="fas fa-arrow-right"></i></a>{% endif %}
+                        {% if has_permission(Permission.MANAGE_USERS) %}<a href="{{ url_for('views.manageusers') }}"><span>Member lookup</span><i class="fas fa-arrow-right"></i></a>{% endif %}
+                        {% if has_permission(Permission.MANAGE_INVENTORY) %}<a href="{{ url_for('views.inventories') }}"><span>Inventory</span><i class="fas fa-arrow-right"></i></a>{% endif %}
+                        {% if has_permission(Permission.MANAGE_ROLES) %}<a href="{{ url_for('views.manage_roles') }}"><span>Roles &amp; permissions</span><i class="fas fa-arrow-right"></i></a>{% endif %}
+                    </nav>
+                </section>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('.dashboard-flash').forEach((alertElement) => {
+            window.setTimeout(() => {
+                bootstrap.Alert.getOrCreateInstance(alertElement).close();
+            }, 6000);
+        });
+    </script>
+</body>
+</html>

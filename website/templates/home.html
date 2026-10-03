@@ -9,8 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts - Modern Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- A calm editorial pairing for a welcoming parish experience -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
     <!-- AOS Animation Library -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
@@ -564,6 +564,323 @@
             
             .hero-title {
                 font-size: 2.5rem;
+            }
+        }
+
+        /* Parish palette and quieter, more welcoming rhythm */
+        :root {
+            --primary: #315d4b;
+            --primary-dark: #244638;
+            --primary-light: #87a895;
+            --secondary: #b38b52;
+            --accent: #6f8b72;
+            --dark: #20332b;
+            --light: #f7f5ef;
+            --gray: #68766e;
+            --parish-paper: #fbfaf6;
+            --parish-line: #e6e6dc;
+        }
+
+        body {
+            background: var(--parish-paper);
+            color: var(--dark);
+            font-family: 'DM Sans', sans-serif;
+            line-height: 1.7;
+        }
+
+        html {
+            overflow-x: clip;
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        .logo-text, .footer-logo {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            letter-spacing: 0;
+        }
+
+        .navbar-modern {
+            padding: 1.1rem 0;
+        }
+
+        .navbar-modern.scrolled {
+            background: rgba(251, 250, 246, 0.96);
+            box-shadow: 0 8px 28px rgba(32, 51, 43, 0.10);
+        }
+
+        .logo-text,
+        .footer-logo {
+            background: none;
+            color: #fff;
+            -webkit-text-fill-color: currentColor;
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        .navbar-modern.scrolled .logo-text {
+            color: var(--dark);
+        }
+
+        .nav-link {
+            border-radius: 4px;
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+
+        .navbar-modern.scrolled .nav-link:hover {
+            background: rgba(49, 93, 75, 0.09);
+            color: var(--primary-dark) !important;
+        }
+
+        .hero-section {
+            min-height: min(820px, 100svh);
+            background-image: linear-gradient(90deg, rgba(22, 42, 34, 0.82), rgba(22, 42, 34, 0.38) 67%, rgba(22, 42, 34, 0.18)),
+                url("{{ url_for('static', filename='uploads/background/backgroundimagechurchapp.jpg') }}");
+            background-position: center 45%;
+        }
+
+        .hero-content {
+            padding-top: 112px;
+            padding-bottom: 64px;
+        }
+
+        .hero-badge {
+            border-radius: 4px;
+            background: rgba(251, 250, 246, 0.12);
+            border-color: rgba(251, 250, 246, 0.34);
+            font-size: 0.88rem;
+        }
+
+        .hero-title {
+            max-width: 760px;
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1.16;
+        }
+
+        .hero-title span {
+            background: none;
+            color: #e4c995;
+            -webkit-text-fill-color: currentColor;
+        }
+
+        .hero-text {
+            max-width: 650px;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 1.08rem;
+        }
+
+        .btn-modern {
+            border-radius: 5px;
+            padding: 0.8rem 1.35rem;
+            font-weight: 600;
+        }
+
+        .btn-primary-modern {
+            background: var(--primary);
+            box-shadow: 0 8px 20px rgba(20, 43, 33, 0.2);
+        }
+
+        .btn-primary-modern:hover {
+            background: var(--primary-dark);
+            color: #fff;
+        }
+
+        .btn-outline-modern {
+            border-width: 1px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .floating-card,
+        .service-card,
+        .event-card,
+        .live-embed-card,
+        .live-side-card,
+        .contact-card {
+            border: 1px solid var(--parish-line);
+            border-radius: 8px;
+            box-shadow: 0 14px 36px rgba(32, 51, 43, 0.08);
+        }
+
+        .floating-card::before {
+            height: 3px;
+            background: var(--secondary);
+        }
+
+        .section-padding {
+            padding: 96px 0;
+        }
+
+        .section-padding.bg-light {
+            background-color: #f1f2eb !important;
+        }
+
+        .section-title {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 2.35rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .section-title span.text-primary {
+            color: var(--primary) !important;
+        }
+
+        .section-subtitle {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+
+        .title-decoration {
+            width: 52px;
+            height: 2px;
+            border-radius: 0;
+            background: var(--secondary);
+        }
+
+        .service-card,
+        .event-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .service-card:hover,
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 42px rgba(32, 51, 43, 0.13);
+        }
+
+        .service-time {
+            border-radius: 4px;
+            color: var(--primary-dark);
+        }
+
+        .event-date-badge {
+            background: var(--primary);
+        }
+
+        .gallery-item {
+            border-radius: 6px;
+        }
+
+        .gallery-overlay {
+            background: linear-gradient(180deg, rgba(22, 42, 34, 0) 15%, rgba(22, 42, 34, 0.86) 100%);
+        }
+
+        .contact-card {
+            background: #fff;
+            padding: 2.5rem;
+        }
+
+        .form-floating-modern input,
+        .form-floating-modern textarea {
+            border: 1px solid var(--parish-line);
+            border-radius: 5px;
+            background: #fdfcf9;
+        }
+
+        .form-floating-modern input:focus,
+        .form-floating-modern textarea:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(49, 93, 75, 0.12);
+        }
+
+        .contact-icon {
+            flex: 0 0 48px;
+            width: 48px;
+            height: 48px;
+            border-radius: 6px;
+            background: var(--primary);
+        }
+
+        .modern-footer {
+            background: #20332b;
+            padding-top: 68px;
+        }
+
+        .footer-wave {
+            height: 3px;
+            background: var(--secondary);
+        }
+
+        .footer-logo {
+            font-size: 1.65rem;
+        }
+
+        .social-link {
+            border-radius: 5px;
+        }
+
+        :focus-visible {
+            outline: 3px solid #c29a5b;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-modern,
+            .navbar-modern.scrolled {
+                background: rgba(32, 51, 43, 0.97);
+            }
+
+            .navbar-modern .logo-text,
+            .navbar-modern.scrolled .logo-text {
+                color: #fff;
+            }
+
+            .navbar-modern.scrolled .nav-link {
+                color: #fff !important;
+            }
+
+            .navbar-modern .navbar-toggler {
+                border-color: rgba(255, 255, 255, 0.45);
+            }
+
+            .navbar-modern .navbar-toggler-icon {
+                filter: brightness(0) invert(1);
+            }
+
+            .hero-title {
+                font-size: 3.2rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .hero-section {
+                min-height: 760px;
+                min-height: min(820px, 100svh);
+                background-position: 59% center;
+            }
+
+            .gallery-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .hero-content {
+                padding-top: 118px;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .section-padding {
+                padding: 72px 0;
+            }
+
+            .section-title {
+                font-size: 1.9rem;
+            }
+
+            .contact-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>

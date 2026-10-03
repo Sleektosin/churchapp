@@ -104,10 +104,10 @@ class BiometricAuth {
                 session_id: sessionId
             };
 
-            const verifyResponse = await fetch('/api/biometric/auth/complete', {
+            const verifyResponse = await fetch(`/api/biometric/auth/complete/${encodeURIComponent(sessionId)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(assertionData)
+                body: JSON.stringify({ ...assertionData, credential_id: assertion.id })
             });
 
             const verifyData = await verifyResponse.json();
@@ -160,7 +160,8 @@ class BiometricAuth {
     }
 
     base64ToArrayBuffer(base64) {
-        const binary = atob(base64);
+        const normalized = base64.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(base64.length / 4) * 4, '=');
+        const binary = atob(normalized);
         const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);

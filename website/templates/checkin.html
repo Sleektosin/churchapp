@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Check-In</title>
+    <title>Service Check-in | RCCG PowerHouse Parish</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-          --primary: #4361ee;
-          --secondary: #3f37c9;
-          --accent: #4cc9f0;
-          --success: #4ade80;
-          --warning: #fbbf24;
-          --dark: #1e293b;
-          --light: #f8fafc;
+          --primary: #183451;
+          --secondary: #10273f;
+          --accent: #b98938;
+          --success: #27745a;
+          --warning: #9a6818;
+          --dark: #202d3a;
+          --light: #f5f4ef;
         }
 
         body {
-          background: radial-gradient(circle at center, #f0f9ff 0%, #e0f2fe 100%);
+          background: #f5f4ef;
           min-height: 100vh;
           display: flex;
           align-items: center;
@@ -34,16 +34,11 @@
           border: none;
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 10px 30px rgba(67, 97, 238, 0.2);
-          transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-          transform: translateY(-5px);
+                    box-shadow: 0 4px 18px rgba(24, 52, 81, 0.07);
         }
 
         .card-header {
-          background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+          background: var(--primary);
           padding: 1.5rem;
           position: relative;
           overflow: hidden;
@@ -75,7 +70,7 @@
             transform: translate(-50%, -50%);
             width: 70%;
             height: 70%;
-            border: 3px dashed rgba(76, 201, 240, 0.7);
+            border: 3px dashed rgba(185, 137, 56, 0.85);
             border-radius: 8px;
             pointer-events: none;
         }
@@ -97,19 +92,35 @@
                 max-height: 280px;
             }
         }
+
+        .checkin-choice { min-height: 88px; border: 1px solid #e2e5e2; border-radius: 12px; background: #fff; color: var(--dark); padding: 1rem; text-align: left; display: flex; align-items: center; gap: 1rem; width: 100%; }
+        .checkin-choice:hover, .checkin-choice:focus-visible { border-color: var(--accent); background: #fffdf8; }
+        .checkin-choice i { color: var(--primary); font-size: 1.5rem; width: 2rem; text-align: center; }
+        .checkin-choice span { display: block; color: #687783; font-size: .9rem; }
+        .checkin-choice strong { display: block; font-size: 1.05rem; }
+        .checkin-layout { max-width: 760px; }
+        #checkinStatus { min-height: 1.5rem; }
     </style>
 </head>
 <body>
     {% block content %}
-    <div class="container mt-4">
+    <div class="container mt-4 checkin-layout">
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
                 <h3 class="mb-0">
                     <i class="fas fa-user-check me-2"></i>
-                    Check-In to: {{ session.name }}
+                    Check-in for {{ session.name }}
                 </h3>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3 p-md-4">
+                <p class="text-muted mb-3">{{ session.date.strftime('%A, %B %d') }}{% if session.start_time %} · {{ session.start_time.strftime('%I:%M %p') }}{% endif %}{% if session.location %} · {{ session.location }}{% endif %}</p>
+                <div class="d-grid gap-3 mb-3" aria-label="Choose a check-in method">
+                    <button type="button" class="checkin-choice" id="scanMemberChoice"><i class="fas fa-id-card" aria-hidden="true"></i><div><strong>Scan Member QR</strong><span>Use a member pass or enter their email</span></div></button>
+                    <button type="button" class="checkin-choice" id="scanServiceChoice"><i class="fas fa-calendar-check" aria-hidden="true"></i><div><strong>Scan Service QR</strong><span>Scan a service code to open its check-in</span></div></button>
+                    <button type="button" class="checkin-choice" id="fingerprintChoice"><i class="fas fa-fingerprint" aria-hidden="true"></i><div><strong>Use Fingerprint</strong><span>Check in with an enrolled device fingerprint</span></div></button>
+                </div>
+                <div id="checkinStatus" class="small" role="status" aria-live="polite"></div>
+                <div id="scanPanel" hidden>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card h-100">
@@ -222,12 +233,20 @@
                         </div>
                     </div>
                 </div>
+                </div>
+                <div id="fingerprintSuccess" class="text-center py-4" hidden role="status" aria-live="polite">
+                    <i class="fas fa-circle-check text-success" style="font-size:3rem" aria-hidden="true"></i>
+                    <h2 class="h4 mt-3" id="fingerprintMemberName">Checked in</h2>
+                    <p class="text-muted" id="fingerprintSessionName"></p>
+                    <button class="btn btn-primary" type="button" id="anotherFingerprint">Check in another person</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="{{ url_for('static', filename='biometric.js') }}"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const video = document.getElementById("scanner-video");
@@ -237,10 +256,58 @@
         const toggleScannerBtn = document.getElementById("toggleScanner");
         let stream = null;
         let scannerActive = false;
+        let scanMode = 'member';
+        const scanPanel = document.getElementById('scanPanel');
+        const checkinStatus = document.getElementById('checkinStatus');
+
+        function openScanner(mode) {
+            scanMode = mode;
+            scanPanel.hidden = false;
+            userInput.focus();
+            if (scannerContainer.style.display === 'none') toggleScannerBtn.click();
+            checkinStatus.textContent = mode === 'service' ? 'Point the camera at the service QR code.' : 'Point the camera at the member QR code, or enter an email.';
+        }
+
+        document.getElementById('scanMemberChoice').addEventListener('click', () => openScanner('member'));
+        document.getElementById('scanServiceChoice').addEventListener('click', () => openScanner('service'));
+        document.getElementById('fingerprintChoice').addEventListener('click', async function() {
+            checkinStatus.textContent = 'Place a finger on the device sensor to continue.';
+            if (!window.biometricAuth || !biometricAuth.isSupported) {
+                checkinStatus.textContent = 'Fingerprint check-in is not available on this device. Choose a QR option instead.';
+                return;
+            }
+            this.disabled = true;
+            try {
+                const result = await biometricAuth.authenticateAndAddToSession({{ session.id|tojson }});
+                const member = result.user || {};
+                document.getElementById('fingerprintMemberName').textContent = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || 'Member checked in';
+                document.getElementById('fingerprintSessionName').textContent = '{{ session.name|e }}';
+                document.getElementById('fingerprintSuccess').hidden = false;
+                document.getElementById('scanPanel').hidden = true;
+                document.getElementById('checkinStatus').textContent = '';
+            } catch (error) {
+                checkinStatus.textContent = error.message || 'Fingerprint check-in did not complete. Please choose a QR option.';
+            } finally {
+                this.disabled = false;
+            }
+        });
+        document.getElementById('anotherFingerprint').addEventListener('click', function() {
+            document.getElementById('fingerprintSuccess').hidden = true;
+            checkinStatus.textContent = '';
+        });
+
+        document.getElementById('checkinForm').addEventListener('submit', function(event) {
+            if (scanMode === 'service') {
+                event.preventDefault();
+                const serviceCode = userInput.value.trim();
+                if (serviceCode) window.location.href = `/scan-session/${encodeURIComponent(serviceCode)}`;
+                else checkinStatus.textContent = 'Scan or enter the service QR code first.';
+            }
+        });
 
         // Toggle scanner visibility
         toggleScannerBtn.addEventListener("click", async function() {
-            if (scannerContainer.style.display === "none") {
+            if (getComputedStyle(scannerContainer).display === "none") {
                 await startScanner();
                 scannerContainer.style.display = "block";
                 userInput.placeholder = "Position QR code in frame";
@@ -319,6 +386,11 @@
         function handleQRDetected(data) {
             const cleanedData = data.trim();
             console.log("QR detected:", cleanedData);
+            if (scanMode === 'service') {
+                stopScanner();
+                window.location.href = `/scan-session/${encodeURIComponent(cleanedData)}`;
+                return;
+            }
             userInput.value = cleanedData;
             showStatus("✓ QR code detected");
             video.classList.add('scanned');

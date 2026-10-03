@@ -248,11 +248,13 @@
     }
 </style>
 
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/church-admin.css') }}">
+
 <header class="app-header" id="appHeader">
     <nav class="navbar navbar-light">
         <div class="container-fluid px-0">
 
-            <a class="navbar-brand" href="{{ url_for('views.home') }}">
+            <a class="navbar-brand" href="{{ url_for('views.dashboard') }}">
                 <div class="brand-logo">
                     <img src="{{ url_for('static', filename='uploads/128px-Rccg_logo.png') }}" alt="logo" width="22" />
                 </div>
@@ -261,10 +263,10 @@
 
             <div class="header-right">
                 <button type="button" class="header-icon-btn header-back-btn" id="backButton"
-                        data-home="{{ url_for('views.home') }}" aria-label="Go back to previous page" title="Back">
+                        data-home="{{ url_for('views.dashboard') }}" aria-label="Go back to previous page" title="Back">
                     <i class="fa-solid fa-arrow-left"></i>
                 </button>
-                <a class="header-icon-btn" href="{{ url_for('views.home') }}" aria-label="Home" title="Home">
+                <a class="header-icon-btn" href="{{ url_for('views.dashboard') }}" aria-label="Dashboard" title="Dashboard">
                     <i class="fa-solid fa-house"></i>
                 </a>
 
